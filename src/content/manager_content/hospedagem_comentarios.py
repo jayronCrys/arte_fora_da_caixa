@@ -11,7 +11,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # ---------------------------
-# Conexão com MongoDB
+# Conexão com MongoDB Local
 # ---------------------------
 def mongo_conn(uri="mongodb://localhost:27017/", banco="plataforma"):
     """"
