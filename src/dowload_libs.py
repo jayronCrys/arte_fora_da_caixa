@@ -15,6 +15,6 @@ def ensure_libs_installed(libs):
 
 
 libs = ["flask", "bcrypt", "google-auth", "google-auth-oauthlib",
-         "requests", "pdfservices-sdk", "python-dotenv", "pypandoc",
-         "regex"]
+        "requests", "python-dotenv", "regex", "sqlalchemy", "pymongo",
+        "bson"]#--> talvez seja melhor mudar flask para fastApi
 ensure_libs_installed(libs)
