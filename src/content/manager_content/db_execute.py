@@ -1,115 +1,104 @@
-import sqlite3 as sq
+from sqlalchemy import create_engine, select, update, delete
+from sqlalchemy.orm import Session
 import logging
-from typing import Union
+from typing import Union, List, Type
+from sqlalchemy.orm import DeclarativeMeta
 
-#b = sq.connect("dh.db")
-#c = db.cursor()
-#c.execute("""CREATE TABLE IF NOT EXISTS SSS(
-#id INTEGER PRIMARY KEY AUTOINCREMENT, 
-#name TEXT NOT NULL,
-#idade INTEGER NOT NULL)""")
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+logger = logging.getLogger(__name__)
 
-def insert_info(db: sq, table: str, collumns: list,  values: list)->bool:
-    
-    if isinstance(collumns, list):
-        placeholders = ", ".join(["?" for n in range (len(collumns))])
-        collumns = ", ".join(collumns)
-        conn = db.cursor()
-        try:
-            
-            conn.execute(f"INSERT INTO {table} ({collumns}) VALUES ({placeholders}) ", values)
-            db.commit()
-            logging.info("Informacao adicionads")
-            return True
-            
-        except Exception as e:
-            logging.error(f"Erro ao adocionar informacoes de usuario, motivo {e}")
-            db.rollback()
-            logging.warning("Dezfazendo alteracoes no banco")
+# ========================================
+# Funções CRUD para SQLAlchemy
+#========================================
+def insert_info(session: Session, model: Type[Base], data: dict) -> bool:
+    """
+    Insere um novo registro no banco.
+    Session -> sessão ativa de um banco conectado.
+    Model -> classe do modelo SQLAlchemy.
+    Data -> dicionário com as colunas e valores.
+    Podem ser adicionados em uma só chamada todos os campos necessários.
+    """
+    try:
+        novo_registro = model(**data)
+        session.add(novo_registro)
+        session.commit()
+        logger.info(f"Registro inserido com sucesso em {model.__tablename__}")
+        return True
+    except Exception as e:
+        session.rollback()
+        logger.error(f"Erro ao inserir informação em {model.__tablename__}: {e}")
+        return False
+
+def select_info(session: Session, model: Type[Base],
+                columnReference: str, valueReference: Union[str, int],
+                items_to_select: Union[List[str], None] = None) -> Union[bool, tuple]:
+    """
+    Seleciona um registro com base em uma coluna e valor.
+    Session -> referência a um banco conectado, onde as informaçãona serem modificadas estão contidas.
+    Model -> tabela de refência para a alteração das informaçãoes.
+    ColummReference -> coluna que representa a entidade que será modificada.
+    valueReference -> valor de busca usado para identificar a entidade.
+    items_to_select: lista de colunas a selecionar ou None para todasAtualiza um campo específico.
+    """
+    try:
+        stmt = select(model).where(getattr(model, columnReference) == valueReference)
+        result = session.execute(stmt).scalars().first()
+
+        if not result:
+            logger.warning(f"Nenhum resultado encontrado para {collumnReference}={valueReference}")
             return False
-            
-        finally:
-            conn.close()
-            logging.info("Banco de dados fechado")
-        
-    logging.warning("A ação de inserção nem foi iniciada pois o tipo de dados informado não atende aos requisitos")
-    return False
-      
-      
-def select_info(db: sq, table: str, collumnReference: str, item_to_select: Union[str, list], varReference: list)-> Union[bool, tuple]:
-        
-    if isinstance(varReference, list):
-        if isinstance(item_to_select, list):
-            item_to_select = ", ".join(item_to_select)
 
-        conn = db.cursor()
+        if items_to_select:
+            data = tuple(getattr(result, col) for col in items_to_select)
+            return data
+        else:
+            return result
+    except Exception as e:
+        logger.error(f"Erro ao selecionar dados: {e}")
+        return False
 
-        try:
-            response = conn.execute(f"SELECT {item_to_select} FROM {table} WHERE {collumnReference} = ?",
-            varReference).fetchone()
-            
-            db.commit()
-            logging.info("seleção bem sucedida")
-            return response
-        
-        except Exception as e:
-            logging.error(f"Erro selecionar informacoes de elemento, motivo: {e}")
-            db.rollback()
-            logging.warning("Dezfazendo alteracoes no banco")
-            return False
-            
-        finally:
-            db.close()
-            logging.info("Banco de dados fechado")
+def update_info(session: Session, model: Type[Base],
+                columnUpdate: str, newValue: Union[str, int, float],
+                columnReference: str, valueReference: Union[str, int]) -> bool:
+    """
+    Atualiza um campo específico.
+    Session -> referência a um banco conectado, onde as informaçãona serem modificadas estão contidas.
+    Model -> tabela de refência para a alteração das informaçãoes.
+    ColumnUpdate -> coluna referêcia que terá o valor modificado.
+    ColummReference -> coluna que representa a entidade que será modificada.
+    valueReference -> valor de busca usado para identificar a entidade.
+    """
+    try:
+        stmt = (
+            update(model)
+            .where(getattr(model, columnReference) == valueReference)
+            .values({columnUpdate: newValue})
+        )
+        session.execute(stmt)
+        session.commit()
+        logger.info(f"Registro atualizado em {model.__tablename__}")
+        return True
+    except Exception as e:
+        session.rollback()
+        logger.error(f"Erro ao atualizar: {e}")
+        return False
 
-    logging.warning("A ação de seleção nem foi iniciada pois o tipo de dados informado não atende aos requisitos")
-    return False
-      
-
-def update_ifo(db: sq, table: str, collumnUpdate: str, collumnReference: str, varReference, newValue)->bool:
-    if isinstance(collumnReference, str):
-        conn = db.cursor()
-        try:
-            conn.execute(f"UPDATE {table} SET {collumnUpdate} = ? WHERE {collumnReference} = ?", (newValue, varReference))
-            db.commit()
-            logging.info("Informacao atualizada")
-            return True
-            
-        except Exception as e:
-            logging.error(f"Erro ao atualizar informacoes de usuario: {e}")
-            db.rollback()
-            logging.warning("Dezfazendo alteracoes no banco")
-            return False
-            
-        finally:
-            db.close()
-            logging.info("Banco de dados fechado")
-
-    logging.warning("A ação de update nem foi iniciada pois o tipo de dados informado não atende aos requisitos")
-    return False    
-    
-
-def delete_info(db: sq, table: str, collumnReference: str, valReference: str)->bool:
-    
-
-    conn = db.cursor()
-    if isinstance(valReference, str):
-        try:
-            
-            conn.execute(f"DELETE FROM {table} WHERE {collumnReference} = ?", (valReference, ))
-            db.commit()
-            logging.info("Exclusão feitao com sucesso")
-            return True
-            
-        except Exception as e:
-            logging.error(f"Erro ao deletar informacoes. Motivo: {e}")
-            db.rollback()
-            logging.warning("Dezfazendo alteracoes no banco")
-            return False
-            
-        finally:
-            db.close()
-            logging.info("Banco de dados fechado")
-
-    logging.warning("A ação de deletar nem foi iniciada pois o tipo de dados informado não atende aos requisitos")
-    return False
+def delete_info(session: Session, model: Type[Base],
+                columnReference: str, valueReference: Union[str, int]) -> bool:
+    """
+    Deleta um registro do banco.
+    Session -> referência a um banco conectado, onde as informaçãona serem modificadas estão contidas.
+    Model -> tabela de refência para a alteração das informaçãoes.
+    ColumnReference -> coluna que representa a entidade que será deletado.
+    valueReference -> valor de busca usado para identificar a entidade. 
+    """
+    try:
+        stmt = delete(model).where(getattr(model, columnReference) == valueReference)
+        session.execute(stmt)
+        session.commit()
+        logger.info(f"Registro deletado de {model.__tablename__}")
+        return True
+    except Exception as e:
+        session.rollback()
+        logger.error(f"Erro ao deletar: {e}")
+        return False
