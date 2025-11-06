@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 # ========================================
 # Funções CRUD para SQLAlchemy
 #========================================
-def insert_info(session: Session, model: Type[Base], data: dict) -> bool:
+def insert_info(session: Session, model: Type[DeclarativeMeta], data: dict) -> bool:
     """
     Insere um novo registro no banco.
     Session -> sessão ativa de um banco conectado.
@@ -29,11 +29,11 @@ def insert_info(session: Session, model: Type[Base], data: dict) -> bool:
         logger.error(f"Erro ao inserir informação em {model.__tablename__}: {e}")
         return False
 
-def select_info(session: Session, model: Type[Base],
+def select_info(session: Session, model: Type[DeclarativeMeta],
                 columnReference: str, valueReference: Union[str, int],
                 items_to_select: Union[List[str], None] = None) -> Union[bool, tuple]:
     """
-    Seleciona um registro com base em uma coluna e valor.
+    Seleciona um registro com DeclarativeMeta em uma coluna e valor.
     Session -> referência a um banco conectado, onde as informaçãona serem modificadas estão contidas.
     Model -> tabela de refência para a alteração das informaçãoes.
     ColummReference -> coluna que representa a entidade que será modificada.
@@ -45,7 +45,7 @@ def select_info(session: Session, model: Type[Base],
         result = session.execute(stmt).scalars().first()
 
         if not result:
-            logger.warning(f"Nenhum resultado encontrado para {collumnReference}={valueReference}")
+            logger.warning(f"Nenhum resultado encontrado para {columnReference}={valueReference}")
             return False
 
         if items_to_select:
@@ -57,7 +57,7 @@ def select_info(session: Session, model: Type[Base],
         logger.error(f"Erro ao selecionar dados: {e}")
         return False
 
-def update_info(session: Session, model: Type[Base],
+def update_info(session: Session, model: Type[DeclarativeMeta],
                 columnUpdate: str, newValue: Union[str, int, float],
                 columnReference: str, valueReference: Union[str, int]) -> bool:
     """
@@ -83,7 +83,7 @@ def update_info(session: Session, model: Type[Base],
         logger.error(f"Erro ao atualizar: {e}")
         return False
 
-def delete_info(session: Session, model: Type[Base],
+def delete_info(session: Session, model: Type[DeclarativeMeta],
                 columnReference: str, valueReference: Union[str, int]) -> bool:
     """
     Deleta um registro do banco.

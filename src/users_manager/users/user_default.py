@@ -1,32 +1,30 @@
-
 #                         Caminhos dos meus módulos
 #---------------------------------------------------------------------------------
 from ..passwords import make_hash as hash
 from ..passwords import compare_password as compare
 from ...apis.google.google_loggin_api import client_ifo
-from ...content.manager_content import hospedagem_aulas as database
-from ...content.manager_content import db_execute
+from ...content.manager_content.db_execute import insert_info, select_info, delete_info, update_info
+from ...content.manager_content.hospedagem_aulas import User, Contents, Subs, Inscricoes
+from ...content.manager_content import create_db as database
 #----------------‐----------------------------------------------------------------
 #                           Importações externas
 #----------------‐----------------------------------------------------------------
-from datetime import datetime
 from typing import Union
-import uuid #-> vai ser desnecessario quando usa um banco de vdd
 import re
 import logging
-#slite3 está contido no arquivo hospedafem_aulas
 #----------------‐----------------------------------------------------------------
 
 
 def check_user(userName, dataBase):
     conn = dataBase()
     try:
-        userExist = db_execute.select_info(database, "USERS", "user_name", "*", userName).fetchone()
-        logging.info("Informações de usuário extraidas com sucesso")  
+        userExist = select_info(conn, User, "name", userName, None)  # corrigido user_name -> name
+        logging.info("Informações de usuário extraídas com sucesso")  
         return userExist
 
     except Exception as e:
         logging.error(f"Erro ao selecionar atributos de usuário, motivo {e}")
+        conn.rollback()
         return False   
 
     finally:
@@ -37,61 +35,51 @@ def check_user(userName, dataBase):
 class Create_Account:
     def __init__(self, dataBase):
         self.dataBase = dataBase
-        self.userEmail = None
         self.userName = None
         self.userPass = None
-        self.userId = None
-        self.picture = None
 
 
-    def create_user(self, userName=None, method=None, email=None):
-        
-        if userName is not None:
-            self.userName = userName
-            
-        self.userEmail = email
-        if self.userName and (self.userPass or (method == "google" and email)):
-            try:
-                self.userId = str(uuid.uuid4())#essa definicão nao vai existir, id vai ser um default no db
-                conn = self.dataBase()
-                db_execute(self.dataBase, "USERS", ["user_id", "user_name", "password", "email"] , [self.userId, self.userName, self.userPass, self.userEmail])
-                
-                user = {"user_id": self.userId,
-                             "name": self.userName,
-                              "email": self.userEmail,
-                              "password": True, #->nao expoe a senha
-                              "picture": self.picture,
-                              "creationDate": datetime.today()}
-                logging.info(f"Novo usuário {self.userName} adicionado com sucesso")
-                
-                return user
-
-            except Exception as e:          
-                logging.error("Erro ao adicionar usuário , motivo {e}")
-                logging.warning("Desfazendo alterações no banco")
-                conn.rollback()
-                
+    def create_user(self, method, account: dict): #-->account deve ser um dict 
+        if method == "google":
+            if not account.get("userName") or not account.get("email"):
                 return False
-                
-            finally:              
-                conn.close()
-                logging.info("Banco de dados fechado com sucesso")
-               
-        return False
+        
+        if method == "local":
+            if not self.userName or not self.userPass:
+                return False
+        
+        #--->self.userName e self.userPass são definidas nas funções de validação de nome e senha, mas essas defs só são chamadas quando o metodo de cadastro é local. Essa linha faz com que self.userName assuma valores diferentes para os dois contextos de login. Eu sei que deve dá pra fazer melhor, mas não sei como :(
+        self.userName = account.get("userName") or self.userName
+                            
+        conn = self.dataBase()
+        try:
+            insert_info(conn, User, {
+                "name": self.userName,
+                "email": account.get("email"),
+                "password": self.userPass, #---> userPass estará salva na instância caso o password for válidos, por isso a função não tem esse campo como parâmetro. Para email o seu valor é none, isso é proposital já que não é um campo obrigatório cadastro com email.
+                "picture": account.get("picture")
+            })                        
+            user = select_info(conn, User, "name", self.userName, None)
+            return user
+        
+        except Exception as e:          
+            logging.error(f"Erro ao adicionar usuário, motivo {e}")
+            conn.rollback()                                      
+            return False
+        
+        finally:              
+            conn.close()
+            logging.info("Banco de dados fechado com sucesso")           
 
 
     def create_user_pass(self, pass1, pass2):
-
-        if pass1 != pass2:
-            return False      
-
-        if len(pass1) < 8:
+        if pass1 != pass2 or len(pass1) < 8:
             return False
 
-        if (any(e.isdigit() for e in pass1) and
-            any(e.isalpha() for e in pass1) and
-            any(e.islower() for e in pass1) and
-            any(e.isupper() for e in pass1)):
+        if (any(e.isdigit() for e in pass2) and
+            any(e.isalpha() for e in pass2) and
+            any(e.islower() for e in pass2) and
+            any(e.isupper() for e in pass2)):
             self.userPass = hash(pass1)
             return True
 
@@ -99,18 +87,14 @@ class Create_Account:
         
 
     def create_user_name(self, name):
-
         if len(name) < 5 or len(name) > 50:
             return False
 
         if check_user(name, self.dataBase):
             return False
                
- #Define os padrões aceitos para nome e verifica se é respeitado pelo user
-        pattern = re.compile(r'^[a-z0-9._-]+$')
-        pattern = pattern.match(name)
-
-        if pattern:
+        #Define os padrões aceitos para nome e verifica se é respeitado pelo user
+        if re.match(r'^[a-z0-9._-]+$', name):
             self.userName = name
             return True
 
@@ -118,56 +102,61 @@ class Create_Account:
 
 
     @classmethod
-    def creator(cls, creationMethod, userName, email=None, pass1=None, pass2=None)->bool :
-
-        dataBase = database.init_db
-        createUser = cls(dataBase)        
+    def creator(cls, creationMethod, userName=None, email: Union[dict, None] = None, pass1=None, pass2=None)->bool:
+        createUser = cls(database)        
         user = None
-        #usuários aud loggando udando google, teram privilégios, eles não passaram pela 
-        #validação de nome e não precisarão de senha, apenas da conta google.
-        if creationMethod == "google" and (userName and email) :
-            user = createUser.create_user(userName, creationMethod, email)
+
+        #usuários logando usando google, terão privilégios, eles não passam pela 
+        #validação de nome e não precisarão de senha, basta a conta google.
+        if creationMethod == "google" and email and email.get("userName") and email.get("email"):
+            user = createUser.create_user(creationMethod, email) #--->email deve ser um dict com os campos name, email, e picture preenchidos
             
-        elif creationMethod == "local" and (userName and pass1 and pass2):           
+        #usando a conta local há uma sequência de validações            
+        elif creationMethod == "local" and userName and pass1 and pass2:
             if not createUser.create_user_name(userName):
                 return False
                            
             if not createUser.create_user_pass(pass1, pass2):
                 return False
                                        
-            user = createUser.create_user()
-          
+            user = createUser.create_user(creationMethod, {
+                "userName": createUser.userName,
+                "email": None,
+                "picture": None
+            })
+            
         else:
             return False
 
+        #----->Funcionalidade bizarra:
+        #Se o user for definido no algoritmo acima, esse trecho é responsável por invocar a classe de loggin automáticamente usando as informações fornecidas pelo usuário que foi cadastrado >> Ler o resto no método de classe de Login
         if user:
-             logginMethod = creationMethod
-             Login_Account.login(logginMethod, user)
-        
+            logginMethod = creationMethod
+            return Login_Account.login(logginMethod, user, True)    
         return False
-
+    
 
 class Login_Account:
 
     def __init__(self, account, dataBase):
+        
+        self.user = account
+        self.dataBase = dataBase
+        
         self.userName = None
         self.userPass = None
         self.email = None
         self.createDate = None
-        self.user = None
+        self.picture = None
+        self.userId = None
         self.isLoged = False       
-        self.account = account
-        self.dataBase = dataBase
+        
 
-    @staticmethod
-    def is_loged(self, func):
-        def wrapper(*args, **kwargs):
+    def is_loged(func):
+        def wrapper(self, *args, **kwargs):
             if self.isLoged and self.user:
-                return func(*args, **kwargs)
-                
-            else:
-                return False
-                
+                return func(self, *args, **kwargs)
+            return False
         return wrapper
 
 
@@ -179,41 +168,38 @@ class Login_Account:
         #---> todas essas informações devem ser garantidamente retornadas caso estejam definidas no banco de dados
         self.userId = self.user.get("id")
         self.email = self.user.get("email")
-        self.userName = self.user.get("user_name")
-        self.userPass = self.user.get("password")
+        self.userName = self.user.get("name")
+        self.userPass = "não te interessa, mas existe"
         self.createDate = self.user.get("creation_date")
-        self.picture = self.user.grt("picture")
-          
+        self.picture = self.user.get("picture")
+        
     
-    def login_with_google_account(self):    
-        userNameIn, emailIn = self.account  
-        if not self.user:
-            self.user = check_user(userNameIn, self.dataBase)
-
-        if self.user:
-            self.get_infor_user_verif()
-            self.isLoged = True
-
-            return self.isLoged, self.user
+    def login_with_google_account(self):
+        if isinstance(self.user, dict):
+            userNameIn = self.user.get("name")
+            userEmailIn = self.user.get("email")
             
-        if not(self.user) and self.userName and self.email:           
-            self.isLoged = False
-
+            userExist = check_user(userNameIn, self.dataBase)
+            if userExist and userExist.get("email") == userEmailIn:
+                self.user = userExist
+                self.get_infor_user_verif()
+                self.isLoged = True
+                return self.isLoged, self.user
+                    
+        self.isLoged = False                            
         return self.isLoged, None
 
     
     def login_with_local_account(self):  
-        userNameIn,  userPassIn = self.account
-        if not self.user:
-            self.user = check_user(userNameIn, self.dataBase)
-
-        if self.user:
-            #Compara a senha informada pelo usuário com a senha associada ao user name no banco
-            if compare(userPassIn, self.userPass):
-            #->>> checar se capare recebe um user ou a senha direto
+        if isinstance(self.user, dict):
+            userNameIn = self.user.get("name")
+            userPassIn = self.user.get("password")
+            
+            userExist = check_user(userNameIn, self.dataBase)       
+            if userExist and compare(userPassIn, userExist.get("password")):
+                self.user = userExist
                 self.get_infor_user_verif()
                 self.isLoged = True
-                
                 return self.isLoged, self.user
                 
         self.isLoged = False
@@ -221,33 +207,35 @@ class Login_Account:
 
 
 
-    
-    #Onde logginMethod deve vir de uma url direcionada ao main flask e redicecionada a este cls mthd
-    #Account pode ser uma lista contendo nome e senha, para situção para loggin convencional, ou um dict para--
+    #Onde logginMethod deve vir de uma url direcionada ao main flask e redirecionada a este cls mthd
+    #Account pode ser uma lista contendo nome e senha, para situação para loggin convencional, ou um dict para--
     #loggin com google
     #O método vai retornar se o user está logado ou não, caso esteja, retorna como segundo parâmetro --
     #um dicionário, caso não esteja loggado o segundo parâmentro é None.
     @classmethod
     def login(cls, loginMethod, account:dict, redirectByCreateAccount=False)->Union[bool, dict, None]:
 
-        dataBase = database.init_db
-        userLog = cls(account, dataBase)
+        userLog = cls(account, database)
         userLoged, userAccount = False, None
 
         if redirectByCreateAccount:
-            #evita recarregar o banco pra buscar informações, usa as iformações contidas a account direcionada por create_account
-            userLoged = userLog.get_infor_user_verif(account)
-              
+            #evita recarregar o banco pra buscar informações, usa as informações contidas na account direcionada por create_account
+            userLog.get_infor_user_verif(account)
+            return True, account
+            
         else:
             if loginMethod == "google":                     
                 userLoged, userAccount = userLog.login_with_google_account()
 
-            elif loginMethod == "Local":
+            elif loginMethod == "local":
                 userLoged, userAccount = userLog.login_with_local_account()
         
-            if not(userAccount) and account:
-                create_loccal = Create_Account()
-                return create_loccal.creator(loginMethod, account)
+        
+        #Funcionalidade bizarra (2):
+        #se userAccount for False, ou seja, ele não estiver definido no banco de dados, mas account que é uma lista de informações, existir então a função de criar usuário é chamada automaticamente para fazer o cadastro usando as informações usadas no login
+        if not(userAccount) and account:
+            create_local = Create_Account(database)
+            return create_local.creator(loginMethod, account)
         
         return userLoged, userAccount
        
@@ -259,10 +247,15 @@ class Management_User(Login_Account):
     def __init__(self, account, dataBase):
         super().__init__(account, dataBase)
         #Define os atributos que o usuário tem permissão para fazer update
-        self.manager_fields = ["user_name", "email", "passWord"]
+        self.manager_fields = ["name", "email", "password"]
+
 
     @Login_Account.is_loged
     def get_user(self):
+        return self.user
+        
+    @Login_Account.is_loged
+    def get_user_name(self):
         return self.userName
 
     @Login_Account.is_loged
@@ -271,16 +264,28 @@ class Management_User(Login_Account):
 
     @Login_Account.is_loged
     def update_user(self, field, newValue):
-        if field not in self.manager_fields:
+        if field in self.manager_fields:
             conn = self.dataBase()
-            db_task = db_execute.update_ifo(conn, "USERS", field, "id", self.userId, newValue)
-            return db_task
- 
+            try:
+                db_task = update_info(conn, User, field, newValue, "id", self.userId)
+                return db_task
+            except Exception as e:
+                conn.rollback()
+                logging.error(f"Erro ao atualizar usuário: {e}")
+                return False
+            finally:
+                conn.close()
         return False
 
     @Login_Account.is_loged
     def delete_user(self):   
         conn = self.dataBase()
-        db_task = db_execute.delete_info(conn, "users", "id", self.id)
-        return db_task
- 
+        try:
+            db_task = delete_info(conn, User, "id", self.userId)
+            return db_task
+        except Exception as e:
+            conn.rollback()
+            logging.error(f"Erro ao deletar usuário: {e}")
+            return False
+        finally:
+            conn.close()
