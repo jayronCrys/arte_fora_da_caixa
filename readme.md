@@ -1,7 +1,7 @@
----->adicionar as novas funcoes em download_libs.py
----->excluir o conversor de pdf e adicionar, caso necessario, modos de tratamento desse pfd antes de adicionar no banco
----->pensanduuuu.....
----->verficar a integração entre o banco criado e as funções de crud
----->verficar a integração entre com os comentários
----->caso necessário modificar as funções de usuários para suportar o novo formato do banco
+
+
+---->modificar a estrutura dos diretórios pra mvc
+---->verficar a integração entre com os comentário
 ---->não lembro se finalizei as novas funcionalidades do oauth
+--->verficar a integracao de admin com o banco
+--->verificar a integracao de professor com banco
