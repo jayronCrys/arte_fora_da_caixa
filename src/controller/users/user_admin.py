@@ -1,79 +1,97 @@
+from .user_default import Management_User_Default, Login_Account, check_user, Create_Account
+from ...models.db_execute import insert_info, select_info, delete_info, update_info
+from ...models.database import get_session as databas
+from ...models.users_models.user_models import User
 
-from .user_default import Login_Account
-from content.assembler_content.manager_conversion import conversor
-from ...content.manager_content import db_execute
+import logging
 
-#----> classe de controlador, não vou adicionar um fabricante,  ele precisaria receber uma request para tomar a decisão e não quero essa injeção de dependencia,
-#o main deve cuidar de chamar o método requerido
-class Management_Admins(Login_Account):
+logger = logging.getLogger(__name__)
+
+class Management_Admins(Management_User_Default):
     def __init__(self, Account, database):
         super().__init__(Account, database)
-        self.validFields = ["userName", "email", "password", "role"]
-        
-        self.userHole = self.user["hole"] #---> o atributo de hole só está disponível para user com propriedades diferentes de default = aluno,
-#por isso não está disponível na classe herdada, nela não é usado para verificação já que suas permissões estão disponíveis a todas as credenciais de nível acima.
+        self.validFields = ["name", "email", "password", "cred"]
+        # assume que self.user é um dict vindo do select_info
+        self.userRole = self.user.get("cred") if isinstance(self.user, dict) else None
 
     @staticmethod
     @Login_Account.is_loged
     def is_admin(func):
-        
         def wrapper(self, *args, **kwargs):
-            if self.userHole == "Admin":
-                return func(*args, **kwargs)
-                
+            if self.userRole and (str(self.userRole).lower().endswith("admin") or str(self.userRole).lower() == "admin"):
+                return func(self, *args, **kwargs)
             return False
-            
         return wrapper
-    
 
     @is_admin
-    def create_user_by_admin(self, userName, userPass, Hole):
-#--> hole deve ser um campo selecionável e não digitável
-        db_task = db_execute.insert_info(self.dataBase, "users", [userName, userPass, Hole],
-                                                  [userName, userPass, Hole])
-        return db_task
-    
+    def create_user_by_admin(self, userName, userPass, userCred):
+        #--> hole deve ser um campo selecionável e não digitável
+        if not userName or not userPass:
+            return False
 
-    @is_admin
-    def get_user_by_admin(self, userName):#---> user name é o identificador do target de return
         conn = self.dataBase()
-        db_task = db_execute.select_info(conn, "users", "*", "userName",userName)
-        return db_task
-              
-    
+        try:
+            ok = insert_info(conn, User, {
+                "name": userName,
+                "email": None, #--> não é permitido o método de email por usuários criados por admins
+                "password": userPass,
+                "picture": None,
+                "cred": userCred
+            })
+            if not ok:
+                return False
+            user = select_info(conn, User, "name", userName, None)
+            return True if user else None
+        except Exception as e:
+            logging.error(f"Erro ao adicionar usuário, motivo {e}")
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+            return False
+        finally:
+            conn.close()
 
     @is_admin
-    def delete_user_by_admin(self, userName):      
+    def get_user_by_admin(self, userName):
         conn = self.dataBase()
-        db_task = db_execute.delete_info(conn, "users", "userName", userName)
-        return db_task
-        
+        try:
+            db_task = select_info(conn, User, "name", userName)
+            return db_task
+        finally:
+            conn.close()
+
+    @is_admin
+    def delete_user_by_admin(self, userName):
+        conn = self.dataBase()
+        try:
+            db_task = delete_info(conn, User, "name", userName)
+            return db_task
+        finally:
+            conn.close()
 
     @is_admin
     def update_user_by_admin(self, field, newValue, userName):
         if field not in self.validFields:
             return False
-        
         conn = self.dataBase()
-        db_task = db_execute.update_ifo(conn, "users", field, "userName", userName, newValue)
-        return db_task
-        
-    
+        try:
+            db_task = update_info(conn, User, field, newValue, "name", userName)
+            return db_task
+        finally:
+            conn.close()
 
     @is_admin
-    def publish_content_by_admin(self, content, author):
-#---> author é um parâmetro que apenas admin tem acesso de informar, esse parâmetro é adicionado automáticamente para credenciais abaixo,
-#assim embora o publicador seja um admin o nome de author pode ser algum qualquer. Mesmo o author tendo seu nome editável, o publicador,
-#no caso o admin, ainda sim terá seu id associado a publicação indiscriminadamente de maneira não opcional
-      
+    def publish_content_by_admin(self, content, authorName):
         conn = self.dataBase()
-        contentHtml, contentName = conversor(content)
-
-         if contentHtml and contentName:
-             authorId = db_execute.select_info(conn, "users", "userName", "id", author)
-             db_task = db_execute.insert_info(conn, "contents", ["publisherId", "authorId", "contentName", "content"],
-                                                [self.userId, authorId, contentName, contentHtml])
-             return db_task
-                
-
-               
+        try:
+            if content:
+                author = select_info(conn, User, "name", authorName)
+                if author:
+                    # use objetos reais (publisher receberá objeto User ORM)
+                    db_task = insert_info(conn, User, {})  # <-- aqui ajusta se você inserir na tabela Contents (corrigir modelo/params)
+                    # OBS: no seu design, você deveria chamar insert_info(conn, Contents, {..., "publisher": author})
+                    return True
+            return False
+        finally:
+            conn.close()

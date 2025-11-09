@@ -1,11 +1,17 @@
+# /controller/users/user_default.py
+
 #                         Caminhos dos meus módulos
 #---------------------------------------------------------------------------------
-from ..passwords import make_hash as hash
-from ..passwords import compare_password as compare
-from ...apis.google.google_loggin_api import client_ifo
-from ...content.manager_content.db_execute import insert_info, select_info, delete_info, update_info
-from ...content.manager_content.hospedagem_aulas import User, Contents, Subs, Inscricoes
-from ...content.manager_content import create_db as database
+
+from ..apis.google.google_loggin_api import client_ifo
+from ...models.passwords import make_hash as hash
+from ...models.passwords import compare_password as compare
+from ...models.database import get_session as database
+from ...models.db_execute import insert_info, select_info, delete_info, update_info
+from ...models.contents_models.content_models import Contents
+from ...models.users_models.user_models import User
+from ...models.relationships_models.inscriptions import Subs
+
 #----------------‐----------------------------------------------------------------
 #                           Importações externas
 #----------------‐----------------------------------------------------------------
@@ -14,22 +20,29 @@ import re
 import logging
 #----------------‐----------------------------------------------------------------
 
+logger = logging.getLogger(__name__)
+
 
 def check_user(userName, dataBase):
+    """
+    dataBase -> função que retorna sessão (get_session)
+    """
     conn = dataBase()
     try:
         userExist = select_info(conn, User, "name", userName, None)  # corrigido user_name -> name
-        logging.info("Informações de usuário extraídas com sucesso")  
+        logger.info("Informações de usuário extraídas com sucesso")  
         return userExist
 
     except Exception as e:
-        logging.error(f"Erro ao selecionar atributos de usuário, motivo {e}")
-        conn.rollback()
+        logger.error(f"Erro ao selecionar atributos de usuário, motivo {e}")
+        try:
+            conn.rollback()
+        except Exception:
+            pass
         return False   
 
     finally:
         conn.close()
-        logging.info("Banco de dados fechado com sucesso")
 
 
 class Create_Account:
@@ -48,28 +61,33 @@ class Create_Account:
             if not self.userName or not self.userPass:
                 return False
         
-        #--->self.userName e self.userPass são definidas nas funções de validação de nome e senha, mas essas defs só são chamadas quando o metodo de cadastro é local. Essa linha faz com que self.userName assuma valores diferentes para os dois contextos de login. Eu sei que deve dá pra fazer melhor, mas não sei como :(
+        #--->self.userName e self.userPass são definidas nas funções de validação de nome e senha
         self.userName = account.get("userName") or self.userName
                             
         conn = self.dataBase()
         try:
-            insert_info(conn, User, {
+            ok = insert_info(conn, User, {
                 "name": self.userName,
                 "email": account.get("email"),
-                "password": self.userPass, #---> userPass estará salva na instância caso o password for válidos, por isso a função não tem esse campo como parâmetro. Para email o seu valor é none, isso é proposital já que não é um campo obrigatório cadastro com email.
+                "password": self.userPass, 
                 "picture": account.get("picture")
-            })                        
+            })
+            if not ok:
+                return False
+
             user = select_info(conn, User, "name", self.userName, None)
             return user
         
         except Exception as e:          
-            logging.error(f"Erro ao adicionar usuário, motivo {e}")
-            conn.rollback()                                      
+            logger.error(f"Erro ao adicionar usuário, motivo {e}")
+            try:
+                conn.rollback()
+            except Exception:
+                pass
             return False
         
         finally:              
             conn.close()
-            logging.info("Banco de dados fechado com sucesso")           
 
 
     def create_user_pass(self, pass1, pass2):
@@ -106,10 +124,9 @@ class Create_Account:
         createUser = cls(database)        
         user = None
 
-        #usuários logando usando google, terão privilégios, eles não passam pela 
-        #validação de nome e não precisarão de senha, basta a conta google.
+        #usuários logando usando google, terão privilégios, não passam pela validação de nome
         if creationMethod == "google" and email and email.get("userName") and email.get("email"):
-            user = createUser.create_user(creationMethod, email) #--->email deve ser um dict com os campos name, email, e picture preenchidos
+            user = createUser.create_user(creationMethod, email)
             
         #usando a conta local há uma sequência de validações            
         elif creationMethod == "local" and userName and pass1 and pass2:
@@ -128,8 +145,6 @@ class Create_Account:
         else:
             return False
 
-        #----->Funcionalidade bizarra:
-        #Se o user for definido no algoritmo acima, esse trecho é responsável por invocar a classe de loggin automáticamente usando as informações fornecidas pelo usuário que foi cadastrado >> Ler o resto no método de classe de Login
         if user:
             logginMethod = creationMethod
             return Login_Account.login(logginMethod, user, True)    
@@ -152,11 +167,13 @@ class Login_Account:
         self.isLoged = False       
         
 
+    @staticmethod
     def is_loged(func):
         def wrapper(self, *args, **kwargs):
             if self.isLoged and self.user:
                 return func(self, *args, **kwargs)
-            return False
+            else:
+                return False
         return wrapper
 
 
@@ -207,11 +224,6 @@ class Login_Account:
 
 
 
-    #Onde logginMethod deve vir de uma url direcionada ao main flask e redirecionada a este cls mthd
-    #Account pode ser uma lista contendo nome e senha, para situação para loggin convencional, ou um dict para--
-    #loggin com google
-    #O método vai retornar se o user está logado ou não, caso esteja, retorna como segundo parâmetro --
-    #um dicionário, caso não esteja loggado o segundo parâmentro é None.
     @classmethod
     def login(cls, loginMethod, account:dict, redirectByCreateAccount=False)->Union[bool, dict, None]:
 
@@ -231,8 +243,7 @@ class Login_Account:
                 userLoged, userAccount = userLog.login_with_local_account()
         
         
-        #Funcionalidade bizarra (2):
-        #se userAccount for False, ou seja, ele não estiver definido no banco de dados, mas account que é uma lista de informações, existir então a função de criar usuário é chamada automaticamente para fazer o cadastro usando as informações usadas no login
+        #se userAccount não existe, tenta criar automaticamente
         if not(userAccount) and account:
             create_local = Create_Account(database)
             return create_local.creator(loginMethod, account)
@@ -242,7 +253,7 @@ class Login_Account:
         
 
 
-class Management_User(Login_Account):
+class Management_User_Default(Login_Account):
 
     def __init__(self, account, dataBase):
         super().__init__(account, dataBase)
@@ -270,7 +281,10 @@ class Management_User(Login_Account):
                 db_task = update_info(conn, User, field, newValue, "id", self.userId)
                 return db_task
             except Exception as e:
-                conn.rollback()
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
                 logging.error(f"Erro ao atualizar usuário: {e}")
                 return False
             finally:
@@ -284,7 +298,10 @@ class Management_User(Login_Account):
             db_task = delete_info(conn, User, "id", self.userId)
             return db_task
         except Exception as e:
-            conn.rollback()
+            try:
+                conn.rollback()
+            except Exception:
+                pass
             logging.error(f"Erro ao deletar usuário: {e}")
             return False
         finally:
