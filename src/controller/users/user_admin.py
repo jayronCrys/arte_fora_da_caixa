@@ -1,9 +1,10 @@
-from .user_default import Management_User_Default, Login_Account, check_user, Create_Account
-from ...models.db_execute import insert_info, select_info, delete_info, update_info
-from ...models.database import get_session as databas
-from ...models.users_models.user_models import User
+from src.controller.users.user_default import Management_User_Default, Login_Account, check_user, Create_Account
+from src.models.db_execute import insert_info, select_info, delete_info, update_info
+from src.models.database import get_session as databas
+from src.models.users_models.user_models import User
 
 import logging
+from functools import wraps
 
 logger = logging.getLogger(__name__)
 
@@ -14,16 +15,24 @@ class Management_Admins(Management_User_Default):
         # assume que self.user é um dict vindo do select_info
         self.userRole = self.user.get("cred") if isinstance(self.user, dict) else None
 
-    @staticmethod
-    @Login_Account.is_loged
-    def is_admin(func):
-        def wrapper(self, *args, **kwargs):
-            if self.userRole and (str(self.userRole).lower().endswith("admin") or str(self.userRole).lower() == "admin"):
-                return func(self, *args, **kwargs)
-            return False
-        return wrapper
 
-    @is_admin
+    def is_admin(self, func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            if self.isLoged and self.user and self.userRole == "admin":
+                return func(*args, **kwargs)
+            else:
+                logger.info("Acesso negado: usuário não logado ou sem permissão de administrador.")
+                return None
+        return wrapper
+        
+    def admin_required(func):
+        @wraps(func)
+        def wrapper(self, *args, **kwargs):
+            return self.is_admin(func)(*args, **kwargs)
+        return wrapper
+    
+    @admin_required
     def create_user_by_admin(self, userName, userPass, userCred):
         #--> hole deve ser um campo selecionável e não digitável
         if not userName or not userPass:
@@ -52,7 +61,7 @@ class Management_Admins(Management_User_Default):
         finally:
             conn.close()
 
-    @is_admin
+    @admin_required
     def get_user_by_admin(self, userName):
         conn = self.dataBase()
         try:
@@ -61,7 +70,7 @@ class Management_Admins(Management_User_Default):
         finally:
             conn.close()
 
-    @is_admin
+    @admin_required
     def delete_user_by_admin(self, userName):
         conn = self.dataBase()
         try:
@@ -70,7 +79,7 @@ class Management_Admins(Management_User_Default):
         finally:
             conn.close()
 
-    @is_admin
+    @admin_required
     def update_user_by_admin(self, field, newValue, userName):
         if field not in self.validFields:
             return False
@@ -81,7 +90,7 @@ class Management_Admins(Management_User_Default):
         finally:
             conn.close()
 
-    @is_admin
+    @admin_required
     def publish_content_by_admin(self, content, authorName):
         conn = self.dataBase()
         try:

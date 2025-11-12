@@ -3,14 +3,14 @@
 #                         Caminhos dos meus módulos
 #---------------------------------------------------------------------------------
 
-from ..apis.google.google_loggin_api import client_ifo
-from ...models.passwords import make_hash as hash
-from ...models.passwords import compare_password as compare
-from ...models.database import get_session as database
-from ...models.db_execute import insert_info, select_info, delete_info, update_info
-from ...models.contents_models.content_models import Contents
-from ...models.users_models.user_models import User
-from ...models.relationships_models.inscriptions import Subs
+from src.controller.apis.google.google_login_api import client_ifo
+from src.models.passwords import make_hash
+from src.models.passwords import compare_password as compare
+from src.models.database import get_session as database
+from src.models.db_execute import insert_info, select_info, delete_info, update_info
+from src.models.contents_models.content_models import Contents
+from src.models.users_models.user_models import User
+from src.models.relationships_models.inscriptions import Subs
 
 #----------------‐----------------------------------------------------------------
 #                           Importações externas
@@ -54,7 +54,7 @@ class Create_Account:
 
     def create_user(self, method, account: dict): #-->account deve ser um dict 
         if method == "google":
-            if not account.get("userName") or not account.get("email"):
+            if not account.get("name") or not account.get("email"):
                 return False
         
         if method == "local":
@@ -62,7 +62,7 @@ class Create_Account:
                 return False
         
         #--->self.userName e self.userPass são definidas nas funções de validação de nome e senha
-        self.userName = account.get("userName") or self.userName
+        self.userName = account.get("name") or self.userName
                             
         conn = self.dataBase()
         try:
@@ -91,31 +91,49 @@ class Create_Account:
 
 
     def create_user_pass(self, pass1, pass2):
+     
         if pass1 != pass2 or len(pass1) < 8:
+            logger.info("senha de tamanho indevido")
             return False
-
+            
+        if pass1.replace(" ", "") != pass1:#pass1.replace(" ", "") retira espaços da senha, se a comparação entre a senha com e sem espaço for diferente ela não deve ser aceita, pois a senha não deve ter espaços.
+            logger.info("A senha não pode conter espaços em branco")
+            return False
+            
         if (any(e.isdigit() for e in pass2) and
             any(e.isalpha() for e in pass2) and
             any(e.islower() for e in pass2) and
             any(e.isupper() for e in pass2)):
+            #verifica em ordem se tem: digitos, letras, letras minusculas e maiusculas.
             self.userPass = hash(pass1)
             return True
-
+        
+        logger.info("senha muito fraca")
         return False
         
 
     def create_user_name(self, name):
+        
+        name = name.strip()#Tira espaços do inicio e fim
+        if not name:
+            return False
+    
+        #realName conserva o nome real, isso é necessário para manter os espaços entre duas palavras, já que o regex usado não aceita espaços na comparação e causaria erro
+        realName = " ".join(name.split())
+        name = name.replace(" ", "")
         if len(name) < 5 or len(name) > 50:
+            logger.info("Nome fora do range")
             return False
 
         if check_user(name, self.dataBase):
+            logger.info("Nome já existe")
             return False
                
         #Define os padrões aceitos para nome e verifica se é respeitado pelo user
-        if re.match(r'^[a-z0-9._-]+$', name):
-            self.userName = name
+        if re.match(r'^[A-Za-z0-9._-]+$', name):
+            self.userName = realName#->lembrando que realName é igual name, suas diferenças são nos espaços entre palavras.
             return True
-
+        logger.info("Nome contém caracteres não permitidos")
         return False
 
 
@@ -125,30 +143,33 @@ class Create_Account:
         user = None
 
         #usuários logando usando google, terão privilégios, não passam pela validação de nome
-        if creationMethod == "google" and email and email.get("userName") and email.get("email"):
+        if creationMethod == "google" and email and email.get("name") and email.get("email"):
             user = createUser.create_user(creationMethod, email)
             
         #usando a conta local há uma sequência de validações            
         elif creationMethod == "local" and userName and pass1 and pass2:
             if not createUser.create_user_name(userName):
-                return False
+                logger.info("Nome de usuário inválido")
+                return False, None
                            
             if not createUser.create_user_pass(pass1, pass2):
-                return False
+                logger.info("Senha não respeita as especificações")
+                return False, None
                                        
             user = createUser.create_user(creationMethod, {
-                "userName": createUser.userName,
+                "name": createUser.userName,
                 "email": None,
                 "picture": None
             })
             
         else:
-            return False
+            return False, None
 
         if user:
             logginMethod = creationMethod
+            logger.info("Tentando fazer login automático")
             return Login_Account.login(logginMethod, user, True)    
-        return False
+        return False, None
     
 
 class Login_Account:
@@ -195,8 +216,9 @@ class Login_Account:
         if isinstance(self.user, dict):
             userNameIn = self.user.get("name")
             userEmailIn = self.user.get("email")
-            
+                      
             userExist = check_user(userNameIn, self.dataBase)
+                        
             if userExist and userExist.get("email") == userEmailIn:
                 self.user = userExist
                 self.get_infor_user_verif()
@@ -209,16 +231,21 @@ class Login_Account:
     
     def login_with_local_account(self):  
         if isinstance(self.user, dict):
+            logger.info("Nome e senha foram repassados")
             userNameIn = self.user.get("name")
             userPassIn = self.user.get("password")
             
-            userExist = check_user(userNameIn, self.dataBase)       
+            userExist = check_user(userNameIn, self.dataBase)
+            
             if userExist and compare(userPassIn, userExist.get("password")):
+                logger.info("Nome de usuário existe e a senha é igual a salva")
                 self.user = userExist
                 self.get_infor_user_verif()
                 self.isLoged = True
                 return self.isLoged, self.user
                 
+            logger.info("senhas diferentes")   
+                                       
         self.isLoged = False
         return self.isLoged, None    
 
@@ -229,7 +256,6 @@ class Login_Account:
 
         userLog = cls(account, database)
         userLoged, userAccount = False, None
-
         if redirectByCreateAccount:
             #evita recarregar o banco pra buscar informações, usa as informações contidas na account direcionada por create_account
             userLog.get_infor_user_verif(account)
@@ -244,9 +270,11 @@ class Login_Account:
         
         
         #se userAccount não existe, tenta criar automaticamente
-        if not(userAccount) and account:
-            create_local = Create_Account(database)
-            return create_local.creator(loginMethod, account)
+        if not(userAccount) and account and loginMethod == "google":
+            logging.info("tentando criar uma conta com as informações")
+            return Create_Account.creator(creationMethod = loginMethod, 
+               userName = account.get("name"),
+               email = account)
         
         return userLoged, userAccount
        

@@ -1,6 +1,6 @@
-from .user_default import Management_User_Default, Login_Account
-from ...models.db_execute import insert_info
-from ...models.contents_models.content_models import Contents
+from src.controller.users.user_default import Management_User_Default, Login_Account
+from src.models.db_execute import insert_info
+from src.models.contents_models.content_models import Contents
 
 class Management_Professors(Management_User_Default):
     def __init__(self, account, dataBase):
