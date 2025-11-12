@@ -2,11 +2,11 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Login</title>
+    <title>Criar Conta</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            background: linear-gradient(120deg, #6c63ff, #5a52ff);
+            background: linear-gradient(120deg, #5a52ff, #8e8eff);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -36,31 +36,22 @@
             cursor: pointer;
         }
         button:hover { background: #423bbf; }
-        .google {
-            background: #db4437;
-            margin-top: 10px;
-        }
-        .error {
-            color: #ffaaaa;
-            margin-bottom: 10px;
+        a {
+            color: white;
+            text-decoration: none;
+            display: block;
+            margin-top: 15px;
         }
     </style>
 </head>
 <body>
-    <form method="POST" action="/login">
-        <h2>Login</h2>
-        {% if error %}
-            <div class="error">{{ error }}</div>
-        {% endif %}
-        <input type="text" name="name" placeholder="Usuário" required><br>
-        <input type="password" name="password" placeholder="Senha" required><br>
-        <button type="submit" name="method" value="local">Entrar</button>
-        <button type="submit" name="method" value="google" class="google" formnovalidate>
-    Login com Google
-</button>
-        <button type="submit" name="new_account" value="new_account" class="new_account" formnovalidate>
-            Criar Conta
-        </button>
+    <form method="POST" action="/create_account">
+        <h2>Criar Conta</h2>
+        <input type="text" name="name" placeholder="Nome" required>
+        <input type="password" name="password_1" placeholder="Senha" required>
+        <input type="password" name="password_2" placeholder="confirmae senga" required>
+        <button type="submit">Criar</button>
+        <a href="/login">Voltar</a>
     </form>
 </body>
 </html>
