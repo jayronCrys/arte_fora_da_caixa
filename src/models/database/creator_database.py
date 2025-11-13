@@ -1,11 +1,11 @@
 
 #models/database/creator_database.py
-from database import Base, engine
+from src.models.database import Base, engine
 
 # Importa as tabelas (isso registra tudo no metadata da Base)
-from .models.users_model.user_model import User
-from .models.contents_model.content_models import Contents
-from .models.relationships.inscriptions import Subs
+from src.models.users_models.user_models import User
+from src.models.contents_models.content_models import Contents
+from src.models.relationships_models.inscriptions import Subs
 
 import os
 

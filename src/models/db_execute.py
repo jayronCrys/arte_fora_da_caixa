@@ -4,8 +4,9 @@ from sqlalchemy.orm import Session
 import logging
 from typing import Union, List, Type
 from sqlalchemy.orm import DeclarativeMeta
+import enum
+import uuid
 
-# Mantive tuas mensagens de logging; só deixei consistentes
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
@@ -34,7 +35,6 @@ def insert_info(session: Session, model: Type[DeclarativeMeta], data: dict) -> b
         logger.error(f"Erro ao inserir informação em {getattr(model, '__tablename__', model)}: {e}")
         return False
 
-
 def select_info(session: Session, model: Type[DeclarativeMeta],
                 columnReference: str, valueReference: Union[str, int],
                 items_to_select: Union[List[str], None] = None) -> Union[bool, dict]:
@@ -50,22 +50,25 @@ def select_info(session: Session, model: Type[DeclarativeMeta],
             logger.warning(f"Nenhum resultado encontrado para {columnReference}={valueReference}")
             return False
 
-        # Caso o usuário especifique colunas específicas
+        data = {}
         if items_to_select:
-            data = {col: getattr(result, col) for col in items_to_select}
+            cols = items_to_select
         else:
-            # Retorna todas as colunas do modelo como dicionário
-            data = {
-                column.name: getattr(result, column.name)
-                for column in model.__table__.columns
-            }
+            cols = [col.name for col in model.__table__.columns]
+
+        for col in cols:
+            value = getattr(result, col)
+            if isinstance(value, enum.Enum):
+                value = value.value
+            elif isinstance(value, uuid.UUID):
+                value = str(value)
+            data[col] = value
 
         return data
 
     except Exception as e:
         logger.error(f"Erro ao selecionar dados: {e}")
         return False
-
 
 def update_info(session: Session, model: Type[DeclarativeMeta],
                 columnUpdate: str, newValue: Union[str, int, float],

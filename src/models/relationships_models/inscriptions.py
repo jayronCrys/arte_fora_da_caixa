@@ -1,7 +1,6 @@
 
 #models/relashiontips_models/inscriptions.py
-from ..databade.creator_database import create_db
-from ..models import * #---->chama o __init__.py
+from src.models import * #---->chama o __init__.py
 import logging
 import uuid
 # --------------------------------------------------
