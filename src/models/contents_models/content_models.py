@@ -1,9 +1,7 @@
 
 #models/contents_models/content_models.py
-from ..databade.creator_database import create_db
-from ..models import *
+from src.models import *
 import uuid
-import enum
 import logging
 
 
