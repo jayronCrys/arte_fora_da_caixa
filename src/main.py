@@ -190,10 +190,18 @@ def create_account():
         name = request.form.get("name")
         password_1 = request.form.get("password_1")
         password_2 = request.form.get("password_2")
+        
+        checker = Create_Account()
+        
         if password_1 != password_2:
-            return render_template("create_account.html", error="Senhas não coincidem"), 400
-
+                        
+            return render_template("create_account.html", error="senhas não coencidem"), 400
+            
+        if check_user(name):
+            return render_template("create_account.html", error="O nome de usuário já está sendo utilizado"), 400
         creation_method = "local"
+        
+        
         userLoged, userAccount = Create_Account.creator(
             creationMethod=creation_method,
             userName=name,
