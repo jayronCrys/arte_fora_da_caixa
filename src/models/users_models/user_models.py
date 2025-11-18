@@ -1,13 +1,13 @@
 
 #models/users_models/user_models.py
+from src.models.database import Base
 from src.models import *
 import logging
 import uuid 
 import enum
 from sqlalchemy import LargeBinary
-# --------------------------------------------------
-# Configuração do log
-# --------------------------------------------------
+
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
