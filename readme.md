@@ -2,10 +2,9 @@
 
 ===PRÓXIMAS TAREFAS=======
 ---->verficar a integração entre com os comentário e usuarios(ai eu nao quero fazer isso)
----->adicionar os requerimentos em requirements
 ---->criar um routes, main sozinho não vai bastar
 
-===TAREFAS COMCLUIDAS======
+===TAREFAS CONCLUIDAS======
 ---->usuários e seus ajustes já estão prontos, abertos para adições
 ---->banco de usuários pronto aberto para adições
 ---->banco de contéudos pronto, aberto para adições

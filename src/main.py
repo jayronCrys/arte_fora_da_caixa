@@ -1,39 +1,84 @@
 import sys, os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+# Para PDF
+from io import BytesIO
 
-#Para login
+# Para atualizar o Banco
+from src.maker_admin import make_users
+from src.models.database import get_session
+import uuid
+# Para login
+import logging
 from pip._vendor import cachecontrol
 import google.auth.transport.requests as goo_request
 from google_auth_oauthlib.flow import Flow
-from google.auth.transport import requests as goo_request
-from src.controller.apis.google.google_login_api import client_ifo
-from src.controller.apis.google.google_login_api import google_config
+from src.controller.apis.google.google_login_api import client_ifo, google_config
 
-#Users
+# Users / controllers
 from src.controller.users.user_admin import Management_Admins
-from src.controller.users.user_default import Create_Account, Login_Account, Management_User_Default
+from src.controller.users.user_professor import Management_Professors 
+from src.controller.users.user_default import Create_Account, Login_Account, Management_User_Default, check_user
 
-#servidor
-from flask import Flask, render_template, redirect, request, url_for, session
-import requests 
-import logging
+# servidor
+from flask import Flask, render_template, redirect, request, url_for, session, g, flash, send_from_directory, Response, abort, send_file
+from werkzeug.utils import secure_filename
+import requests
+import uuid
 
-
-print("Caminho atual:", os.getcwd())
-print("Templates:", os.path.exists("src/view/templates/home_page.html"))
-
-
-# Cria uma instância da aplicação Flask
+# app
 app = Flask(__name__, template_folder="view/templates", static_folder="view/static")
-app.secret_key = "12434"#os.environ.get("FLASK_SECRET", "dev-secret")
+app.secret_key = os.environ.get("FLASK_SECRET", "dev-secret")
+
+# constantes e pasta de uploads
+UPLOAD_FOLDER = os.path.join(app.static_folder, "profile_images")
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+def make_session_from_dbuser(db_user_dict):
+   
+    if not db_user_dict:
+        return
+    session["user"] = {
+        "id": str(db_user_dict.get("id")),
+        "name": db_user_dict.get("name"),
+        "email": db_user_dict.get("email"),
+        "picture": db_user_dict.get("picture"),
+        "creation_date": str(db_user_dict.get("creation_date")),
+        "cred": db_user_dict.get("cred")
+    }
+    # extras para acesso rápido
+    session["name"] = session["user"]["name"]
+    session["email"] = session["user"]["email"]
+    session["picture"] = session["user"]["picture"]
+    session["id"] = session["user"]["id"]
+    session["cred"] = session["user"]["cred"]
+    session.modified = True
+    
+    logging.info("Sessão criada/atualizada para %s", session.get("name"))
 
 
-
-
-
+@app.before_request
+def load_user():
+    
+    if session.get("user"):
+        user_data = session.get("user")
+        if user_data:
+            g.user = Management_User_Default(user_data)
+        else:
+            g.user = type("Anon", (), {})()  # objeto vazio ao invés de None
+        if user_data.get("cred") == "admin":
+            g.user = Management_Admins(g.user.get_user())
+        if user_data.get("cred") == "professor":
+            g.user = Management_Professors(g.user.get_user())
+                     
+                     
+@app.route("/", methods = ["GET"])
+def get_app():
+    return redirect(url_for("login"))
+    
+    
 @app.route('/login', methods=["GET", "POST"])
 def login():
-    if "name" in session:
+    if session.get("name"):
         return redirect(url_for("home_page"))
 
     if request.method == "GET":
@@ -41,24 +86,28 @@ def login():
 
     login_with = request.form.get("method")
     create_new_account = request.form.get("new_account")
-    logging.info(f"medos de login: {login_with}")
+    logging.info("método de login: %s", login_with)
+
     if login_with == "google":
-        logging.info("login usando google")
         return redirect(url_for("google_login"))
 
     if login_with == "local":
-        logging.info("login local")
         account = {
             "name": request.form.get("name"),
             "password": request.form.get("password")
         }
-        userLoged, userAccount = Login_Account.login(login_with, account)
+        userLoged, userAccount = Login_Account.login("local", account)
         if userLoged and userAccount:
-            session["name"] = userAccount.get("name")
-            session["email"] = userAcccount.get("email")
-            session["picture"] = userAccount.get("picture")
-            session["cred"] = userAccount.get("cred")
-            return redirect(url_for("home_page"))
+            
+            try:
+                user_dict = userAccount.get_user()
+            except Exception:
+                user_dict = userAccount
+            make_session_from_dbuser(user_dict)
+            if session.get("cred") == "aluno":
+                return redirect(url_for("home_page"))
+            if session.get("cred") == "admin":
+                return redirect(url_for("admin_page"))       
         return render_template("index.html", error="credenciais incorretas")
 
     if create_new_account:
@@ -67,100 +116,6 @@ def login():
     return render_template("index.html", error="Opção de login inválida.")
 
 
-
-
-
-@app.route("/login/google", methods=["GET"])
-def google_login():
-    authorization = google_config(redirect_by="google_login_checkout")
-    
-    if authorization:
-        session["google_state"] = authorization.get("google_state")
-        session["google_client_config"] = authorization.get("client_config")
-        print("pego flow")
-        
-        return redirect(authorization.get("oauth_autho"))
-    return redirect(url_for("login"))
-
-
-
-
-@app.route("/login/google/checkin")
-def google_login_checkout():
-    
-    flow = Flow.from_client_config(
-    session.get("google_client_config"),
-    scopes=["openid", "https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/userinfo.profile"],
-    redirect_uri=url_for("google_login_checkout", _external=True),
-    state=session.get("google_state")
-)
-
-    flow.fetch_token(authorization_response=request.url)
-    req = goo_request.Request()
-    account = client_ifo(flow.credentials._id_token, req)
-   
-    if account:
-        userLoged, userAccount = Login_Account.login("google", account)
-        if userLoged and userAccount:
-            session["name"] = userAccount.get("name")
-            session["email"] = userAccount.get("email")
-            session["picture"] = userAccount.get("picture")
-            session["cred"] = userAccount.get("cred")
-            return redirect(url_for("home_page"))
-                    
-        return redirect(url_for("login"))
-    
-    return render_template("index.html")
-
-from flask import request, redirect, url_for, session
-
-
-
-@app.route("/create_account", methods=["GET", "POST"])
-def create_account():
-  
-    if request.method == "POST":
-        
-      
-        name = request.form.get("name")
-        password_1 = request.form.get("password_1")
-        password_2 = request.form.get("password_2") 
-        
-        if password_1 != password_2:
-            # Retornar uma mensagem de erro ao usuário (melhor seria renderizar o template com erro)
-            return "Erro: As senhas não coincidem.", 400 
-        creation_method = "local"
-        
-        user_logged, user_account = Create_Account.creator(
-            creationMethod = creation_method,
-            userName = name,
-            email = None, 
-            pass1 = password_1,
-            pass2 = password_2
-        )
-        
-        if user_logged and user_account:             
-            session["name"] = user_account.get("name")
-            session["email"] = user_account.get("email")
-            session["picture"] = user_account.get("picture")
-            session["cred"] = user_account.get("cred")
-            return redirect(url_for("home_page"))
-        else:
-            return name
-              
-    return render_template("create_account.html")
-    
-@app.route("/home")
-def home_page():
-    user_name = session.get("name", "Visitante")
-    user_email = session.get("email", "não informado")
-    
-    return render_template(
-        "home_page.html",
-        user_name=user_name,
-        user_email=user_email
-    )
-
 @app.route("/logout")
 def logout():
     session.clear()
@@ -168,11 +123,509 @@ def logout():
     return redirect(url_for("login"))
 
 
-if __name__ == '__main__':
+@app.route("/login/google", methods=["GET"])
+def google_login():
+    authorization = google_config(redirect_by="google_login_checkout")
+    if authorization:
+        session["google_state"] = authorization.get("google_state")
+        session["google_client_config"] = authorization.get("client_config")
+        return redirect(authorization.get("oauth_autho"))
+    return redirect(url_for("login"))
+
+
+@app.route("/login/google/checkin")
+def google_login_checkout():
+    flow = Flow.from_client_config(
+        session.get("google_client_config"),
+        scopes=["openid", "https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/userinfo.profile"],
+        redirect_uri=url_for("google_login_checkout", _external=True),
+        state=session.get("google_state")
+    )
+
+    flow.fetch_token(authorization_response=request.url)
+    req = goo_request.Request()
+    account = client_ifo(flow.credentials._id_token, req)
+    if account:
+        picture_url = account.get("picture")
+    
+        if picture_url and picture_url.startswith("http"):
+            try:
+               
+                img_bytes = requests.get(picture_url).content
+                
+                unique_name = f"{uuid.uuid4()}.jpg"
+                filepath = os.path.join(UPLOAD_FOLDER, unique_name)
+    
+                with open(filepath, "wb") as f:
+                    f.write(img_bytes)
+    
+                
+                public_url = f"/profile_images/{unique_name}"
+    
+                print("Foto original do Google:", picture_url)
+                print("Salva como:", filepath)
+    
+                account["picture"] = public_url
+    
+            except Exception as E:
+                logging.error(f"Erro ao salvar foto de perfil do usuário: {E}")
+        userLoged, userAccount = Login_Account.login("google", account)
+        if userLoged and userAccount:
+            try:
+                user_dict = dict(userAccount)
+            except Exception:
+                user_dict = userAccount
+            make_session_from_dbuser(user_dict)
+            return redirect(url_for("home_page"))
+        logging.error("Login Google falhou durante Login_Account.login()")
+        return redirect(url_for("login"))
+
+    logging.error("Erro: account info google não retornada")
+    return redirect(url_for("login"))
+
+
+@app.route("/create_account", methods=["GET", "POST"])
+def create_account():
+    if request.method == "POST":
+        name = request.form.get("name")
+        password_1 = request.form.get("password_1")
+        password_2 = request.form.get("password_2")
+        if password_1 != password_2:
+            return render_template("create_account.html", error="Senhas não coincidem"), 400
+
+        creation_method = "local"
+        userLoged, userAccount = Create_Account.creator(
+            creationMethod=creation_method,
+            userName=name,
+            email=None,
+            pass1=password_1,
+            pass2=password_2
+        )
+
+        if userLoged and userAccount:
+            try:
+                user_dict = userAccount.get_user()
+            except Exception:
+                user_dict = userAccount
+            make_session_from_dbuser(user_dict)
+            return redirect(url_for("home_page"))
+
+    return render_template("create_account.html")
+
+
+@app.route("/home")
+def home_page():
+    return redirect(url_for("contents"))
+    """user_name = session.get("name", "Visitante")
+    user_email = session.get("email", "não informado")
+    return render_template("home_page.html", user_name=user_name, user_email=user_email) --> decidindo como migrar isso pra contents"""
+
+
+
+@app.route("/user")
+def user():
+    total_courses = 0
+    enrolled_courses = []
+    if getattr(g, "user", None):
+        try:
+            user_data = g.user.get_user()
+        except Exception:
+            user_data = session.get("user")
+    else:
+        user_data = session.get("user")
+
+    return render_template("user_page.html", session_user=user_data, total_courses=total_courses, enrolled_courses=enrolled_courses)
+
+
+@app.route("/edit_user", methods=["GET", "POST"])
+def edit_user():
+    if not session.get("user"):
+        logging.info("Acesso negado - sem sessão")
+        flash("Acesso negado.")
+        return redirect("/login")
+
+    if request.method == "GET":
+        return render_template("edit_user.html", user=session.get("user"))
+
+    logging.info("Processando edição de usuário")
+    new_name = request.form.get("new_name")
+    new_pass = request.form.get("password")
+    
+    confirm_new_pass = request.form.get("confirm_password")
+    new_image = request.files.get("profile_image")
+
+    
+    if new_name and new_name.strip():
+        ok = False
+        try:
+            ok = g.user.update_user(field="name", newValue1=new_name)
+        except Exception as e:
+            logging.exception("Erro ao atualizar nome: %s", e)
+            ok = False
+
+        if not ok:
+            flash("Erro ao atualizar nome.")
+            return redirect("/user")
+
+    if new_pass and confirm_new_pass:
+        if new_pass != confirm_new_pass:
+            flash("As senhas não coincidem.")
+            return redirect("/user")
+        ok = False
+        try:
+            ok = g.user.update_user(field="password", newValue1=new_pass, newValue2=confirm_new_pass)
+            logging.info(f"senha atualizada para: {new_pass}")
+        except Exception as e:
+            logging.exception("Erro ao atualizar senha: %s", e)
+            ok = False
+        if not ok:
+            flash("Erro ao atualizar senha.")
+            return redirect("/user")
+    
+    print(new_image.filename)
+    if new_image and new_image.filename != "":
+        
+        filename = secure_filename(new_image.filename)
+        
+        if filename.startswith("/static/"):
+            filename = filename.replace("/static/", "", 1)
+          
+        if filename.startswith("view/static/"):
+            filename = filename.replace("view/static/", "", 1)
+        filepath = os.path.join(UPLOAD_FOLDER, filename)
+    
+        try:
+            new_image.save(filepath)     
+        # URL acessível ao navegador
+            public_url = f"/profile_images/{filename}"       
+            ok = g.user.update_user(field="picture", newValue1=public_url)
+            if not ok:
+                
+                flash("Erro ao salvar imagem.")
+                return redirect("/user")
+                     
+        except Exception as e:
+            logging.exception("Erro ao salvar arquivo: %s", e)
+            flash("Erro ao salvar imagem.")
+            return redirect("/user")
     try:
-        from models.database.creator_database import create_db
+        updated = check_user(g.user.userId,collumn="id")
+        
+        try:
+            updated_dict = dict(updated)
+        except Exception:
+            updated_dict = updated
+            
+        print(updated_dict.get("picture"))
+        
+        make_session_from_dbuser(updated_dict)
+    except Exception as e:
+        logging.exception("Erro ao recarregar usuário do DB após update: %s", e)
+        
+        pass
+
+    flash("Perfil atualizado com sucesso.")
+    return redirect("/user")
+
+
+@app.route("/edit_user/delete_picture", methods=["POST", "GET"])
+def delete_picture():
+    print(session.get("picture"))
+    if not session.get("picture"):
+        return render_template("user_page.html")
+    img = session.get("picture")
+    if not img.startswith("/profile_images/"):
+        return render_template("user_page.html")
+    img = os.path.join(app.static_folder, "profile_images", os.path.basename(img))
+    print(img)
+   
+    # Apaga o arquivo se existir
+    if os.path.exists(img):
+        print("agora entra")
+        os.remove(img)
+        try:
+            print("antiga", g.user.picture)
+            if g.user.update_user("picture", None):
+                
+                session["picture"] = g.user.picture
+                
+                
+                return render_template("exito.html")
+        except Exception as E:
+            logging.error(f"erro ao tentar apagar imagem {E}")
+            return render_template("user_page.html")
+    
+    return render_template("user_page.html")
+
+
+@app.route("/edit_user/delete_use", methods = ["POST", "GET"])
+def delete_user():
+    if request.method == "POST":
+        g.user.delete_user()
+        session.clear()
+        return redirect(url_for("login"))
+    
+    
+    return redirect(url_for("edit_user"))
+
+        
+
+@app.route("/contents", methods = ["GET", "POST"])
+def contents():
+    
+    try:
+        contents = g.user.get_all_contents()
+        return render_template("contents.html", contents = contents)
+        
+    except Exception as e:
+        return f"Erro ao carregar conteúdos: {e}", 500  
+@app.route("/contents/view/<content_id>", methods=["GET"])
+def get_file(content_id):
+
+    content = g.user.get_content_by_id(content_id)
+    
+    if not content:
+        abort(404)
+
+    return send_file(
+        BytesIO(content.get("pdf")),
+        mimetype="application/pdf",
+        as_attachment=False,
+        download_name=f"{content.get('title')}.pdf"
+    )
+
+
+@app.route("/contents/content/<content_id>", methods=["GET"])
+def content_buss(content_id):
+    
+    try:
+        content = g.user.get_content_by_id(content_id)
+    except Exception as e:
+        logging.error("Erro ao buscar conteúdo individual: %s", e)
+        abort(404)
+
+    if not content:
+        abort(404)
+    return render_template("content_view.html", content=content)
+
+                
+@app.route("/admin")
+def admin_page():
+    if session.get("cred")== "admin":
+        users = g.user.all_users()
+        
+        return render_template("admin_page.html", users=users)
+    return render_template("index.html")
+
+#MELHORAR NOME DA ROTA
+@app.route("/admin/create", methods=["POST"])
+def admin_create_user():
+    nome = request.form.get("nome")
+    cred = request.form.get("cred")
+    senha = request.form.get("password")
+    confirm = request.form.get("confirm")
+    user ={
+        "name":nome,
+        "cred":cred,
+        "password": senha,
+        "confirm": confirm}
+    print(user)
+    if g.user.create_user_by_admin(user.get("name"), user.get("password"), user.get("confirm"), user.get("cred")):
+        logging.info("ação bem sucedida")
+    
+    return redirect(url_for("admin_page"))
+
+
+#MELHAR NOME DA ROTA
+@app.route("/admin/edit/<user_id>", methods=["GET", "POST"])
+def admin_edit_user(user_id):
+
+    if request.method == "POST":
+        
+        new_name = request.form.get("nome")
+        print(new_name)
+        new_pass = request.form.get("senha")
+        confirm_pass = request.form.get("confirm_pass")
+        new_cred = request.form.get("cred")
+        if new_name.strip == "":
+            logging.info("Nome não pode ser um espaço em branco")
+            return redirect(url_for("admin_page"))
+            
+        if new_name:
+            g.user.update_user_by_admin("name", new_name, None, user_id)
+            print(f"nome: {new_name}, pass1: {new_pass}, pass2: {confirm_pass}")
+            
+        if (new_pass and confirm_pass) and (new_pass == confirm_pass):
+            g.user.update_user_by_admin("password", new_pass, confirm_pass, user_id)      
+        if new_cred:
+            g.user.update_user_by_admin("cred", new_cred, None, user_id)
+            print(session.get("cred"))
+        return redirect(url_for("admin_page"))
+        
+    return render_template("admin_edit_user.html", user=user)
+
+#MELHORAR NOME DA ROTA
+@app.route("/admin/delete/<user_id>", methods=["POST"])
+def admin_delete_user(user_id):
+        
+    g.user.delete_user_by_admin(user_id)
+    return redirect(url_for("admin_page"))
+    
+    
+@app.route("/publish_content", methods=["POST", "GET"])
+def publish_content():
+    if request.method == "POST":
+        if session.get("cred") in ("admin", "professor"):
+            
+            content_name = request.form.get("content_name", "").strip()
+            description = request.form.get("description", "").strip()
+            file = request.files.get("file")
+            print("FILES RECEBIDOS:", request.files)
+            # Validação simples
+            if len(content_name) < 15:
+                content_name = None
+
+            if len(description) < 50:
+                description = None
+
+            pdf_bytes = None
+
+            # Lê SOMENTE UMA VEZ
+            if file and file.filename.lower().endswith(".pdf"):
+                pdf_bytes = file.read()
+
+            if pdf_bytes and description and content_name:
+
+                content = {
+                    "title": content_name,
+                    "desc": description,
+                    "pdf": pdf_bytes
+                }
+                upload = None
+                if session.get("cred") == "admin":
+                    author = request.form.get("author")
+                    if author:
+                        upload = g.user.publish_content_by_admin(content, author)
+                elif session.get("cred") == "professor":
+                    author = g.user.get_user_name()
+                    if author:
+                        upload = g.user.publish_content_by_professor(content, author)
+
+                else:
+                    abort(404)
+                if upload:
+                    return render_template("exito.html")
+    return render_template("publish_content.html")
+    
+    
+@app.route("/contents/publications", methods = ["GET"])
+def get_publications():
+    if session.get("cred") == "professor" or session.get("cred") == "admin":
+        if session.get("cred") == "professor":
+            publications = g.user.select_contents_by_publisher_id()
+        if session.get("cred") == "admin":
+            publications = g.user.get_all_contents()
+        return render_template("my_publications.html", publications = publications)
+
+
+@app.route("/contents/publications/selec_content/<content_id>", methods=["POST", "GET"])
+def select_content(content_id):
+    if session.get("cred") != "professor" and session.get("cred") != "admin" :
+        return redirect(url_for("login"))
+    if session.get("cred") == "professor":
+        content = g.user.professor_get_content_by_id(content_id)
+    if session.get("cred") == "admin":
+        content = g.user.get_content_by_admin(content_id)
+    if not content:
+        return redirect(url_for("get_publications"))
+
+    return render_template("edit_content.html", content=content)
+
+
+@app.route("/contents/publications/selec_content/edit/<content>", methods = ["POST", "GET"])
+def edit_content(content):
+    print("credencial:", session.get("cred"))
+    if session.get("cred") == "professor" or session.get("cred") == "admin":
+        if session.get("cred") == "admin":
+            content = g.user.get_content_by_admin(content)
+        if session.get("cred") == "professor":
+            content = g.user.professor_get_content_by_id(content_id)
+            
+        
+        if content:                    
+            new_content_title = request.form.get("new_title")
+            new_content_desc = request.form.get("new_desc")
+            new_content_file = request.files.get("file")
+            
+            action = False        
+            if new_content_title:
+                if new_content_title.split != "" or len(new_content_title) > 15:
+                    if content.get("id"):
+                        if session.get("cred") == "professor":
+                            action = g.user.update_contents_by_id("title", content.get("id"), new_content_title)
+                        if session.get("cred") == "admin":
+                            action = g.user.update_contents_by_admin("title", content.get("id"), new_content_title)
+                if not action:
+                    print("título muito curto")
+                    return render_template("edit_content.html", content = content, error = "título muito curto")                  
+                        
+            if new_content_desc:
+                action = False
+                if new_content_desc.split != "" or len(new_content_desc) > 50:
+                    if content.get("id"):
+                        if session.get("cred") == "professor":
+                            action = g.user.update_contents_by_id("desc", content.get("id"), new_content_desc)
+                        if session.get("cred") == "admin":
+                            action = g.user.update_contents_by_admin("desc", content.get("id"), new_content_desc)         
+                if not action:
+                    print("descrucao curta")
+                    return render_template("edit_content.html", content = content, error = "descrição muito curta")
+                
+            if new_content_file:
+                pdf_bytes = None
+                action = False
+                if new_content_file and new_content_file.filename.lower().endswith(".pdf"):
+                    pdf_bytes = new_content_file.read()
+                    if session.get("cred") == "professor":
+                        action = g.user.update_contents_by_id("pdf", content.get("id"), pdf_bytes)
+                    if session.get("cred") == "admin":
+                            action = g.user.update_contents_by_admin("pdf", content.get("id"), pdf_bytes)                                                            
+                if not action: return render_template("edit_content.html", content = content, error = "Formato indevido para pdf")
+            if action:
+                get_session().expire_all()
+                return render_template("exito.html")
+    return redirect(url_for("login"))
+
+        
+@app.route("/delete_content/<content_id>", methods = ["POST"])
+def delete_content(content_id):
+    if session.get("cred") == "professor" or session.get("cred") == "admin":
+        if content_id:
+            if session.get("cred") == "professor":
+                action = g.user.delete_contents_by_id(content_id)
+            if session.get("cred") == "admin":
+                action = g.user.delete_contents_by_admin(content_id)
+            if not action:
+                return render_template("edit_content.html",content=content_id, error = "não foi possível excluir arquivo")
+        return redirect(url_for("get_publications"))
+    return redirect(url_for("login"))
+   
+
+
+if __name__ == '__main__':
+    
+    try:
+        from src.models.database.creator_database import create_db
         create_db()
-    except Exception:
-        close()
+        make_users()#--> insere 3 usuarios:
+        """
+            admin : JAYRON,
+            professor: Frederico
+            aluno: bolsonaro
+            todas as senhas são 1081514Jh
+            só é possível criar novos admins e novos professores com a conta de admin 
+            """
+    except Exception as E:
+        logging.info(f"create_db não executado ou já existente: {E}")
 
     app.run(debug=True, port=8080)
