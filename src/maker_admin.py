@@ -1,6 +1,6 @@
 
 from src.models.database import get_session as database
-from src.models.db_execute import insert_info
+from src.models.db_execute import insert_info, select_info
 from src.models.contents_models.content_models import Contents
 from src.models.users_models.user_models import User, UserCred
 from src.models.relationships_models.inscriptions import Subs
@@ -40,6 +40,13 @@ def make_users():
     "cred" : UserCred.STUDENT,
     "picture" : None}]
     for user in users:
+        
+        
+        if select_info(session, User, "name", user.get("name")):
+            print("informação já existe no banco")
+            continue
+            
+        print("inserindo")
         insert_info(session, User, user)
     session.close()
     migrate_roles()
