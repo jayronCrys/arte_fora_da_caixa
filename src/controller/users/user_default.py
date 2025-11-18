@@ -49,7 +49,7 @@ def check_user(seach, dataBase=database, collumn="name"):
 
 
 class Create_Account:
-    def __init__(self, dataBase):
+    def __init__(self, dataBase=database):
         self.dataBase = dataBase
         self.userName = None
         self.userPass = None
@@ -90,7 +90,6 @@ class Create_Account:
 
         finally:
             conn.close()
-
     def create_user_pass(self, pass1, pass2):
 
         if pass1 != pass2 or len(pass1) < 8:
@@ -113,8 +112,7 @@ class Create_Account:
         return False
 
     def create_user_name(self, name):
-
-        name = name.strip()  # Tira espaços do inicio e fim
+        name = name.strip()# Tira espaços do inicio e fim
         if not name:
             return False
 
@@ -125,7 +123,7 @@ class Create_Account:
             logger.info("Nome fora do range")
             return False
 
-        if check_user(name, self.dataBase):
+        if check_user(realName, self.dataBase):
             logger.info("Nome já existe")
             return False
 
@@ -136,12 +134,13 @@ class Create_Account:
         logger.info("Nome contém caracteres não permitidos")
         return False
 
+
     @classmethod
     def creator(cls, creationMethod, userName=None, email: Union[dict, None] = None, pass1=None, pass2=None) -> bool:
+        
         createUser = cls(database)
         user = None
-
-        # usuários logando usando google, terão privilégios, não passam pela validação de nome
+        
         if creationMethod == "google" and email and email.get("name") and email.get("email"):
             user = createUser.create_user(creationMethod, email)
 

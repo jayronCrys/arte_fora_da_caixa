@@ -82,11 +82,20 @@
             opacity: 0.9;
             box-shadow: 0 5px 14px rgba(0,0,0,0.2);
         }
+        .error {
+            color: #ff4444;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
     <form method="POST" action="/create_account">
         <h2>Criar Conta</h2>
+           
+        {% if error %}
+            <div class="error">{{ error }}</div>
+        {% endif %}
         <input type="text" name="name" placeholder="Nome" required>
         <input type="password" name="password_1" placeholder="Senha" required>
         <input type="password" name="password_2" placeholder="Confirmar senha" required>
