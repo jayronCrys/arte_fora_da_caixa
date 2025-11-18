@@ -480,17 +480,24 @@ def publish_content():
             content_name = request.form.get("content_name", "").strip()
             description = request.form.get("description", "").strip()
             file = request.files.get("file")
+            
+            
             print("FILES RECEBIDOS:", request.files)
-            # Validação simples
+            
             if len(content_name) < 15:
                 content_name = None
+                return render_template("publish_content.html", error = "Nome de conteúdo muito curto")
+    
 
             if len(description) < 50:
                 description = None
-
+                return render_template("publish_content.html", error = "Descrição de conteúdo muito curtq")
             pdf_bytes = None
 
-            # Lê SOMENTE UMA VEZ
+            if not file:
+                description = None
+                return render_template("publish_content.html", error = "Nenhuk documento selecionado")
+                
             if file and file.filename.lower().endswith(".pdf"):
                 pdf_bytes = file.read()
 
@@ -501,22 +508,39 @@ def publish_content():
                     "desc": description,
                     "pdf": pdf_bytes
                 }
-                upload = None
+                upload = False
+                author = False
                 if session.get("cred") == "admin":
                     author = request.form.get("author")
-                    if author:
-                        upload = g.user.publish_content_by_admin(content, author)
+                    author = g.user.get_user_by_admin(author)
+                    if author and author.get("name"):
+                        upload = g.user.publish_content_by_admin(content, author.get("name"))
+                
                 elif session.get("cred") == "professor":
+                    
                     author = g.user.get_user_name()
-                    if author:
-                        upload = g.user.publish_content_by_professor(content, author)
-
-                else:
-                    abort(404)
-                if upload:
-                    return render_template("exito.html")
+                    if author == session.get("name"):
+                        if author:
+                            upload = g.user.publish_content_by_professor(content, author)
+                    else:
+                        author = False
+                       
+                if not author:
+                   
+                    return render_template("publish_content.html", error = "Nome de autor não existe")
+                
+                if not pdf_bytes:
+                    return render_template("publish_content.html", error = "Formato inválido para documento")
+                                                
+                if not upload:
+                    print(upload)                                
+                    return render_template("publish_content.html", error = "Não foi possível fazer upload do conteúdo, tente novamente.")
+                                   
+            return render_template("exito.html")
+                
+                
     return render_template("publish_content.html")
-    
+            
     
 @app.route("/contents/publications", methods = ["GET"])
 def get_publications():
@@ -627,5 +651,5 @@ if __name__ == '__main__':
             """
     except Exception as E:
         logging.info(f"create_db não executado ou já existente: {E}")
-
+        os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
     app.run(debug=True, port=8080)
