@@ -1,0 +1,119 @@
+</html><!-- edit_content.html --><!DOCTYPE html><html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Editar Conteúdo</title>
+    <style>
+        body {
+            background: #f3f4f6;
+            font-family: "Segoe UI", Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+        }.container {
+        max-width: 650px;
+        margin: 50px auto;
+        background: white;
+        padding: 40px;
+        border-radius: 18px;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+    }
+
+    h3 {
+        text-align: center;
+        margin-bottom: 25px;
+        font-size: 22px;
+    }
+
+    label {
+        font-weight: 600;
+        display: block;
+        margin-bottom: 6px;
+    }
+
+    input, textarea {
+        width: 100%;
+        padding: 12px;
+        border-radius: 10px;
+        border: 1px solid #ccc;
+        background: #fafafa;
+        margin-bottom: 18px;
+        font-size: 14px;
+    }
+
+    textarea {
+        resize: vertical;
+        min-height: 80px;
+    }
+
+    .btn {
+        width: 100%;
+        padding: 12px 0;
+        border: none;
+        border-radius: 10px;
+        background: linear-gradient(90deg, #ff7a00, #00c853);
+        color: white;
+        font-weight: bold;
+        font-size: 15px;
+        cursor: pointer;
+        margin-top: 10px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        transition: 0.2s ease;
+    }
+
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 14px rgba(0,0,0,0.20);
+    }
+
+    .back-btn {
+        display: inline-block;
+        width: 100%;
+        padding: 12px 0;
+        border-radius: 10px;
+        text-decoration: none;
+        font-weight: bold;
+        font-size: 15px;
+        background: #00a651;
+        color: white;
+        text-align: center;
+        margin-top: 15px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
+
+    .back-btn:hover {
+        background: #008d45;
+        transform: translateY(-2px);
+    }
+
+    .error {
+        color: #c0392b;
+        font-weight: bold;
+        text-align: center;
+        margin-bottom: 18px;
+    }
+</style>
+
+</head>
+<body>
+<div class="container">
+    <h3>Editando conteúdo: {{ content.title }}</h3>{% if error %}
+    <div class="error">{{ error }}</div>
+{% endif %}
+
+<form method="POST"
+      enctype="multipart/form-data"
+      action="{{ url_for('edit_content', content=content.id) }}">
+    <label>Novo título</label>
+    <input name="new_title" type="text" placeholder="Título atualizado...">
+
+    <label>Nova descrição</label>
+    <textarea name="new_desc"></textarea>
+
+    <label>Novo PDF</label>
+    <input type="file" name="file" accept="application/pdf">
+
+    <button class="btn" type="submit">Salvar alterações</button>
+    <a href="/contents/publications" class="back-btn">Voltar</a>
+</form>
+
+</div>
+</body>

@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Editar Usuário</title>
+
+    <style>
+        body {
+            background: #f3f4f6;
+            font-family: "Segoe UI", Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 50px auto;
+            background: white;
+            padding: 35px 40px;
+            border-radius: 18px;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+        }
+
+        h4 {
+            text-align: center;
+            margin-bottom: 25px;
+            color: #222;
+            font-size: 22px;
+        }
+
+        label {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid #ccc;
+            background: #fafafa;
+            margin-bottom: 18px;
+        }
+
+        /* Botões padrão */
+        .btn {
+            width: 200px;
+            padding: 12px 0;
+            display: inline-block;
+            text-align: center;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 15px;
+            color: white;
+            transition: 0.2s ease;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+            text-decoration: none;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 14px rgba(0,0,0,0.20);
+        }
+
+        /* Botão principal — gradiente laranja→verde */
+        .btn-primary-custom {
+            background: linear-gradient(90deg, #ff7a00, #00c853);
+        }
+
+        /* Botão voltar — versão verde sólido */
+        .btn-back {
+            background: #00a651;
+        }
+
+        .btn-back:hover {
+            background: #008d45;
+        }
+
+        .buttons {
+            margin-top: 25px;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <h4>Editar usuário #{{ user.id }}</h4>
+
+    <form method="POST">
+
+        <label>Nome</label>
+        <input name="nome" type="text" value="{{ user.nome }}">
+
+        <label>Nova senha</label>
+        <input name="senha" type="password">
+
+        <label>Confirmar nova senha</label>
+        <input name="confirm_pass" type="password">
+
+        <label>Permissão</label>
+        <input name="cred" type="text" value="{{ user.cred }}">
+
+        <div class="buttons">
+            <button class="btn btn-primary-custom">Salvar alterações</button>
+
+            <a href="{{ url_for('admin_page') }}"
+               class="btn btn-back">
+               Voltar
+            </a>
+        </div>
+
+    </form>
+</div>
+
+</body>
+</html>

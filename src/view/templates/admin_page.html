@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Painel Administrativo</title>
+
+    <style>
+        body {
+            background: #f3f4f6;
+            font-family: "Segoe UI", Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Header */
+        nav {
+            background: #ffffff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            padding: 16px 32px;
+            margin-bottom: 30px;
+        }
+
+        nav span {
+            font-size: 22px;
+            font-weight: bold;
+            color: #222;
+        }
+
+        /* Cards */
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+            margin-bottom: 35px;
+        }
+
+        .card h4 {
+            margin-bottom: 15px;
+            color: #222;
+        }
+
+        /* Tabela */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            text-align: left;
+            padding: 10px;
+            background: #fafafa;
+            border-bottom: 2px solid #eee;
+            color: #555;
+        }
+
+        td {
+            padding: 12px 10px;
+            border-bottom: 1px solid #eee;
+            color: #333;
+        }
+
+        tr:hover {
+            background: #f9f9f9;
+        }
+
+        /* Botões padrão */
+        .btn {
+            width: 180px;
+            padding: 12px 0;
+            display: inline-block;
+            border: none;
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            color: white;
+            text-decoration: none;
+            transition: 0.2s ease;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 14px rgba(0,0,0,0.20);
+        }
+
+        /* Gradiente igual ao Home */
+        .btn-gradient {
+            background: linear-gradient(90deg, #ff7a00, #00c853);
+        }
+
+        /* Verde sólido */
+        .btn-green {
+            background: #00a651;
+        }
+
+        .btn-green:hover {
+            background: #008d45;
+        }
+
+        /* Vermelho */
+        .btn-red {
+            background: #ff4444;
+        }
+
+        .btn-red:hover {
+            background: #d62d2d;
+        }
+
+        /* Inputs */
+        input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid #ccc;
+            background: #fafafa;
+            margin-bottom: 18px;
+        }
+
+        /* Botão pequeno dentro da tabela */
+        .btn-sm {
+            width: auto;
+            padding: 6px 14px;
+            font-size: 12px;
+        }
+
+        /* Link Home estilizado */
+        .home-link {
+            margin: 20px 0;
+            display: flex;
+            justify-content: center;
+        }
+
+        .home-link a {
+            width: 200px;
+            text-align: center;
+            background: #00a651;
+            padding: 12px 0;
+            border-radius: 10px;
+            color: white;
+            font-weight: bold;
+            text-decoration: none;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+            transition: 0.2s ease;
+        }
+
+        .home-link a:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 14px rgba(0,0,0,0.20);
+            background: #008d45;
+        }
+
+    </style>
+</head>
+<body>
+
+<nav>
+    <span>Administração de Usuários</span>
+</nav>
+
+<div class="container">
+
+    <!-- LISTA DE USUÁRIOS -->
+    <div class="card">
+        <h4>Usuários cadastrados</h4>
+
+        <div style="overflow-x:auto;">
+            <table>
+                <thead>
+                <tr>
+                    <th>Permissão</th>
+                    <th>Nome</th>
+                    <th>Email</th>
+                    <th>Ações</th>
+                </tr>
+                </thead>
+
+                <tbody>
+                {% for user in users %}
+                    <tr>
+                        <td>{{ user.cred.value }}</td>
+                        <td>{{ user.name }}</td>
+                        <td>{{ user.email }}</td>
+                        <td>
+                            <a href="{{ url_for('admin_edit_user', user_id=user.id) }}"
+                               class="btn btn-sm btn-green">Editar</a>
+
+                            <form action="{{ url_for('admin_delete_user', user_id=user.id) }}"
+                                  method="POST"
+                                  style="display:inline;">
+                                <button class="btn btn-sm btn-red"
+                                        onclick="return confirm('Tem certeza que deseja excluir este usuário?')">
+                                    Excluir
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+
+            </table>
+        </div>
+    </div>
+
+
+    <!-- CRIAÇÃO DE USUÁRIO -->
+    <div class="card">
+        <h4>Criar novo usuário</h4>
+
+        <form method="POST" action="{{ url_for('admin_create_user') }}">
+
+            <label>Nome</label>
+            <input name="nome" type="text" required>
+
+            <label>Permissão</label>
+<select name="cred" required
+        style="
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid #ccc;
+            background: #fafafa;
+            margin-bottom: 18px;
+            font-size: 15px;
+        ">
+    <option value="aluno">Aluno</option>
+    <option value="professor">Professor</option>
+    <option value="admin">Administrador</option>
+</select>
+            <label>Senha</label>
+            <input name="password" type="password" required>
+
+            <label>Confirmar senha</label>
+            <input name="confirm" type="password" required>
+
+            <button class="btn btn-gradient">Criar</button>
+
+        </form>
+    </div>
+
+    <!-- Link para Home -->
+    <div class="home-link">
+        <a href="/home">🏠 Home</a>
+    </div>
+
+</div>
+
+</body>
+</html>
