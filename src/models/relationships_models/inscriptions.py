@@ -1,5 +1,6 @@
 
 #models/relashiontips_models/inscriptions.py
+from src.models.database import Base
 from src.models import * #---->chama o __init__.py
 import logging
 import uuid
@@ -29,7 +30,7 @@ class Subs(Base):
 
     # ------------------------------------------------
     # Relacionamentos:
-    # - student → usuário (aluno) relacionado a esta inscrição
+    # - student → usuário (auno) relacionado a esta inscrição
     # - content → conteúdo ao qual o aluno está inscrito
     # ------------------------------------------------
     student = relationship("User", back_populates="subs")

@@ -1,5 +1,6 @@
 
 #models/contents_models/content_models.py
+from src.models.database import Base
 from src.models import *
 import uuid
 import logging
@@ -15,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 # --------------------------------------------------
-# Tabela de Conteúdos (PDFs, materiais, etc.)
+# Tabela de Conteúdos
 # --------------------------------------------------
 class Contents(Base):
     __tablename__ = "conteudos"
@@ -46,58 +47,3 @@ class Contents(Base):
 
     def __repr__(self):
         return f"<Conteudo(titulo={self.title}, autor={self.author})>"
-
-
-# --------------------------------------------------
-# Exemplo de uso e populamento inicial
-# --------------------------------------------------
-if __name__ == "__main__":
-    # Cria o banco e inicia a sessão
-    session = creator_database.create_db()
-
-    # Cria usuários
-    admin = User(name="Administrador", email="admin@email.com",
-                 password="hash123", cred=UserCred.ADMIN)
-    prof = User(name="Professor João", email="jclever@gmail.com",
-                password="hash456", cred=UserCred.PROFESSOR)
-    aluno = User(name="Maria", email="maria@email.com",
-                 password="hash789", cred=UserCred.STUDENT)
-
-    session.add_all([admin, prof, aluno])
-    session.commit()
-
-    # ------------------------------------------------
-    # Admin posta conteúdo
-    # publisher_id = admin.id será automaticamente associado via objeto
-    # ------------------------------------------------
-    conteudo1 = Contents(
-        title="Introdução",
-        desc="Material do curso.",
-        pdf=b"%PDF...",  # bytes do PDF
-        author="Frederixxxxo",
-        publisher=admin
-    )
-
-    # ------------------------------------------------
-    # Professor posta conteúdo
-    # ------------------------------------------------
-    conteudo2 = Contents(
-        title="Aula 1",
-        desc="Primeira aula do módulo.",
-        pdf=b"%PDF...",
-        author=prof.name,
-        publisher=prof
-    )
-
-    session.add_all([conteudo1, conteudo2])
-    session.commit()
-
-    # ------------------------------------------------
-    # Aluno se inscreve em um conteúdo
-    # O ORM automaticamente associa os IDs corretos (student_id e content_id)
-    # ------------------------------------------------
-    insc = Subs(student=aluno, content=conteudo2)
-    session.add(insc)
-    session.commit()
-
-    logger.info("Banco populado com dados iniciais.")
