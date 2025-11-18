@@ -11,12 +11,12 @@ def install_requirements(file_path="requirements.txt"):
     """
     
     if not os.path.exists(file_path):
-        print(f"erro: O arquivo '{file_path}' não foi encontrado.")
-        print("Verifique se o arquivo está no mesmo diretório ou verifique o caminho.")
+        print(f"❌ Erro: O arquivo '{file_path}' não foi encontrado.")
+        print("Certifique-se de que o arquivo está no mesmo diretório ou verifique o caminho.")
         return
     
     command = [sys.executable, "-m", "pip", "install", "-r", file_path]
-    print(f" Iniciando a instalação das dependências a partir de '{file_path}'...")
+    print(f"🚀 Iniciando a instalação das dependências a partir de '{file_path}'...")
     
     try:
         process = subprocess.run(
@@ -26,15 +26,15 @@ def install_requirements(file_path="requirements.txt"):
             text=True
         )
         
-        print("instalação concluída com sucesso!")
+        print("✅ Instalação concluída com sucesso!")
  
         
     except subprocess.CalledProcessError as e:
-        print(f" Erro durante a instalação do PIP. Código de retorno: {e.returncode}")
+        print(f"❌ Erro durante a instalação do PIP. Código de retorno: {e.returncode}")
         print("\n--- Mensagem de Erro ---\n")
         print(e.stderr)
     except Exception as e:
-        print(f"Ocorreu um erro inesperado: {e}")
+        print(f"❌ Ocorreu um erro inesperado: {e}")
 
 if __name__ == "__main__":
     install_requirements()
