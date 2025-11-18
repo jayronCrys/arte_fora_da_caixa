@@ -126,12 +126,6 @@
       box-shadow: 0 10px 20px rgba(0, 0, 0, 0.12);
     }
 
-    .course img {
-      width: 100%;
-      height: 180px;
-      object-fit: cover;
-    }
-
     .course-content {
       padding: 18px;
     }
@@ -155,7 +149,7 @@
       padding: 12px;
       border-radius: 10px;
       border: none;
-      background: #00c853;
+      background: linear-gradient(90deg, #ff7a00, #00c853);
       color: white;
       font-size: 15px;
       font-weight: bold;
@@ -164,7 +158,8 @@
     }
 
     .course button:hover {
-      background: #009c44;
+      transform: translateY(-3px);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.25);
     }
 
     footer {
@@ -175,117 +170,89 @@
       margin-top: 40px;
     }
 
-    .link-container {
-      text-align: center;
-      margin-top: 20px;
-    }
-
-    .link-container a {
-      color: #0077cc;
-      font-weight: bold;
-      text-decoration: none;
-    }
-
-    .link-container a:hover {
-      text-decoration: underline;
-    }
-
   </style>
 </head>
 <body>
 
-  <header>
-    <h1>Arte Fora da Caixa</h1>
+<header>
+  <h1>Arte Fora da Caixa</h1>
 
-    <div class="user-info" onclick="location.href='/user'">
-      <img src="{{ url_for('static', filename=session.get('picture')) 
-                    if session.get('picture') 
-                    else url_for('static', filename='default_profile.png') }}" />
+  <div class="user-info" onclick="location.href='/user'">
+    <img src="{{ url_for('static', filename=session.get('picture')) 
+                  if session.get('picture') 
+                  else url_for('static', filename='default_profile.png') }}" />
 
-      <div class="user-details">
-        <strong>{{ session.get("name") }}</strong>
-        {% if session.get("email") %}
-        <span>{{ session.get("email") }}</span>
-        {% endif %}
-      </div>
+    <div class="user-details">
+      <strong>{{ session.get("name") }}</strong>
+      {% if session.get("email") %}
+      <span>{{ session.get("email") }}</span>
+      {% endif %}
     </div>
-  </header>
-
-  <section class="banner">
-    <h2>Arte Fora da Caixa</h2>
-    <p>Cursos gratuitos e criativos para expandir seu conhecimento</p>
-  </section>
-
-  <div class="filters">
-    <select>
-      <option>Todas as Áreas</option>
-      <option>Ciência</option>
-      <option>Matemática</option>
-      <option>Artes</option>
-    </select>
-
-    <select>
-      <option>Mais Popular</option>
-      <option>Mais Recente</option>
-      <option>Mais Curtido</option>
-    </select>
   </div>
+</header>
 
-  <main class="courses">
-    <div class="course">
-      <img src="https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=600" />
-      <div class="course-content">
-        <h3>Desenvolvimento Web Completo</h3>
-        <p>Aprenda HTML, CSS, JavaScript, React e Node.js do zero.</p>
-        <button onclick="location.href='/content'">Acessar</button>
-      </div>
-    </div>
+<section class="banner">
+  <h2>Arte Fora da Caixa</h2>
+  <p>Cursos gratuitos e criativos para expandir seu conhecimento</p>
+</section>
 
-    <div class="course">
-      <img src="https://images.unsplash.com/photo-1537432376769-00a9b1b2e401?w=600" />
-      <div class="course-content">
-        <h3>Python para Data Science</h3>
-        <p>Domine Python, Pandas e visualização de dados.</p>
-        <button onclick="location.href='/content'">Acessar</button>
-      </div>
-    </div>
+<div class="filters">
+  <select>
+    <option>Todas as Áreas</option>
+    <option>Ciência</option>
+    <option>Matemática</option>
+    <option>Artes</option>
+  </select>
 
-    <div class="course">
-      <img src="https://images.unsplash.com/photo-1557804506-669a67965ba0?w=600" />
-      <div class="course-content">
-        <h3>Marketing Digital</h3>
-        <p>Estratégias de redes sociais e publicidade online.</p>
-        <button onclick="location.href='/content'">Acessar</button>
-      </div>
-    </div>
-<div class="link-container">
-  <a class="btn-contents" href="/contents">Ver conteúdos →</a>
+  <select>
+    <option>Mais Popular</option>
+    <option>Mais Recente</option>
+    <option>Mais Curtido</option>
+  </select>
 </div>
 
-<style>
-  .btn-contents {
-    display: inline-block;
-    padding: 12px 26px;
-    border-radius: 12px;
-    font-weight: bold;
-    font-size: 16px;
-    text-decoration: none !important; /* Remove sublinhado */
-    color: white !important;          /* Força a cor branca */
-    background: linear-gradient(90deg, #ff7a00, #00c853);
-    box-shadow: 0 3px 8px rgba(0,0,0,0.18);
-    transition: 0.25s ease-in-out;
-  }
+<main class="courses">
 
-  .btn-contents:hover {
-    transform: translateY(-3px);
-    opacity: 0.95;
-    box-shadow: 0 6px 16px rgba(0,0,0,0.25);
-  }
-</style>
+  {% if contents %}
+    {% for c in contents %}
+    <div class="course">
 
-  </main>
+      <!-- Se tiver imagem associada -->
+      {% if c.image %}
+        <img src="{{ url_for('static', filename=c.image) }}">
+      
+        {% else %}
+  <div style="
+      width: 100%;
+      height: 180px;
+      background: linear-gradient(90deg, #ff7a00, #00c853);
+    ">
+  </div>
+{% endif %}
+      
 
-  <footer>© 2025 Arte Fora da Caixa — Todos os direitos reservados</footer>
+      <div class="course-content">
+        <h3>{{ c.title }}</h3>
+        <p>Autor: {{ c.author }} • Publicado: {{ c.creation_date }}</p>
+
+        <button onclick="location.href='{{ url_for('content_buss', content_id=c.id) }}'">
+          Ver
+        </button>
+      </div>
+
+    </div>
+    {% endfor %}
+  {% else %}
+    <p style="text-align:center; font-size:18px; color:#555; grid-column: 1 / -1;">
+      Nenhum conteúdo publicado.
+    </p>
+  {% endif %}
+
+</main>
+
+<footer>
+  © 2025 Arte Fora da Caixa — Todos os direitos reservados
+</footer>
 
 </body>
 </html>

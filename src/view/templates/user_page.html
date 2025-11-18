@@ -1,0 +1,113 @@
+<!DOCTYPE html><html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Perfil do Usuário</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Segoe UI", Roboto, sans-serif; }
+    body { background: #f3f4f6; color: #333; }
+    header { background: #ffffff; box-shadow: 0 2px 8px rgba(0,0,0,0.06); padding: 16px 32px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+    header h1 { font-size: 22px; color: #222; }
+    header a { font-size: 16px; text-decoration: none; background: linear-gradient(90deg, #ff7a00, #00c853); padding: 8px 16px; border-radius: 10px; color: white; font-weight: bold; transition: 0.2s; }
+    header a:hover { opacity: 0.9; }
+    .profile-container { max-width: 950px; margin: 40px auto; background: white; padding: 40px 50px; border-radius: 18px; box-shadow: 0 4px 14px rgba(0,0,0,0.08); }
+    .profile-header { display: flex; align-items: center; gap: 25px; padding-bottom: 30px; border-bottom: 1px solid #eee; margin-bottom: 30px; }
+    .profile-header img { width: 130px; height: 130px; border-radius: 50%; object-fit: cover; border: 3px solid #e5e5e5; background: #fafafa; }
+    .profile-info h2 { font-size: 26px; margin-bottom: 5px; color: #222; }
+    .profile-info p { margin: 4px 0; font-size: 15px; color: #555; }input[type="text"], input[type="password"], input[type="email"], input[type="file"] {
+  width: 100%; padding: 12px; margin: 10px 0 18px 0; border-radius: 10px; border: 1px solid #ccc; background: #fafafa;
+}
+
+.btn-fixed { width: 230px; text-align: center; padding: 12px 0; display: inline-block; }
+.btn-home-style {
+  background: linear-gradient(90deg, #ff7a00, #00c853);
+  color: white !important;
+  border: none;
+  border-radius: 10px;
+  font-weight: bold;
+  cursor: pointer;
+  text-decoration: none;
+  transition: 0.2s;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+.btn-home-style:hover { opacity: 0.9; transform: translateY(-2px); }
+.btn-danger { background: linear-gradient(90deg, #ff2d2d, #cc0000); color: white; border-radius: 10px; font-weight: bold; cursor: pointer; padding: 12px 0; display: block; margin: 10px auto; }
+.btn-logout { background: linear-gradient(90deg, #ff9800, #ff5722); color: white; border-radius: 10px; font-weight: bold; padding: 12px 0; }
+
+.action-bar { margin: 40px 0; display: flex; justify-content: center; gap: 25px; flex-wrap: wrap; }
+.form-buttons { margin-top: 25px; display: flex; justify-content: center; }
+.delete-buttons-group { margin-top: 15px; display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; }
+
+footer { text-align: center; padding: 20px; margin-top: 40px; color: #777; font-size: 14px; }
+
+  </style>
+</head>
+<body><header>
+  <h1>Arte Fora da Caixa</h1>
+  <a href="/home">🏠 Home</a>
+</header><div class="profile-container">  <div class="profile-header">
+    <img src="{{ url_for('static', filename=session.get('picture')) if session.get('picture') else url_for('static', filename='default_profile.png') }}">
+    <div class="profile-info">
+      <h2>{{ session.get("name") or 'Usuário Exemplo' }}</h2>
+      {% if session.get("cred") %}<p> {{ session.get("cred") }}</p>{% endif %}
+      {% if session.get("email") %}<p>Email: {{ session.get("email") }}</p>{% endif %}
+      <p>Data de criação: {{ session.get("creatio_date") or '01/01/2025' }}</p>
+      <p>Cursos inscritos: {{ total_courses or 0 }}</p>
+    </div>
+  </div>  <div class="edit-section">
+    <h3>Editar informações</h3>
+    <form method="POST" action="/edit_user" enctype="multipart/form-data">
+      <label>Nome:</label>
+      <input type="text" name="new_name" placeholder="Novo nome"><label>Nova senha:</label>
+  <input type="password" name="password" placeholder="Nova senha">
+
+  <label>Confirmar nova senha:</label>
+  <input type="password" name="confirm_password" placeholder="Confirmar senha">
+
+  <label>Alterar foto de perfil:</label>
+  <input type="file" name="profile_image">
+
+  <div class="form-buttons">
+    <button type="submit" class="btn-home-style btn-fixed">Salvar alterações</button>
+  </div>
+</form>
+
+<div class="delete-buttons-group">
+  <form method="POST" action="{{ url_for('delete_picture') }}">
+    <button class="btn-danger btn-fixed" type="submit">Excluir foto de perfil</button>
+  </form>
+  <form action="{{ url_for('delete_user') }}" method="POST">
+    <button class="btn-danger btn-fixed" type="submit">Excluir conta</button>
+  </form>
+</div>
+
+<div class="action-bar">
+  <a href="/logout" class="btn-logout btn-fixed">Sair da conta</a>
+  {% if session.get("cred") == "admin" %}
+    <a href="/admin" class="btn-home-style btn-fixed">Painel de Administração</a>
+  {% endif %}
+  {% if session.get("cred") in ["admin", "professor"] %}
+    <a href="/publish_content" class="btn-home-style btn-fixed">Publicar Conteúdo</a>
+ 
+
+  <!-- BOTÃO NOVO ADICIONADO → Minhas Publicações -->
+  <a href="/contents/publications" class="btn-home-style btn-fixed">Minhas Publicações</a>
+   {% endif %}
+</div>
+
+  </div>  <div class="courses-section">
+    <h3>Meus cursos</h3>
+    {% if enrolled_courses %}
+      {% for course in enrolled_courses %}
+      <div class="course-card">
+        <span>{{ course.name }}</span>
+        <span class="status">{{ course.status }}</span>
+      </div>
+      {% endfor %}
+    {% else %}
+      <p>Você ainda não se inscreveu em nenhum curso.</p>
+    {% endif %}
+  </div></div><footer>
+  © 2025 Arte Fora da Caixa — Todos os direitos reservados
+</footer></body>
+</html>
