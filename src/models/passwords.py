@@ -6,20 +6,22 @@ def make_hash(password):
 
     try:
         hashPassword = cripto.hashpw(password.encode("utf-8"), cripto.gensalt())
-        return hashPassword
+        return hashPassword.decode("utf-8")
     
     except:
         return False
     
 
-def compare_password(user, password):
-    password_hash_bytes = user["password"] 
+def compare_password(passwordIn, password):
     
-    if not isinstance(password_hash_bytes, bytes):
-        password_hash_bytes = password_hash_bytes.encode('utf-8')
-
+    if not isinstance(password, bytes):
+        password_hash_bytes = password.encode('utf-8')
+        
+    if not isinstance(passwordIn, bytes):
+        passwordIn_hash_bytes = passwordIn.encode('utf-8')
+        
     try:
-        passwordValidation = cripto.checkpw(password.encode("utf-8"), password_hash_bytes) 
+        passwordValidation = cripto.checkpw(passwordIn_hash_bytes, password_hash_bytes) 
         return passwordValidation
     
     except Exception:

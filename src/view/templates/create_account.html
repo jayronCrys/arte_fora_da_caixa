@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Login</title>
+    <title>Criar Conta</title>
     <style>
         body {
             background: #f3f4f6;
@@ -40,19 +40,20 @@
             font-size: 14px;
         }
 
-        /* Botões com estilo uniforme */
+        /* Botão Criar */
         button {
             width: 100%;
             padding: 12px 0;
             border: none;
             border-radius: 10px;
+            background: linear-gradient(90deg, #ff7a00, #00c853);
+            color: white;
             font-weight: bold;
             font-size: 15px;
             cursor: pointer;
             box-shadow: 0 2px 6px rgba(0,0,0,0.15);
             transition: 0.2s ease-in-out;
             margin-bottom: 12px;
-            color: white;
         }
 
         button:hover {
@@ -60,44 +61,37 @@
             box-shadow: 0 5px 14px rgba(0,0,0,0.2);
         }
 
-        /* Cores específicas dos botões */
-        button[name="method"][value="local"] {
-            background: linear-gradient(90deg, #ff7a00, #00c853); /* laranja-verde */
-        }
-
-        button.google {
-            background: linear-gradient(90deg, #4285F4, #2a66c7); /* azul Google */
-        }
-
-        button.new_account {
-            background: linear-gradient(90deg, #f39c12, #e67e22); /* tons de laranja */
-        }
-
-        .error {
-            color: #ff4444;
-            margin-bottom: 15px;
+        /* Botão Voltar — mesmo estilo do Criar Conta do login */
+        .back-btn {
+            display: inline-block;
+            width: 100%;
+            padding: 12px 0;
+            border-radius: 10px;
+            text-decoration: none;
             font-weight: bold;
+            font-size: 15px;
+            background: linear-gradient(90deg, #f39c12, #e67e22); /* mesma coloração */
+            color: white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+            transition: 0.2s ease-in-out;
+            text-align: center;
+        }
+
+        .back-btn:hover {
+            transform: translateY(-2px);
+            opacity: 0.9;
+            box-shadow: 0 5px 14px rgba(0,0,0,0.2);
         }
     </style>
 </head>
 <body>
-    <form method="POST" action="/login">
-        <h2>Login</h2>
-
-        {% if error %}
-            <div class="error">{{ error }}</div>
-        {% endif %}
-
-        <input type="text" name="name" placeholder="Usuário" required>
-        <input type="password" name="password" placeholder="Senha" required>
-
-        <button type="submit" name="method" value="local">Entrar</button>
-        <button type="submit" name="method" value="google" class="google" formnovalidate>
-            Login com Google
-        </button>
-        <button type="submit" name="new_account" value="new_account" class="new_account" formnovalidate>
-            Criar Conta
-        </button>
+    <form method="POST" action="/create_account">
+        <h2>Criar Conta</h2>
+        <input type="text" name="name" placeholder="Nome" required>
+        <input type="password" name="password_1" placeholder="Senha" required>
+        <input type="password" name="password_2" placeholder="Confirmar senha" required>
+        <button type="submit">Criar</button>
+        <a href="/login" class="back-btn">Voltar</a>
     </form>
 </body>
 </html>

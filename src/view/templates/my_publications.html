@@ -1,0 +1,115 @@
+<!-- my_publications.html --><!DOCTYPE html><html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Minhas Publicações</title>
+    <style>
+        body {
+            background: #f3f4f6;
+            font-family: "Segoe UI", Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }.container {
+        max-width: 800px;
+        margin: 40px auto;
+        background: white;
+        padding: 30px;
+        border-radius: 18px;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+    }
+
+    h2 {
+        text-align: center;
+        margin-bottom: 25px;
+        color: #222;
+    }
+
+    .content-card {
+        background: #fafafa;
+        padding: 18px;
+        margin-bottom: 20px;
+        border: 1px solid #ddd;
+        border-radius: 12px;
+    }
+
+    .title {
+        font-size: 18px;
+        font-weight: 700;
+        color: #222;
+    }
+
+    .desc {
+        font-size: 14px;
+        margin: 8px 0 12px;
+        color: #444;
+    }
+
+    .btn {
+        padding: 10px 14px;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        font-weight: bold;
+        text-decoration: none;
+        color: white;
+        background: linear-gradient(90deg, #ff7a00, #00c853);
+        box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        transition: 0.2s ease;
+        display: inline-block;
+    }
+
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 14px rgba(0,0,0,0.20);
+    }
+
+    .delete-btn {
+        background: #d63031;
+    }
+
+    .delete-btn:hover {
+        background: #b42122;
+    }
+    .back-btn {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: linear-gradient(90deg, #ff7a00, #00c853);
+    color: white;
+    padding: 10px 16px;
+    border-radius: 12px;
+    font-weight: bold;
+    text-decoration: none;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+    transition: 0.2s;
+    z-index: 999;
+}
+
+.back-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 14px rgba(0,0,0,0.25);
+}
+</style>
+
+</head>
+
+<body>
+<a href="/user" class="back-btn">Home</a>
+<div class="container">
+
+    <h2>Minhas Publicações</h2>{% for c in publications %}
+    <div class="content-card">
+        <div class="title">{{ c.title }}</div>
+        <div class="desc">{{ c.desc }}</div>
+
+        <form method="POST" action="/contents/publications/selec_content/{{ c.id }}">
+            <button class="btn">Editar</button>
+        </form>
+
+        <form method="POST" action="/delete_content/{{ c.id }}" style="margin-top: 10px;">
+            <button class="btn delete-btn">Excluir</button>
+        </form>
+    </div>
+{% endfor %}
+
+</div>
+</body>

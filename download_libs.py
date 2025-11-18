@@ -1,20 +1,40 @@
-import importlib
 import subprocess
 import sys
+import os
 
-def ensure_libs_installed(libs):
-    """Verifica e instala automaticamente as bibliotecas listadas."""
-    for lib in libs:
-        try:
-            importlib.import_module(lib)
-            print(f"✅ {lib} já está instalada.")
-        except ImportError:
-            print(f"📦 Instalando {lib}...")
-            subprocess.check_call([sys.executable, "-m", "pip", "install", lib])
-            print(f"✅ {lib} instalada com sucesso!")
+def install_requirements(file_path="requirements.txt"):
+    """
+    Executa o comando 'pip install -r <arquivo>' para instalar dependências.
 
+    Args:
+        file_path (str): O caminho para o arquivo de requisitos.
+    """
+    
+    if not os.path.exists(file_path):
+        print(f"❌ Erro: O arquivo '{file_path}' não foi encontrado.")
+        print("Certifique-se de que o arquivo está no mesmo diretório ou verifique o caminho.")
+        return
+    
+    command = [sys.executable, "-m", "pip", "install", "-r", file_path]
+    print(f"🚀 Iniciando a instalação das dependências a partir de '{file_path}'...")
+    
+    try:
+        process = subprocess.run(
+            command, 
+            check=True,
+            capture_output=True, 
+            text=True
+        )
+        
+        print("✅ Instalação concluída com sucesso!")
+ 
+        
+    except subprocess.CalledProcessError as e:
+        print(f"❌ Erro durante a instalação do PIP. Código de retorno: {e.returncode}")
+        print("\n--- Mensagem de Erro ---\n")
+        print(e.stderr)
+    except Exception as e:
+        print(f"❌ Ocorreu um erro inesperado: {e}")
 
-libs = ["flask", "bcrypt", "google-auth", "google-auth-oauthlib",
-        "requests", "python-dotenv", "regex", "sqlalchemy", "pymongo",
-        "bson"]#--> talvez seja melhor mudar flask para fastApi
-ensure_libs_installed(libs)
+if __name__ == "__main__":
+    install_requirements()

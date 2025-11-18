@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Publicar Conteúdo</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+
+    <style>
+        :root{
+            --accent-start: #ff7a00;    /* laranja */
+            --accent-end:   #00c853;    /* verde */
+            --green:        #00c853;
+            --blue:         #007bff;
+            --muted:        #f0f0f0;
+            --text:         #222;
+            --card-bg:      #ffffff;
+            --shadow:       0 6px 18px rgba(0,0,0,0.08);
+            --btn-width:    230px;
+            --radius:       10px;
+            --font:         "Segoe UI", Roboto, Arial, sans-serif;
+        }
+
+        *{box-sizing:border-box}
+        html,body{height:100%}
+        body{
+            margin:0;
+            font-family: var(--font);
+            background: var(--muted);
+            color:var(--text);
+            -webkit-font-smoothing:antialiased;
+            -moz-osx-font-smoothing:grayscale;
+            padding:20px;
+        }
+
+        .container{
+            max-width:720px;
+            margin:28px auto;
+            background:var(--card-bg);
+            border-radius:14px;
+            padding:28px;
+            box-shadow: var(--shadow);
+        }
+
+        h2{
+            margin:0 0 14px 0;
+            font-size:20px;
+            color:var(--text);
+        }
+
+        label{
+            display:block;
+            margin-top:12px;
+            font-size:14px;
+            color:#444;
+        }
+
+        input[type="text"],
+        textarea,
+        input[type="file"]{
+            width:100%;
+            padding:12px 14px;
+            border-radius:8px;
+            border:1px solid #ddd;
+            margin-top:8px;
+            background: #fbfbfb;
+            font-size:15px;
+        }
+
+        textarea{min-height:140px; resize:vertical}
+
+        /* botões — aparência igual ao home / perfil */
+        .btn {
+            width: var(--btn-width);
+            padding: 12px 0;
+            border: none;
+            border-radius: var(--radius);
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.10);
+            transition: transform .12s ease, box-shadow .12s ease, opacity .12s ease;
+            color: #fff;
+            display:inline-block;
+            text-align:center;
+            text-decoration:none;
+        }
+        .btn:active{ transform: translateY(1px) }
+
+        /* gradiente igual ao header/banner do home */
+        .btn-accent{
+            background: linear-gradient(90deg, var(--accent-start), var(--accent-end));
+        }
+        .btn-accent:hover{ opacity:.95; box-shadow:0 8px 24px rgba(0,0,0,0.12) }
+
+        /* botoes verdes sólidos (ações confirmar) */
+        .btn-green{
+            background: linear-gradient(90deg, #00c853, #00a647);
+        }
+        .btn-green:hover{ opacity:.95 }
+
+        /* botão primário azul (quando precisar) */
+        .btn-blue{
+            background: linear-gradient(90deg, var(--blue), #0056c1);
+        }
+
+        /* botão secundário escuro para "Voltar" */
+        .btn-muted{
+            background: #6c757d;
+        }
+
+        /* centraliza o botão submit */
+        .row-center{
+            display:flex;
+            justify-content:center;
+            margin-top:20px;
+        }
+
+        /* ações na parte inferior - mantém alinhamento e espaçamento */
+        .bottom-actions{
+            display:flex;
+            justify-content:center;
+            gap:18px;
+            margin-top:28px;
+            flex-wrap:wrap;
+        }
+
+        /* responsividade: botões encolhem em telas estreitas */
+        @media (max-width:520px){
+            :root{ --btn-width: 160px }
+            .container{ padding:18px }
+        }
+        .error {
+            color: #ff4444;
+            margin-bottom: 15px;
+            font-weight: bold;
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Publicar Novo Conteúdo</h2>
+    {% if error %}
+            <div class = "error">{{ error }}</div>
+        {% endif %}
+    <form method="POST" enctype="multipart/form-data">
+
+        <!-- Título -->
+        <label for="content_name">Título (mín. 15 caracteres)</label>
+        <input type="text" id="content_name" name="content_name" placeholder="Título do conteúdo">
+
+        <!-- Descrição -->
+        <label for="description">Descrição (mín. 50 caracteres)</label>
+        <textarea id="description" name="description" placeholder="Descrição detalhada..."></textarea>
+
+        <!-- PDF -->
+        <label for="file">Arquivo PDF</label>
+        <input type="file" id="file" name="file" accept="application/pdf">
+
+        {% if session.get("cred") == "admin" %}
+            <label for="author">Autor (opcional)</label>
+            <input type="text" id="author" name="author" placeholder="Nome do autor">
+        {% endif %}
+
+        <!-- botão publicar: gradiente igual ao home -->
+        <div class="row-center">
+            <button type="submit" class="btn btn-accent">Publicar</button>
+        </div>
+    </form>
+
+    <!-- botão voltar com aparência discreta -->
+    <div class="bottom-actions" role="group" aria-label="ações">
+        <a href="/user" class="btn btn-green" style="line-height:34px; text-decoration:none; color:#fff;">Voltar</a>
+    </div>
+</div>
+
+</body>
+</html>

@@ -1,35 +1,113 @@
-from .user_default import Management_User_Default, Login_Account
-from ...models.db_execute import insert_info
-from ...models.contents_models.content_models import Contents
+from src.controller.users.user_default import Management_User_Default, Login_Account
+from src.models.db_execute import insert_info, select_info, delete_info, update_info
+from src.models.contents_models.content_models import Contents
+from functools import wraps
+from src.models.database import get_session as database
+import uuid
 
 class Management_Professors(Management_User_Default):
-    def __init__(self, account, dataBase):
+    def __init__(self, account, dataBase=database):
         super().__init__(account, dataBase)
         self.userRole = self.user.get("cred") if isinstance(self.user, dict) else None
-
-    @staticmethod
-    @Login_Account.is_loged
-    def is_professor(func):
+        self.contentValidFields = ["desc", "title", "banner", "pdf"]
+    def professor_required(func):
+        @wraps(func)
         def wrapper(self, *args, **kwargs):
-            if self.userRole and (str(self.userRole).lower().endswith("professor") or str(self.userRole).lower() == "professor"):
+            if self.isLoged and self.user and self.userRole == "professor":
                 return func(self, *args, **kwargs)
-            return False
+            else:
+                logger.info("Acesso negado: usuário não logado ou sem permissão de professor.")
+                return None
         return wrapper
 
-    @is_professor
-    def publish_content_by_professor(self, content):
-        conn = self.dataBase()
+    """tem que modificae a tela de home page, pra expor esses conteudo, apos isso já da pra fazer a primeirs entrega"""
+    @professor_required
+    def select_contents_by_publisher_id(self):
+        if not self.userId:
+            return False
+        userId = [uuid.UUID(self.userId)]
         try:
-            if content:
-                # publisher pode ser o objeto ORM do user ou seu id; aqui passamos o objeto self.user (se for ORM)
-                db_task = insert_info(conn, Contents, {
-                    "title": content.get("fileName"),
-                    "desc": content.get("description"),
-                    "pdf": content.get("file"),
-                    "author": self.user.get("name") if isinstance(self.user, dict) else getattr(self.user, "name", None),
-                    "publisher": self.user  # funciona se insert_info e Contents aceitarem objeto relacionável
-                })
-                return db_task
+            conn = self.dataBase()
+            all_my_contents = conn.query(Contents).filter(Contents.publisher_id.in_(userId)).all()
+            return all_my_contents
+        finally:
+            conn.close()        
+            
+    @professor_required
+    def professor_get_content_by_id(self, contentId):
+        if not self.userId:
+            return False
+            
+        try:
+            conn = self.dataBase()
+            contentExist = select_info(conn, Contents, "id", uuid.UUID(contentId))
+            
+            if contentExist:                               
+                if contentExist.get("publisher_id") == self.userId:
+                    return contentExist
+                                   
+            return False                
+        finally:
+            conn.close()        
+            
+    @professor_required
+    def delete_contents_by_id(self, contentId):
+        if not contentId:
+            return False           
+        
+        contentExist = self.professor_get_content_by_id(contentId)
+        if contentExist:                        
+            
+            try:
+                
+                conn = self.dataBase()      
+                db_task = delete_info(conn, Contents, "id", uuid.UUID(contentId))
+                
+                if db_task : return True
+                    
+                return False
+            finally:
+                conn.close()
+        
+    @professor_required
+    def update_contents_by_id(self, columnUpdate, contentId, newValue):
+        
+        if not newValue or not contentId or not columnUpdate:
+            return False
+            
+        if columnUpdate not in self.contentValidFields:
+            return False
+        
+        if columnUpdate == "pdf":
+            if not isinstance(newValue, bytes):
+                return False
+        contentExist = self.professor_get_content_by_id(contentId) 
+        if contentExist:                        
+            
+            try:
+                
+                conn = self.dataBase()      
+                db_task = update_info(conn, Contents, columnUpdate, newValue, "id", uuid.UUID(contentId))
+                
+                if db_task : return True
+                    
+                return False
+            finally:
+                conn.close()
+     
+     
+    @professor_required
+    def publish_content_by_professor(self, content, author):
+        
+        if author != self.get_user_name():
+            return False
+        author = self.userId
+        try:
+            if content:               
+                if author:
+                    conn = self.dataBase()
+                    db_task = insert_info(conn, Contents, {"title" : content.get("title"), "desc" : content.get("desc"), "pdf" : content.get("pdf"), "author" : str(author), "publisher_id" : uuid.UUID(self.userId)})
+                    return True
             return False
         finally:
             conn.close()
