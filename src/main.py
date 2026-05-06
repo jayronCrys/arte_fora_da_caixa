@@ -591,7 +591,7 @@ def edit_content(content):
             
             action = False        
             if new_content_title:
-                if new_content_title.split != "" or len(new_content_title) > 15:
+                if new_content_title.strip() != "" or len(new_content_title) > 15:
                     if content.get("id"):
                         if session.get("cred") == "professor":
                             action = g.user.update_contents_by_id("title", content.get("id"), new_content_title)
