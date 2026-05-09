@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Excluir conta - Arte Fora da Caixa</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Segoe UI", Roboto, sans-serif; }
+    body { background: #f3f4f6; color: #333; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+    .delete-container {
+      background: white; padding: 40px; border-radius: 18px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.08); max-width: 480px; width: 90%;
+    }
+    h2 { margin-bottom: 20px; color: #c62828; }
+    .warning { background: #ffebee; border-left: 4px solid #c62828; padding: 15px; margin: 20px 0; border-radius: 6px; }
+    .warning p { margin: 5px 0; font-size: 14px; }
+    label { display: block; margin-top: 15px; font-weight: 600; }
+    input[type="password"] {
+      width: 100%; padding: 10px; margin-top: 5px;
+      border: 1px solid #ccc; border-radius: 8px; font-size: 15px;
+    }
+    .btn-group { margin-top: 25px; display: flex; flex-direction: column; gap: 12px; align-items: center; }
+    .btn-understand {
+      background: #ff9800; color: white; border: none; padding: 12px 24px;
+      border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 15px;
+      transition: .2s;
+    }
+    .btn-understand:hover { background: #f57c00; }
+    .btn-delete {
+      background: #c62828; color: white; border: none; padding: 12px 24px;
+      border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 15px;
+      opacity: 0.5; pointer-events: none; transition: .2s;
+    }
+    .btn-delete.active { opacity: 1; pointer-events: auto; }
+    .btn-delete.active:hover { background: #b71c1c; }
+    .btn-cancel {
+      background: #ddd; color: #333; border: none; padding: 12px 24px;
+      border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 15px;
+      text-decoration: none; display: inline-block; text-align: center;
+    }
+    .btn-cancel:hover { background: #bbb; }
+    .flash-msg { background: #fff3cd; padding: 10px; border-radius: 6px; margin-bottom: 15px; }
+  </style>
+</head>
+<body>
+  <div class="delete-container">
+    <h2>🗑️ Excluir minha conta</h2>
+    
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        {% for msg in messages %}
+          <div class="flash-msg">{{ msg }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST" id="delete-form">
+      <label for="password">Senha atual</label>
+      <input type="password" id="password" name="password" required>
+
+      <label for="confirm_password">Confirme sua senha</label>
+      <input type="password" id="confirm_password" name="confirm_password" required>
+
+      <div class="warning">
+        <p>⚠️ <strong>Atenção!</strong></p>
+        <p>Esta ação é irreversível. Todos os seus dados, publicações e progresso serão permanentemente removidos.</p>
+        <p>Não será possível recuperar a conta depois da exclusão.</p>
+      </div>
+
+      <div class="btn-group">
+        <!-- Botão "Li e entendi" (não envia o formulário) -->
+        <button type="button" class="btn-understand" id="understand-btn" onclick="enableDelete()">
+          ✅ Li e entendi
+        </button>
+        
+        <!-- Botão de exclusão (inicia desabilitado) -->
+        <button type="submit" class="btn-delete" id="delete-btn" disabled>
+          Excluir minha conta
+        </button>
+        
+        <a href="/user" class="btn-cancel">Cancelar</a>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    function enableDelete() {
+      const deleteBtn = document.getElementById('delete-btn');
+      deleteBtn.classList.add('active');
+      deleteBtn.disabled = false;
+      document.getElementById('understand-btn').style.display = 'none';
+    }
+  </script>
+</body>
+</html>

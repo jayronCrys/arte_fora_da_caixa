@@ -31,6 +31,7 @@ app.secret_key = os.environ.get("FLASK_SECRET", "dev-secret")
 
 # constantes e pasta de uploads
 UPLOAD_FOLDER = os.path.join(app.static_folder, "profile_images")
+app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 def make_session_from_dbuser(db_user_dict):
@@ -245,96 +246,172 @@ def user():
     return render_template("user_page.html", session_user=user_data, total_courses=total_courses, enrolled_courses=enrolled_courses)
 
 
-@app.route("/edit_user", methods=["GET", "POST"])
+import subprocess
+import os
+import logging
+
+def convert_heic_to_jpeg(source_path, dest_path, quality=90):
+    """
+    Converte HEIC -> JPEG usando heif-convert ou ImageMagick (fallback).
+    Retorna True se bem‑sucedido.
+    """
+    # Tenta heif-convert (rápido e leve)
+    try:
+        subprocess.run(
+            ["heif-convert", "-q", str(quality), source_path, dest_path],
+            check=True,
+            capture_output=True,
+            timeout=30
+        )
+        logging.info(f"HEIC convertido com heif-convert: {source_path} -> {dest_path}")
+        return True
+    except (FileNotFoundError, subprocess.CalledProcessError) as e:
+        logging.warning(f"heif-convert falhou ou não encontrado: {e}")
+
+    # Fallback: ImageMagick (convert)
+    try:
+        subprocess.run(
+            ["convert", source_path, "-quality", str(quality), dest_path],
+            check=True,
+            capture_output=True,
+            timeout=30
+        )
+        logging.info(f"HEIC convertido com ImageMagick: {source_path} -> {dest_path}")
+        return True
+    except (FileNotFoundError, subprocess.CalledProcessError) as e:
+        logging.error(f"ImageMagick também falhou: {e}")
+
+    return False
+        
+@app.route("/edit_user", methods=["POST"])
 def edit_user():
     if not session.get("user"):
         logging.info("Acesso negado - sem sessão")
         flash("Acesso negado.")
         return redirect("/login")
 
-    if request.method == "GET":
-        return render_template("edit_user.html", user=session.get("user"))
-
     logging.info("Processando edição de usuário")
     new_name = request.form.get("new_name")
-    new_pass = request.form.get("password")
-    
-    confirm_new_pass = request.form.get("confirm_password")
     new_image = request.files.get("profile_image")
 
-    
+    # Atualização do nome
     if new_name and new_name.strip():
         ok = False
         try:
-            ok = g.user.update_user(field="name", newValue1=new_name)
+            ok = g.user.update_user(field="name", newValue1=new_name.strip())
         except Exception as e:
             logging.exception("Erro ao atualizar nome: %s", e)
             ok = False
-
         if not ok:
             flash("Erro ao atualizar nome.")
             return redirect("/user")
-
-    if new_pass and confirm_new_pass:
-        if new_pass != confirm_new_pass:
-            flash("As senhas não coincidem.")
-            return redirect("/user")
-        ok = False
-        try:
-            ok = g.user.update_user(field="password", newValue1=new_pass, newValue2=confirm_new_pass)
-            logging.info(f"senha atualizada para: {new_pass}")
-        except Exception as e:
-            logging.exception("Erro ao atualizar senha: %s", e)
-            ok = False
-        if not ok:
-            flash("Erro ao atualizar senha.")
-            return redirect("/user")
-    
-    print(new_image.filename)
+            
+                    
+        session["name"] = g.user.get_user_name()
+        return render_template("user_page.html")             
+            
     if new_image and new_image.filename != "":
-        
-        filename = secure_filename(new_image.filename)
-        
-        if filename.startswith("/static/"):
-            filename = filename.replace("/static/", "", 1)
-          
-        if filename.startswith("view/static/"):
-            filename = filename.replace("view/static/", "", 1)
-        filepath = os.path.join(UPLOAD_FOLDER, filename)
+        original_filename = f"{uuid.uuid4().hex}.jpg"
+        is_heic = original_filename.lower().endswith(('.heic', '.heif'))
     
-        try:
-            new_image.save(filepath)     
-        # URL acessível ao navegador
-            public_url = f"/profile_images/{filename}"       
-            ok = g.user.update_user(field="picture", newValue1=public_url)
-            if not ok:
-                
+        if is_heic:
+            # Nome final .jpg
+            base, _ = os.path.splitext(original_filename)
+            final_filename = base + ".jpg"
+            final_path = os.path.join(app.config['UPLOAD_FOLDER'], final_filename)
+    
+            # Salva temporário HEIC
+            temp_filename = "__heic_temp_" + original_filename
+            temp_path = os.path.join(app.config['UPLOAD_FOLDER'], temp_filename)
+            try:
+                new_image.save(temp_path)
+            except Exception as e:
+                logging.exception("Erro ao salvar HEIC temporário: %s", e)
+                flash("Erro ao processar imagem HEIC.")
+                return redirect("/user")
+
+        # Converte HEIC -> JPEG (função externa)
+            success = convert_heic_to_jpeg(temp_path, final_path)
+
+        # Remove temporário
+            try:
+                os.remove(temp_path)
+            except OSError:
+                pass
+    
+            if not success:
+                flash("Erro ao converter imagem HEIC. O servidor pode não ter suporte. Envie JPEG ou PNG.")
+                return redirect("/user")
+    
+            public_url = f"/profile_images/{final_filename}"
+        else:
+            # Formatos comuns
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], original_filename)
+            try:
+                new_image.save(filepath)
+            except Exception as e:
+                logging.exception("Erro ao salvar arquivo: %s", e)
                 flash("Erro ao salvar imagem.")
                 return redirect("/user")
-                     
-        except Exception as e:
-            logging.exception("Erro ao salvar arquivo: %s", e)
-            flash("Erro ao salvar imagem.")
+            public_url = f"/profile_images/{original_filename}"
+    
+        # Atualiza 'picture' no banco
+        ok = g.user.update_user(field="picture", newValue1=public_url)
+        if not ok:
+            flash("Erro ao salvar imagem no perfil.")
             return redirect("/user")
-    try:
-        updated = check_user(g.user.userId,collumn="id")
         
-        try:
-            updated_dict = dict(updated)
-        except Exception:
-            updated_dict = updated
+        session["picture"] = g.user.picture
+        flash("Perfil atualizado com sucesso.")
+        return render_template("user_page.html")
             
-        print(updated_dict.get("picture"))
-        
-        make_session_from_dbuser(updated_dict)
+@app.route("/change_password", methods=["GET", "POST"])
+def change_password():
+    if not session.get("user"):
+        flash("Acesso negado.")
+        return redirect("/login")
+
+    if request.method == "GET":
+        # A tela pronta (change_password.html) já deve existir
+        return render_template("change_password.html")
+
+    # POST: processa a troca de senha
+    new_password = request.form.get("password")
+    confirm_password = request.form.get("confirm_password")
+
+    if not new_password or not confirm_password:
+        flash("Todos os campos são obrigatórios.")
+        return redirect("/change_password")
+
+    if new_password != confirm_password:
+        flash("As novas senhas não coincidem.")
+        return redirect("/change_password")
+
+
+    # Atualiza a senha usando o método existente (newValue1 = nova senha, newValue2 = confirmação)
+    ok = False
+    try:
+        ok = g.user.update_user(field="password", newValue1=new_password, newValue2=confirm_password)
     except Exception as e:
-        logging.exception("Erro ao recarregar usuário do DB após update: %s", e)
-        
+        logging.exception("Erro ao atualizar senha: %s", e)
+        flash("Erro ao atualizar senha.")
+        return redirect("/change_password")
+
+    if not ok:
+        flash("Erro ao atualizar senha.")
+        return redirect("/change_password")
+
+    # Recarrega sessão (se necessário)
+    try:
+        updated = check_user(g.user.userId, collumn="id")
+        updated_dict = dict(updated) if not isinstance(updated, dict) else updated
+        make_session_from_dbuser(updated_dict)
+    except Exception:
         pass
 
-    flash("Perfil atualizado com sucesso.")
-    return redirect("/user")
-
+    flash("Senha alterada com sucesso!")
+    return redirect("/user")    
+    
 
 @app.route("/edit_user/delete_picture", methods=["POST", "GET"])
 def delete_picture():
@@ -366,17 +443,57 @@ def delete_picture():
     return render_template("user_page.html")
 
 
-@app.route("/edit_user/delete_use", methods = ["POST", "GET"])
-def delete_user():
-    if request.method == "POST":
-        g.user.delete_user()
-        session.clear()
-        return redirect(url_for("login"))
-    
-    
-    return redirect(url_for("edit_user"))
+@app.route("/delete_account", methods=["GET", "POST"])
+def delete_account_page():
+    if not session.get("user"):
+        flash("Acesso negado.")
+        return redirect("/login")
 
+    if request.method == "GET":
+        return render_template("delete_account.html")
+
+    # POST: processa a exclusão
+    password = request.form.get("password")
+    confirm_password = request.form.get("confirm_password")
+
+    if not password or not confirm_password:
+        flash("Preencha todos os campos.")
+        return redirect("/delete_account")
+
+    if password != confirm_password:
+        flash("As senhas não coincidem.")
+        return redirect("/delete_account")
+
+    # Verifica se a senha está correta (implementação depende do seu modelo)
+    try:
+        print("entro??????????????")
+        account = {
+            "name": g.user.get_user_name(),
+            "password": request.form.get("password")
+        }
+        userLoged, userAccount = Login_Account.login("local", account)
+        if not userLoged or not userAccount:
+            
+            flash("Senha incorreta.")
+            return redirect("/delete_account")
+    except AttributeError:
         
+            return redirect("/delete_account")
+
+    # Exclui o usuário (supondo que exista um método delete())
+    try:
+        g.user.delete_user()
+        
+        session.clear()
+        flash(">>>>>>>***(Conta excluída com sucesso.")
+        return redirect("/login")
+    except Exception as e:
+        logging.exception("Erro ao excluir conta: %s", e)
+        flash("Erro ao excluir conta. Tente novamente.")
+        return redirect("/delete_account")
+
+
+    print("aaaaa")        
 
 @app.route("/contents", methods = ["GET", "POST"])
 def contents():
@@ -432,17 +549,25 @@ def admin_create_user():
     cred = request.form.get("cred")
     senha = request.form.get("password")
     confirm = request.form.get("confirm")
-    user ={
-        "name":nome,
-        "cred":cred,
-        "password": senha,
-        "confirm": confirm}
-    print(user)
-    if g.user.create_user_by_admin(user.get("name"), user.get("password"), user.get("confirm"), user.get("cred")):
-        logging.info("ação bem sucedida")
-    
+    checker = Create_Account()
+    if checker:
+        if senha != confirm:
+                        
+            return render_template("admin_page.html", error="senhas não coencidem"), 400
+            
+        if check_user(nome):
+            return render_template("admin_page.html", error="O nome de usuário já está sendo utilizado"), 400
+        
+        user ={
+            "name":nome,
+            "cred":cred,
+            "password": senha,
+            "confirm": confirm}
+        print(user)
+        if g.user.create_user_by_admin(user.get("name"), user.get("password"), user.get("confirm"), user.get("cred")):
+            logging.info("ação bem sucedida")
+        
     return redirect(url_for("admin_page"))
-
 
 #MELHAR NOME DA ROTA
 @app.route("/admin/edit/<user_id>", methods=["GET", "POST"])
@@ -455,13 +580,13 @@ def admin_edit_user(user_id):
         new_pass = request.form.get("senha")
         confirm_pass = request.form.get("confirm_pass")
         new_cred = request.form.get("cred")
-        if new_name.strip == "":
+        if new_name.strip() == "":
             logging.info("Nome não pode ser um espaço em branco")
             return redirect(url_for("admin_page"))
             
         if new_name:
             g.user.update_user_by_admin("name", new_name, None, user_id)
-            print(f"nome: {new_name}, pass1: {new_pass}, pass2: {confirm_pass}")
+            
             
         if (new_pass and confirm_pass) and (new_pass == confirm_pass):
             g.user.update_user_by_admin("password", new_pass, confirm_pass, user_id)      
@@ -469,8 +594,10 @@ def admin_edit_user(user_id):
             g.user.update_user_by_admin("cred", new_cred, None, user_id)
             print(session.get("cred"))
         return redirect(url_for("admin_page"))
-        
-    return render_template("admin_edit_user.html", user=user)
+    
+    user = g.user.get_user_by_admin(userId = user_id)
+    print(user)
+    return render_template("admin_edit_user.html", user=user.get("name"))
 
 #MELHORAR NOME DA ROTA
 @app.route("/admin/delete/<user_id>", methods=["POST"])
@@ -581,7 +708,7 @@ def edit_content(content):
         if session.get("cred") == "admin":
             content = g.user.get_content_by_admin(content)
         if session.get("cred") == "professor":
-            content = g.user.professor_get_content_by_id(content_id)
+            content = g.user.professor_get_content_by_id(content)
             
         
         if content:                    
@@ -603,7 +730,7 @@ def edit_content(content):
                         
             if new_content_desc:
                 action = False
-                if new_content_desc.split != "" or len(new_content_desc) > 50:
+                if new_content_desc.strip() != "" or len(new_content_desc) > 50:
                     if content.get("id"):
                         if session.get("cred") == "professor":
                             action = g.user.update_contents_by_id("desc", content.get("id"), new_content_desc)
@@ -656,8 +783,14 @@ if __name__ == '__main__':
             aluno: bolsonaro
             todas as senhas são 1081514Jh
             só é possível criar novos admins e novos professores com a conta de admin 
+            account = {
+            "name": request.form.get("name"),
+            "password": request.form.get("password")
+        } -> cria outro usuario usando o nome do logado e a senha que ele digitou, se os dois combinarem entao passa.
+            
             """
+            
     except Exception as E:
         logging.info(f"create_db não executado ou já existente: {E}")
         os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
-    app.run(debug=True, port=8080)
+    app.run(debug=True, port=8080, host = "0.0.0.0")

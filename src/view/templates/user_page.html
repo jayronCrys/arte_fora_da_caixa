@@ -1,4 +1,13 @@
-<!DOCTYPE html><html lang="pt-BR">
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Perfil do Usuário</title>
+  <style>
+    
+<!DOCTYPE html>
+<html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -6,96 +15,295 @@
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Segoe UI", Roboto, sans-serif; }
     body { background: #f3f4f6; color: #333; }
+
     header { background: #ffffff; box-shadow: 0 2px 8px rgba(0,0,0,0.06); padding: 16px 32px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
     header h1 { font-size: 22px; color: #222; }
     header a { font-size: 16px; text-decoration: none; background: linear-gradient(90deg, #ff7a00, #00c853); padding: 8px 16px; border-radius: 10px; color: white; font-weight: bold; transition: 0.2s; }
     header a:hover { opacity: 0.9; }
+
     .profile-container { max-width: 950px; margin: 40px auto; background: white; padding: 40px 50px; border-radius: 18px; box-shadow: 0 4px 14px rgba(0,0,0,0.08); }
+
+    /* ── PROFILE HEADER ── */
     .profile-header { display: flex; align-items: center; gap: 25px; padding-bottom: 30px; border-bottom: 1px solid #eee; margin-bottom: 30px; }
-    .profile-header img { width: 130px; height: 130px; border-radius: 50%; object-fit: cover; border: 3px solid #e5e5e5; background: #fafafa; }
-    .profile-info h2 { font-size: 26px; margin-bottom: 5px; color: #222; }
-    .profile-info p { margin: 4px 0; font-size: 15px; color: #555; }input[type="text"], input[type="password"], input[type="email"], input[type="file"] {
-  width: 100%; padding: 12px; margin: 10px 0 18px 0; border-radius: 10px; border: 1px solid #ccc; background: #fafafa;
-}
 
-.btn-fixed { width: 230px; text-align: center; padding: 12px 0; display: inline-block; }
-.btn-home-style {
-  background: linear-gradient(90deg, #ff7a00, #00c853);
-  color: white !important;
-  border: none;
-  border-radius: 10px;
-  font-weight: bold;
-  cursor: pointer;
-  text-decoration: none;
-  transition: 0.2s;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-}
-.btn-home-style:hover { opacity: 0.9; transform: translateY(-2px); }
-.btn-danger { background: linear-gradient(90deg, #ff2d2d, #cc0000); color: white; border-radius: 10px; font-weight: bold; cursor: pointer; padding: 12px 0; display: block; margin: 10px auto; }
-.btn-logout { background: linear-gradient(90deg, #ff9800, #ff5722); color: white; border-radius: 10px; font-weight: bold; padding: 12px 0; }
+    /* foto com botões de ação */
+    .avatar-wrapper { position: relative; flex-shrink: 0; width: 130px; height: 130px; }
+    .avatar-wrapper img { width: 130px; height: 130px; border-radius: 50%; object-fit: cover; border: 3px solid #e5e5e5; background: #fafafa; display: block; }
 
-.action-bar { margin: 40px 0; display: flex; justify-content: center; gap: 25px; flex-wrap: wrap; }
-.form-buttons { margin-top: 25px; display: flex; justify-content: center; }
-.delete-buttons-group { margin-top: 15px; display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; }
+    /* botão câmera (manter à direita) */
+    .avatar-edit-btn {
+      position: absolute; bottom: 4px; right: 4px;
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #ff7a00, #00c853);
+      border: 2px solid white;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      transition: transform .2s, box-shadow .2s;
+    }
+    .avatar-edit-btn:hover { transform: scale(1.12); box-shadow: 0 4px 10px rgba(0,0,0,0.25); }
+    .avatar-edit-btn svg { width: 16px; height: 16px; fill: white; pointer-events: none; }
 
-footer { text-align: center; padding: 20px; margin-top: 40px; color: #777; font-size: 14px; }
+    /* NOVO: botão lixeira (excluir foto) – à esquerda */
+    .avatar-delete-btn {
+      position: absolute; bottom: 4px; left: 4px;
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      background: #e53935;
+      border: 2px solid white;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      transition: transform .2s, box-shadow .2s;
+    }
+    .avatar-delete-btn:hover { transform: scale(1.12); box-shadow: 0 4px 10px rgba(0,0,0,0.25); }
+    .avatar-delete-btn svg { width: 16px; height: 16px; fill: white; pointer-events: none; }
 
+    #avatar-file-input { display: none; }
+
+    /* nome inline */
+    .profile-info { flex: 1; }
+    .name-row { display: flex; align-items: center; gap: 10px; margin-bottom: 5px; }
+    .name-row h2 { font-size: 26px; color: #222; }
+    .icon-btn {
+      width: 30px; height: 30px; border-radius: 50%;
+      border: 1.5px solid #ddd; background: #f9f9f9;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: background .2s, border-color .2s, transform .15s;
+      flex-shrink: 0;
+    }
+    .icon-btn:hover { background: #fff0e5; border-color: #ff7a00; transform: scale(1.1); }
+    .icon-btn svg { width: 14px; height: 14px; stroke: #ff7a00; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+    .profile-info p { margin: 4px 0; font-size: 15px; color: #555; }
+
+    /* ── INLINE NAME FORM (oculto por padrão) ── */
+    .inline-name-form { display: none; align-items: center; gap: 8px; margin-bottom: 5px; }
+    .inline-name-form.active { display: flex; }
+    .inline-name-form input {
+      font-size: 18px; font-weight: 600; color: #222;
+      border: 1.5px solid #ff7a00; border-radius: 8px;
+      padding: 6px 10px; outline: none; background: #fff8f3;
+      flex: 1;
+    }
+    .inline-name-form button {
+      padding: 6px 14px; border-radius: 8px; border: none;
+      font-weight: bold; cursor: pointer; font-size: 13px; transition: opacity .2s;
+    }
+    .btn-confirm { background: linear-gradient(90deg,#ff7a00,#00c853); color: white; }
+    .btn-confirm:hover { opacity: .85; }
+    .btn-cancel-sm { background: #eee; color: #555; }
+    .btn-cancel-sm:hover { background: #ddd; }
+
+    /* ── INLINE AVATAR FORM ── */
+    .avatar-form-row { display: none; margin-top: 8px; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .avatar-form-row.active { display: flex; }
+    .avatar-form-row span { font-size: 13px; color: #555; }
+
+    /* ── SECTION TÍTULOS ── */
+    .edit-section h3, .courses-section h3 { font-size: 18px; color: #222; margin-bottom: 18px; }
+
+    /* ── BOTÕES GERAIS ── */
+    .btn-fixed { width: 230px; text-align: center; padding: 12px 0; display: inline-block; }
+    .btn-home-style {
+      background: linear-gradient(90deg, #ff7a00, #00c853);
+      color: white !important; border: none; border-radius: 10px;
+      font-weight: bold; cursor: pointer; text-decoration: none;
+      transition: 0.2s; box-shadow: 0 2px 6px rgba(0,0,0,0.15); font-size: 15px;
+    }
+    .btn-home-style:hover { opacity: 0.9; transform: translateY(-2px); }
+    .btn-danger { background: linear-gradient(90deg, #ff2d2d, #cc0000); color: white; border-radius: 10px; font-weight: bold; cursor: pointer; padding: 12px 0; display: block; margin: 10px auto; border: none; }
+    .btn-logout { background: linear-gradient(90deg, #ff9800, #ff5722); color: white; border-radius: 10px; font-weight: bold; padding: 12px 0; text-decoration: none; display: inline-block; text-align: center; }
+
+    /* ── BOTÃO ALTERAR SENHA ── */
+    .btn-password {
+      background: linear-gradient(90deg, #1565c0, #0288d1);
+      color: white; border-radius: 10px; font-weight: bold;
+      padding: 12px 0; text-decoration: none; display: inline-block;
+      text-align: center; transition: .2s; box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+      border: none; cursor: pointer; font-size: 15px;
+    }
+    .btn-password:hover { opacity: .88; transform: translateY(-2px); }
+
+    /* ── ACTION BARS ── */
+    .action-bar { margin: 40px 0; display: flex; justify-content: center; gap: 25px; flex-wrap: wrap; }
+
+    /* NOVO: seção "Informações avançadas" */
+    .advanced-toggle {
+      background: #666;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      padding: 12px 24px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 15px;
+      transition: .2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .advanced-toggle:hover { background: #555; }
+    .advanced-content {
+      display: none;
+      margin-top: 20px;
+      padding: 20px;
+      background: #fafafa;
+      border: 1px solid #e0e0e0;
+      border-radius: 14px;
+      flex-direction: column;
+      gap: 15px;
+      align-items: center;
+    }
+    .advanced-content.active { display: flex; }
+
+    footer { text-align: center; padding: 20px; margin-top: 40px; color: #777; font-size: 14px; }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(20px);
+      background: #222; color: white; padding: 10px 22px; border-radius: 10px;
+      font-size: 14px; opacity: 0; pointer-events: none;
+      transition: opacity .3s, transform .3s; z-index: 999;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); })
+
+    /* MODAL */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 200;
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-box {
+      background: white;
+      padding: 30px;
+      border-radius: 16px;
+      max-width: 400px;
+      width: 90%;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+    .modal-box h2 { margin-bottom: 15px; }
+    .modal-buttons { display: flex; gap: 15px; justify-content: center; margin-top: 25px; }
+    .modal-btn {
+      padding: 10px 24px;
+      border-radius: 10px;
+      font-weight: bold;
+      border: none;
+      cursor: pointer;
+      font-size: 15px;
+      transition: .2s;
+    }
+    .modal-btn-confirm { background: #e53935; color: white; }
+    .modal-btn-confirm:hover { background: #c62828; }
+    .modal-btn-cancel { background: #ddd; color: #333; }
+    .modal-btn-cancel:hover { background: #bbb; }
   </style>
 </head>
-<body><header>
+<body>
+
+<header>
   <h1>Arte Fora da Caixa</h1>
   <a href="/home">🏠 Home</a>
-</header><div class="profile-container">  <div class="profile-header">
-    <img src="{{ url_for('static', filename=session.get('picture')) if session.get('picture') else url_for('static', filename='default_profile.png') }}">
+</header>
+
+<div class="profile-container">
+
+  <!-- CABEÇALHO DO PERFIL (inalterado, com lixeira e câmera) -->
+  <div class="profile-header">
+    <div class="avatar-wrapper">
+      <img id="avatar-preview"
+           src="{{ url_for('static', filename=session.get('picture')) if session.get('picture') else url_for('static', filename='default_profile.png') }}"
+           alt="Foto de perfil">
+
+      <!-- Lixeira -->
+      <button class="avatar-delete-btn" type="button" title="Excluir foto de perfil"
+              onclick="document.getElementById('delete-picture-form').submit();">
+        <svg viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+          <path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M19 6l-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+
+      <!-- Câmera -->
+      <button class="avatar-edit-btn" type="button" title="Alterar foto" onclick="toggleAvatarForm()">
+        <svg viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7zm7-13h-1.586l-1.707-1.707A1 1 0 0 0 15 .5H9a1 1 0 0 0-.707.293L6.586 2.5H5A3 3 0 0 0 2 5.5v12a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3v-12a3 3 0 0 0-3-3z"/>
+        </svg>
+      </button>
+    </div>
+
+    <form id="delete-picture-form" method="POST" action="{{ url_for('delete_picture') }}" style="display:none;"></form>
+    <input type="file" id="avatar-file-input" name="profile_image" accept="image/*" onchange="onAvatarChosen(this)" style="display:none;">
+
     <div class="profile-info">
-      <h2>{{ session.get("name") or 'Usuário Exemplo' }}</h2>
-      {% if session.get("cred") %}<p> {{ session.get("cred") }}</p>{% endif %}
+      <!-- Nome inline -->
+      <div class="name-row" id="name-display-row">
+        <h2 id="name-display">{{ session.get("name") or 'Usuário Exemplo' }}</h2>
+        <button class="icon-btn" type="button" title="Editar nome" onclick="toggleNameEdit()">
+          <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
+      </div>
+
+      <form method="POST" action="/edit_user" class="inline-name-form" id="name-edit-form">
+        <input type="text" name="new_name" id="name-input" placeholder="Novo nome">
+        <button type="submit" class="btn-confirm">✓ Salvar</button>
+        <button type="button" class="btn-cancel-sm" onclick="toggleNameEdit()">✕</button>
+      </form>
+
+      <form method="POST" action="/edit_user" enctype="multipart/form-data" id="avatar-form">
+        <input type="file" name="profile_image" id="avatar-file-real" accept="image/*" style="display:none" onchange="onAvatarChosen(this)">
+        <div class="avatar-form-row" id="avatar-form-row">
+          <span id="avatar-file-name">Nenhum arquivo escolhido</span>
+          <button type="submit" class="btn-confirm" style="padding:6px 14px;border-radius:8px;font-size:13px;">✓ Enviar foto</button>
+          <button type="button" class="btn-cancel-sm" style="padding:6px 14px;border-radius:8px;font-size:13px;" onclick="cancelAvatarForm()">✕ Cancelar</button>
+        </div>
+      </form>
+
+      {% if session.get("cred") %}<p>{{ session.get("cred") }}</p>{% endif %}
       {% if session.get("email") %}<p>Email: {{ session.get("email") }}</p>{% endif %}
-      <p>Data de criação: {{ session.get("creatio_date") or '01/01/2025' }}</p>
+      <p>Data de criação: {{ session.get("creation_date") or '01/01/2025' }}</p>
       <p>Cursos inscritos: {{ total_courses or 0 }}</p>
     </div>
-  </div>  <div class="edit-section">
-    <h3>Editar informações</h3>
-    <form method="POST" action="/edit_user" enctype="multipart/form-data">
-      <label>Nome:</label>
-      <input type="text" name="new_name" placeholder="Novo nome"><label>Nova senha:</label>
-  <input type="password" name="password" placeholder="Nova senha">
-
-  <label>Confirmar nova senha:</label>
-  <input type="password" name="confirm_password" placeholder="Confirmar senha">
-
-  <label>Alterar foto de perfil:</label>
-  <input type="file" name="profile_image">
-
-  <div class="form-buttons">
-    <button type="submit" class="btn-home-style btn-fixed">Salvar alterações</button>
   </div>
-</form>
 
-<div class="delete-buttons-group">
-  <form method="POST" action="{{ url_for('delete_picture') }}">
-    <button class="btn-danger btn-fixed" type="submit">Excluir foto de perfil</button>
-  </form>
-  <form action="{{ url_for('delete_user') }}" method="POST">
-    <button class="btn-danger btn-fixed" type="submit">Excluir conta</button>
-  </form>
-</div>
+  <!-- AÇÕES -->
+  <div class="edit-section">
+    <h3>Ações da conta</h3>
 
-<div class="action-bar">
-  <a href="/logout" class="btn-logout btn-fixed">Sair da conta</a>
-  {% if session.get("cred") == "admin" %}
-    <a href="/admin" class="btn-home-style btn-fixed">Painel de Administração</a>
-  {% endif %}
-  {% if session.get("cred") in ["admin", "professor"] %}
-    <a href="/publish_content" class="btn-home-style btn-fixed">Publicar Conteúdo</a>
- 
+    <div class="action-bar">
+      <button class="advanced-toggle" type="button" onclick="toggleAdvanced()">
+        ⚙️ Informações avançadas
+        <span id="advanced-arrow" style="transition: .3s;">▼</span>
+      </button>
 
-  <!-- BOTÃO NOVO ADICIONADO → Minhas Publicações -->
-  <a href="/contents/publications" class="btn-home-style btn-fixed">Minhas Publicações</a>
-   {% endif %}
-</div>
+      {% if session.get("cred") == "admin" %}
+        <a href="/admin" class="btn-home-style btn-fixed">Painel de Administração</a>
+      {% endif %}
+      {% if session.get("cred") in ["admin", "professor"] %}
+        <a href="/publish_content" class="btn-home-style btn-fixed">Publicar Conteúdo</a>
+        <a href="/contents/publications" class="btn-home-style btn-fixed">Minhas Publicações</a>
+      {% endif %}
+    </div>
 
-  </div>  <div class="courses-section">
+    <div class="advanced-content" id="advanced-content">
+      <!-- Excluir conta agora leva a uma página de confirmação -->
+      <a href="{{ url_for('delete_account_page') }}" class="btn-danger btn-fixed" style="text-decoration:none; color:white;">Excluir conta</a>
+
+      <!-- Sair da conta (abre modal) -->
+      <a href="#" class="btn-logout btn-fixed" onclick="openLogoutModal(event)">Sair da conta</a>
+
+      <a href="/change_password" class="btn-password btn-fixed">🔒 Alterar senha</a>
+    </div>
+  </div>
+
+  <!-- CURSOS (inalterado) -->
+  <div class="courses-section">
     <h3>Meus cursos</h3>
     {% if enrolled_courses %}
       {% for course in enrolled_courses %}
@@ -107,7 +315,101 @@ footer { text-align: center; padding: 20px; margin-top: 40px; color: #777; font-
     {% else %}
       <p>Você ainda não se inscreveu em nenhum curso.</p>
     {% endif %}
-  </div></div><footer>
-  © 2025 Arte Fora da Caixa — Todos os direitos reservados
-</footer></body>
+  </div>
+
+</div>
+
+<!-- MODAL DE LOGOUT -->
+<div class="modal-overlay" id="logout-modal">
+  <div class="modal-box">
+    <h2>Deseja realmente sair?</h2>
+    <p>Você precisará fazer login novamente para acessar sua conta.</p>
+    <div class="modal-buttons">
+      <button class="modal-btn modal-btn-cancel" onclick="closeLogoutModal()">Cancelar</button>
+      <a href="/logout" class="modal-btn modal-btn-confirm" style="text-decoration:none;">Sim, sair</a>
+    </div>
+  </div>
+</div>
+
+<footer>© 2025 Arte Fora da Caixa — Todos os direitos reservados</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ... funções toggleNameEdit, toggleAvatarForm, onAvatarChosen, cancelAvatarForm, toggleAdvanced, showToast ...
+
+  function openLogoutModal(e) {
+    e.preventDefault();
+    document.getElementById('logout-modal').classList.add('active');
+  }
+  function closeLogoutModal() {
+    document.getElementById('logout-modal').classList.remove('active');
+  }
+  // Fecha modal ao clicar fora da caixa
+  document.getElementById('logout-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeLogoutModal();
+  });
+
+  // Scripts existentes (mantidos)
+  function toggleNameEdit() {
+    const displayRow = document.getElementById('name-display-row');
+    const editForm   = document.getElementById('name-edit-form');
+    const input      = document.getElementById('name-input');
+    if (!editForm.classList.contains('active')) {
+      input.value = document.getElementById('name-display').textContent.trim();
+      displayRow.style.display = 'none';
+      editForm.classList.add('active');
+      input.focus();
+    } else {
+      displayRow.style.display = '';
+      editForm.classList.remove('active');
+    }
+  }
+
+  function toggleAvatarForm() {
+    document.getElementById('avatar-file-real').click();
+  }
+
+  function onAvatarChosen(input) {
+    if (!input.files || !input.files[0]) return;
+    const file = input.files[0];
+    const reader = new FileReader();
+    reader.onload = e => {
+      document.getElementById('avatar-preview').src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+    document.getElementById('avatar-file-name').textContent = file.name;
+    document.getElementById('avatar-form-row').classList.add('active');
+  }
+
+  function cancelAvatarForm() {
+    document.getElementById('avatar-form-row').classList.remove('active');
+    document.getElementById('avatar-file-real').value = '';
+    document.getElementById('avatar-preview').src = "{{ url_for('static', filename=session.get('picture')) if session.get('picture') else url_for('static', filename='default_profile.png') }}";
+  }
+
+  function toggleAdvanced() {
+    const content = document.getElementById('advanced-content');
+    const arrow = document.getElementById('advanced-arrow');
+    const isActive = content.classList.toggle('active');
+    arrow.textContent = isActive ? '▲' : '▼';
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2800);
+  }
+
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}
+      {% for msg in messages %}
+        showToast("{{ msg }}");
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+</script>
+
+</body>
 </html>
