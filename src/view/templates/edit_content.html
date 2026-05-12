@@ -101,7 +101,7 @@
 
 <form method="POST"
       enctype="multipart/form-data"
-      action="{{ url_for('edit_content', content=content.id) }}">
+      action="{{ url_for('contents.edit_content', content_id=content.id) }}">
     <label>Novo título</label>
     <input name="new_title" type="text" placeholder="Título atualizado...">
 

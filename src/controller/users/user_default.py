@@ -367,14 +367,21 @@ class Management_User_Default(Login_Account):
         conn = self.dataBase()
             
         content = select_info(conn, Contents, "id",UUID(contentId), None)
+        
+        conteudo = db.session.query(Contents).first()
+        print(conteudo.banner)   # None? bytes?
         conn.close()
         return content
         
     @Login_Account.is_loged
     def get_all_contents(self):
-        print("vou tentar fazer conecao")
+        print("Retornando todos os coteudos")
         conn = self.dataBase()
-        print("fiz comeccao")
+        conteudo = db.session.query(Contents).first()
+        print(conteudo.banner)   # None? bytes?
+        print("Retorno com sucesso")
         all_contents = conn.query(Contents).all()
         conn.close()
         return all_contents                    
+        
+        

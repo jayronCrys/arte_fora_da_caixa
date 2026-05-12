@@ -184,10 +184,10 @@
                         <td>{{ user.name }}</td>
                         <td>{{ user.email }}</td>
                         <td>
-                            <a href="{{ url_for('admin_edit_user', user_id=user.id) }}"
+                            <a href="{{ url_for('admin.admin_edit_user', user_id=user.id) }}"
                                class="btn btn-sm btn-green">Editar</a>
 
-                            <form action="{{ url_for('admin_delete_user', user_id=user.id) }}"
+                            <form action="{{ url_for('admin.admin_delete_user', user_id=user.id) }}"
                                   method="POST"
                                   style="display:inline;">
                                 <button class="btn btn-sm btn-red"
@@ -209,7 +209,7 @@
     <div class="card">
         <h4>Criar novo usuário</h4>
 
-        <form method="POST" action="{{ url_for('admin_create_user') }}">
+        <form method="POST" action="{{ url_for('admin.admin_create_user') }}">
 
             <label>Nome</label>
             <input name="nome" type="text" required>

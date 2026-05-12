@@ -1,177 +1,573 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <title>Publicar Conteúdo</title>
-    <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta charset="UTF-8">
+  <title>Publicar Conteúdo</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>
+    :root {
+      --accent-start: #ff7a00;
+      --accent-end:   #00c853;
+      --radius:       12px;
+      --font:         "Segoe UI", Roboto, Arial, sans-serif;
+      --shadow:       0 4px 18px rgba(0,0,0,0.09);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font);
+      background: #f3f4f6;
+      color: #222;
+      padding: 20px 16px 60px;
+    }
 
-    <style>
-        :root{
-            --accent-start: #ff7a00;    /* laranja */
-            --accent-end:   #00c853;    /* verde */
-            --green:        #00c853;
-            --blue:         #007bff;
-            --muted:        #f0f0f0;
-            --text:         #222;
-            --card-bg:      #ffffff;
-            --shadow:       0 6px 18px rgba(0,0,0,0.08);
-            --btn-width:    230px;
-            --radius:       10px;
-            --font:         "Segoe UI", Roboto, Arial, sans-serif;
-        }
+    header {
+      background: #fff;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      padding: 14px 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky; top: 0; z-index: 200;
+      margin: -20px -16px 28px;
+    }
+    header h1 { font-size: 20px; color: #222; }
+    header a {
+      font-size: 13px; text-decoration: none;
+      background: linear-gradient(90deg, var(--accent-start), var(--accent-end));
+      padding: 7px 14px; border-radius: 8px;
+      color: white; font-weight: bold;
+    }
 
-        *{box-sizing:border-box}
-        html,body{height:100%}
-        body{
-            margin:0;
-            font-family: var(--font);
-            background: var(--muted);
-            color:var(--text);
-            -webkit-font-smoothing:antialiased;
-            -moz-osx-font-smoothing:grayscale;
-            padding:20px;
-        }
+    .card {
+      max-width: 700px;
+      margin: 0 auto;
+      background: #fff;
+      border-radius: var(--radius);
+      padding: 28px 28px 32px;
+      box-shadow: var(--shadow);
+    }
+    .card + .card { margin-top: 20px; }
+    .card-title {
+      font-size: 17px; font-weight: 700;
+      margin-bottom: 20px; color: #111;
+      display: flex; align-items: center; gap: 8px;
+    }
 
-        .container{
-            max-width:720px;
-            margin:28px auto;
-            background:var(--card-bg);
-            border-radius:14px;
-            padding:28px;
-            box-shadow: var(--shadow);
-        }
+    label { display: block; font-size: 13px; color: #555; margin-bottom: 5px; }
+    .field { margin-bottom: 18px; }
+    input[type="text"], textarea, select {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1.5px solid #ddd;
+      border-radius: 8px;
+      font-size: 15px;
+      background: #fafafa;
+      transition: border-color .2s;
+    }
+    input[type="text"]:focus,
+    textarea:focus,
+    select:focus { border-color: var(--accent-start); outline: none; background: #fff; }
+    textarea { min-height: 110px; resize: vertical; }
+    .hint { font-size: 11px; color: #999; margin-top: 4px; }
 
-        h2{
-            margin:0 0 14px 0;
-            font-size:20px;
-            color:var(--text);
-        }
+    .type-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 10px;
+    }
+    .type-option { display: none; }
+    .type-label {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 6px; padding: 12px 8px;
+      border: 2px solid #e0e0e0; border-radius: 10px;
+      cursor: pointer; transition: all .18s;
+      font-size: 13px; color: #444; text-align: center;
+      background: #fafafa;
+    }
+    .type-label span.emoji { font-size: 22px; }
+    .type-option:checked + .type-label {
+      border-color: var(--accent-start);
+      background: #fff5ee;
+      color: #ff7a00;
+      font-weight: 600;
+    }
 
-        label{
-            display:block;
-            margin-top:12px;
-            font-size:14px;
-            color:#444;
-        }
+    .banner-tabs {
+      display: flex; gap: 8px; margin-bottom: 18px;
+    }
+    .tab-btn {
+      flex: 1; padding: 9px; border-radius: 8px;
+      border: 1.5px solid #ddd; background: #f7f7f7;
+      font-size: 13px; font-weight: 600; cursor: pointer;
+      transition: all .18s; color: #555;
+    }
+    .tab-btn.active {
+      border-color: var(--accent-start);
+      background: #fff5ee; color: #ff7a00;
+    }
 
-        input[type="text"],
-        textarea,
-        input[type="file"]{
-            width:100%;
-            padding:12px 14px;
-            border-radius:8px;
-            border:1px solid #ddd;
-            margin-top:8px;
-            background: #fbfbfb;
-            font-size:15px;
-        }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
 
-        textarea{min-height:140px; resize:vertical}
+    .upload-area {
+      border: 2px dashed #ddd; border-radius: 10px;
+      padding: 28px; text-align: center;
+      cursor: pointer; transition: border-color .2s;
+      background: #fafafa;
+    }
+    .upload-area:hover { border-color: var(--accent-start); }
+    .upload-area input { display: none; }
+    .upload-area p { font-size: 14px; color: #888; margin-top: 8px; }
+    .upload-area .upload-icon { font-size: 32px; }
+    #banner-preview-own {
+      display: none; width: 100%; height: 160px;
+      object-fit: cover; border-radius: 8px; margin-top: 12px;
+    }
 
-        /* botões — aparência igual ao home / perfil */
-        .btn {
-            width: var(--btn-width);
-            padding: 12px 0;
-            border: none;
-            border-radius: var(--radius);
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.10);
-            transition: transform .12s ease, box-shadow .12s ease, opacity .12s ease;
-            color: #fff;
-            display:inline-block;
-            text-align:center;
-            text-decoration:none;
-        }
-        .btn:active{ transform: translateY(1px) }
+    /* ── Galeria de banners padrão ── */
+    .banner-gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 10px;
+    }
+    .banner-opt { display: none; }
+    .banner-opt-label {
+      display: block; cursor: pointer;
+      border: 2px solid transparent; border-radius: 10px;
+      overflow: hidden; transition: border-color .18s;
+    }
+    .banner-opt:checked + .banner-opt-label {
+      border-color: var(--accent-start);
+      box-shadow: 0 0 0 3px rgba(255,122,0,.15);
+    }
+    /* thumbnail da imagem real */
+    .banner-opt-label img {
+      width: 100%; height: 70px;
+      object-fit: cover; display: block;
+      border-radius: 8px 8px 0 0;
+    }
+    .banner-opt-label span {
+      display: block; text-align: center;
+      font-size: 12px; padding: 5px 4px; color: #555;
+      background: #fafafa;
+    }
 
-        /* gradiente igual ao header/banner do home */
-        .btn-accent{
-            background: linear-gradient(90deg, var(--accent-start), var(--accent-end));
-        }
-        .btn-accent:hover{ opacity:.95; box-shadow:0 8px 24px rgba(0,0,0,0.12) }
+    .preview-wrapper {
+      display: none;
+      margin-top: 20px;
+    }
+    .preview-wrapper.visible { display: block; }
+    .preview-label {
+      font-size: 13px; color: #888; margin-bottom: 10px;
+      text-align: center; text-transform: uppercase; letter-spacing: .5px;
+    }
 
-        /* botoes verdes sólidos (ações confirmar) */
-        .btn-green{
-            background: linear-gradient(90deg, #00c853, #00a647);
-        }
-        .btn-green:hover{ opacity:.95 }
+    .pub-card {
+      max-width: 320px;
+      margin: 0 auto;
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: 0 3px 14px rgba(0,0,0,0.12);
+      overflow: hidden;
+    }
+    .pub-card-banner {
+      height: 160px;
+      background: linear-gradient(135deg, #ff7a00, #00c853);
+      overflow: hidden;
+    }
+    .pub-card-banner img {
+      width: 100%; height: 100%; object-fit: cover; display: none;
+    }
+    .pub-card-body { padding: 14px 16px 16px; }
+    .pub-card-title {
+      font-size: 15px; font-weight: 700; color: #111;
+      margin-bottom: 6px; line-height: 1.3;
+    }
+    .pub-card-meta {
+      font-size: 12px; color: #888; line-height: 1.6;
+    }
+    .pub-card-meta .badge {
+      display: inline-block;
+      background: #f0f0f0; color: #555;
+      border-radius: 6px; padding: 2px 7px;
+      font-size: 11px; font-weight: 600;
+      margin-right: 4px;
+    }
+    .pub-card-btn {
+      display: block; width: 100%;
+      margin-top: 12px; padding: 10px;
+      background: linear-gradient(90deg, var(--accent-start), var(--accent-end));
+      color: white; text-align: center;
+      border-radius: 8px; font-weight: 600; font-size: 14px;
+      border: none; cursor: default;
+    }
 
-        /* botão primário azul (quando precisar) */
-        .btn-blue{
-            background: linear-gradient(90deg, var(--blue), #0056c1);
-        }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 12px 0; width: 200px;
+      border: none; border-radius: 10px;
+      font-size: 15px; font-weight: 700;
+      cursor: pointer; transition: opacity .15s, transform .1s;
+      color: #fff; text-decoration: none;
+    }
+    .btn:hover { opacity: .9; transform: translateY(-1px); }
+    .btn-accent { background: linear-gradient(90deg, var(--accent-start), var(--accent-end)); }
+    .btn-muted  { background: #6c757d; }
+    .row-btns {
+      display: flex; justify-content: center;
+      gap: 16px; flex-wrap: wrap; margin-top: 28px;
+    }
 
-        /* botão secundário escuro para "Voltar" */
-        .btn-muted{
-            background: #6c757d;
-        }
+    .modal-overlay {
+      display: none; position: fixed;
+      inset: 0; background: rgba(0,0,0,0.5);
+      z-index: 500; align-items: center; justify-content: center;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-box {
+      background: #fff; border-radius: 16px;
+      padding: 32px 28px; max-width: 420px; width: 92%;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.2);
+    }
+    .modal-box h2 { font-size: 19px; margin-bottom: 10px; }
+    .modal-box p  { font-size: 14px; color: #555; line-height: 1.6; }
+    .modal-summary {
+      background: #f7f7f7; border-radius: 10px;
+      padding: 14px 16px; margin: 16px 0;
+      font-size: 13px; color: #444; line-height: 1.8;
+    }
+    .modal-summary strong { color: #111; }
+    .modal-btns {
+      display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px;
+    }
+    .modal-btn {
+      padding: 10px 22px; border-radius: 9px;
+      font-weight: 700; font-size: 14px;
+      border: none; cursor: pointer; transition: opacity .15s;
+    }
+    .modal-btn:hover { opacity: .85; }
+    .modal-btn-cancel { background: #eee; color: #444; }
+    .modal-btn-confirm {
+      background: linear-gradient(90deg, var(--accent-start), var(--accent-end));
+      color: #fff;
+    }
 
-        /* centraliza o botão submit */
-        .row-center{
-            display:flex;
-            justify-content:center;
-            margin-top:20px;
-        }
-
-        /* ações na parte inferior - mantém alinhamento e espaçamento */
-        .bottom-actions{
-            display:flex;
-            justify-content:center;
-            gap:18px;
-            margin-top:28px;
-            flex-wrap:wrap;
-        }
-
-        /* responsividade: botões encolhem em telas estreitas */
-        @media (max-width:520px){
-            :root{ --btn-width: 160px }
-            .container{ padding:18px }
-        }
-        .error {
-            color: #ff4444;
-            margin-bottom: 15px;
-            font-weight: bold;
-    </style>
+    .error {
+      background: #fff0f0; border: 1px solid #fbb;
+      border-radius: 8px; padding: 12px 16px;
+      color: #c00; font-size: 14px; margin-bottom: 18px;
+    }
+  </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>Publicar Novo Conteúdo</h2>
+<header>
+  <h1>Arte Fora da Caixa</h1>
+  <a href="/contents">← Conteúdos</a>
+</header>
+
+<form method="POST" enctype="multipart/form-data" id="publish-form">
+
+  <!-- Card 1: informações básicas -->
+  <div class="card">
+    <div class="card-title">📋 Informações do conteúdo</div>
+
     {% if error %}
-            <div class = "error">{{ error }}</div>
-        {% endif %}
-    <form method="POST" enctype="multipart/form-data">
+      <div class="error">{{ error }}</div>
+    {% endif %}
 
-        <!-- Título -->
-        <label for="content_name">Título (mín. 15 caracteres)</label>
-        <input type="text" id="content_name" name="content_name" placeholder="Título do conteúdo">
-
-        <!-- Descrição -->
-        <label for="description">Descrição (mín. 50 caracteres)</label>
-        <textarea id="description" name="description" placeholder="Descrição detalhada..."></textarea>
-
-        <!-- PDF -->
-        <label for="file">Arquivo PDF</label>
-        <input type="file" id="file" name="file" accept="application/pdf">
-
-        {% if session.get("cred") == "admin" %}
-            <label for="author">Autor (opcional)</label>
-            <input type="text" id="author" name="author" placeholder="Nome do autor">
-        {% endif %}
-
-        <!-- botão publicar: gradiente igual ao home -->
-        <div class="row-center">
-            <button type="submit" class="btn btn-accent">Publicar</button>
-        </div>
-    </form>
-
-    <!-- botão voltar com aparência discreta -->
-    <div class="bottom-actions" role="group" aria-label="ações">
-        <a href="/user" class="btn btn-green" style="line-height:34px; text-decoration:none; color:#fff;">Voltar</a>
+    <div class="field">
+      <label for="content_name">Título <span style="color:#bbb">(mín. 15 caracteres)</span></label>
+      <input type="text" id="content_name" name="content_name"
+             placeholder="Ex.: Introdução à Programação com Python">
     </div>
+
+    <div class="field">
+      <label for="description">Descrição <span style="color:#bbb">(mín. 50 caracteres)</span></label>
+      <textarea id="description" name="description"
+                placeholder="Descreva o conteúdo detalhadamente…"></textarea>
+    </div>
+
+    <div class="field">
+      <label for="file">Arquivo PDF</label>
+      <input type="file" id="file" name="file" accept="application/pdf"
+             onchange="onPdfChosen(this)">
+      <p class="hint" id="pdf-hint">Nenhum arquivo selecionado</p>
+    </div>
+
+    {% if session.get("cred") == "admin" %}
+    <div class="field">
+      <label for="author">Autor (nome de usuário)</label>
+      <input type="text" id="author" name="author" placeholder="Nome exato do professor">
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Card 2: tipo de conteúdo -->
+  <div class="card">
+    <div class="card-title">🏷️ Tipo de conteúdo</div>
+    <div class="type-grid">
+      {% for value, label, emoji in content_types %}
+      <div>
+        <input class="type-option" type="radio" name="content_type"
+               id="type-{{ value }}" value="{{ value }}"
+               {% if loop.first %}checked{% endif %}
+               onchange="updatePreview()">
+        <label class="type-label" for="type-{{ value }}">
+          <span class="emoji">{{ emoji }}</span>
+          {{ label }}
+        </label>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Card 3: banner -->
+  <div class="card">
+    <div class="card-title">🖼️ Banner</div>
+
+    <div class="banner-tabs">
+      <button type="button" class="tab-btn active" onclick="switchTab('default')">
+        🎨 Banners do site
+      </button>
+      <button type="button" class="tab-btn" onclick="switchTab('own')">
+        📁 Enviar meu banner
+      </button>
+    </div>
+
+    <!-- Galeria de banners padrão -->
+    <div class="tab-panel active" id="tab-default">
+      <div class="banner-gallery">
+        {% for b in default_banners %}
+        <div>
+          {# value = b.id (ex: "R1.jpg") — é o que o backend recebe em banner_id #}
+          <input class="banner-opt" type="radio" name="banner_id"
+                 id="banner-{{ b.id }}" value="{{ b.id }}"
+                 {% if loop.first %}checked{% endif %}
+                 onchange="onDefaultBannerChange('{{ b.id }}')">
+          <label class="banner-opt-label" for="banner-{{ b.id }}">
+            {# thumbnail: rota que serve a imagem estática pelo id #}
+            <img src="{{ url_for('contents.get_banner_default', banner_id=b.id) }}"
+                 alt="{{ b.label }}">
+            <span>{{ b.label }}</span>
+          </label>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Upload próprio -->
+    <div class="tab-panel" id="tab-own">
+      <p class="hint" style="margin-bottom:12px">
+        Recomendado: <strong>1280 × 720 px</strong> (proporção 16:9) •
+        Formatos: JPG, PNG, WEBP • Máx. 2 MB<br>
+        A imagem será ajustada automaticamente para o tamanho padrão.
+      </p>
+      <div class="upload-area" onclick="document.getElementById('banner_file').click()">
+        <div class="upload-icon">🖼️</div>
+        <p>Clique para escolher uma imagem</p>
+        <input type="file" id="banner_file" name="banner_file"
+               accept="image/jpeg,image/png,image/webp"
+               onchange="onBannerChosen(this)">
+      </div>
+      <img id="banner-preview-own" alt="preview do banner">
+    </div>
+
+    <!-- Preview do card público -->
+    <div class="preview-wrapper visible" id="preview-wrapper">
+      <p class="preview-label">Como ficará para o público</p>
+      <div class="pub-card">
+        <div class="pub-card-banner" id="preview-banner">
+          <img id="preview-banner-img" src="" alt="">
+        </div>
+        <div class="pub-card-body">
+          <div class="pub-card-title" id="preview-title">Título do conteúdo</div>
+          <div class="pub-card-meta">
+            <span class="badge" id="preview-type">Aula</span>
+            <span id="preview-author">{{ session.get("name") }}</span><br>
+            <span id="preview-date">{{ now }}</span>
+          </div>
+          <div class="pub-card-btn">Ver</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Botões -->
+  <div class="row-btns">
+    <a href="/user" class="btn btn-muted">Voltar</a>
+    <button type="button" class="btn btn-accent" onclick="openConfirm()">
+      Publicar
+    </button>
+  </div>
+
+</form>
+
+<!-- Modal de confirmação -->
+<div class="modal-overlay" id="confirm-modal">
+  <div class="modal-box">
+    <h2>Confirmar publicação</h2>
+    <p>Revise as informações antes de publicar:</p>
+    <div class="modal-summary">
+      <div><strong>Título:</strong> <span id="sum-title">—</span></div>
+      <div><strong>Tipo:</strong> <span id="sum-type">—</span></div>
+      <div><strong>PDF:</strong> <span id="sum-pdf">—</span></div>
+      <div><strong>Banner:</strong> <span id="sum-banner">—</span></div>
+    </div>
+    <div class="modal-btns">
+      <button class="modal-btn modal-btn-cancel" onclick="closeConfirm()">Revisar</button>
+      <button class="modal-btn modal-btn-confirm" onclick="submitForm()">Publicar agora</button>
+    </div>
+  </div>
 </div>
+
+<script>
+  // Mapa id → URL da imagem (para atualizar o preview sem nova requisição)
+  const BANNER_URLS = {
+    {% for b in default_banners %}
+    "{{ b.id }}": "{{ url_for('contents.get_banner_default', banner_id=b.id) }}",
+    {% endfor %}
+  };
+
+  const TYPE_LABELS = {
+    {% for value, label, emoji in content_types %}
+    "{{ value }}": "{{ emoji }} {{ label }}",
+    {% endfor %}
+  };
+
+  let bannerMode = "default";
+  let ownBannerDataUrl = null;
+
+  // Inicializa o preview com o primeiro banner da galeria
+  window.addEventListener("DOMContentLoaded", () => {
+    const first = document.querySelector('input[name="banner_id"]:checked');
+    if (first) onDefaultBannerChange(first.value);
+    updatePreview();
+  });
+
+  // ── Tabs ──────────────────────────────────────────────────────────────────
+  function switchTab(tab) {
+    bannerMode = tab;
+    document.querySelectorAll(".tab-btn").forEach((b, i) => {
+      b.classList.toggle("active", (i === 0 && tab === "default") || (i === 1 && tab === "own"));
+    });
+    document.getElementById("tab-default").classList.toggle("active", tab === "default");
+    document.getElementById("tab-own").classList.toggle("active", tab === "own");
+
+    if (tab === "default") {
+      const checked = document.querySelector('input[name="banner_id"]:checked');
+      if (checked) onDefaultBannerChange(checked.value);
+    } else if (ownBannerDataUrl) {
+      applyOwnBannerPreview(ownBannerDataUrl);
+    }
+  }
+
+  // ── Banner padrão selecionado ─────────────────────────────────────────────
+  // bannerId = "R1.jpg" (valor do radio)
+  function onDefaultBannerChange(bannerId) {
+    const url = BANNER_URLS[bannerId];
+    const bannerDiv = document.getElementById("preview-banner");
+    const img = document.getElementById("preview-banner-img");
+
+    if (url) {
+      bannerDiv.style.background = "none";
+      img.src = url;
+      img.style.display = "block";
+    } else {
+      // fallback: sem imagem, mostra gradiente
+      bannerDiv.style.background = "linear-gradient(135deg,#ff7a00,#00c853)";
+      img.style.display = "none";
+    }
+    ownBannerDataUrl = null;
+  }
+
+  // ── Banner próprio ────────────────────────────────────────────────────────
+  function onBannerChosen(input) {
+    if (!input.files || !input.files[0]) return;
+    const file = input.files[0];
+    if (file.size > 2 * 1024 * 1024) {
+      alert("A imagem deve ter no máximo 2 MB.");
+      input.value = "";
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = e => {
+      ownBannerDataUrl = e.target.result;
+      document.getElementById("banner-preview-own").src = ownBannerDataUrl;
+      document.getElementById("banner-preview-own").style.display = "block";
+      applyOwnBannerPreview(ownBannerDataUrl);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function applyOwnBannerPreview(dataUrl) {
+    const bannerDiv = document.getElementById("preview-banner");
+    const img = document.getElementById("preview-banner-img");
+    bannerDiv.style.background = "none";
+    img.src = dataUrl;
+    img.style.display = "block";
+  }
+
+  // ── Preview do card ───────────────────────────────────────────────────────
+  function updatePreview() {
+    const title = document.getElementById("content_name").value.trim() || "Título do conteúdo";
+    document.getElementById("preview-title").textContent = title;
+
+    const typeEl = document.querySelector('input[name="content_type"]:checked');
+    const typeKey = typeEl ? typeEl.value : "";
+    document.getElementById("preview-type").textContent = TYPE_LABELS[typeKey] || typeKey;
+  }
+
+  document.getElementById("content_name").addEventListener("input", updatePreview);
+
+  // ── PDF ───────────────────────────────────────────────────────────────────
+  function onPdfChosen(input) {
+    document.getElementById("pdf-hint").textContent =
+      input.files[0] ? input.files[0].name : "Nenhum arquivo selecionado";
+  }
+
+  // ── Modal ─────────────────────────────────────────────────────────────────
+  function openConfirm() {
+    const title = document.getElementById("content_name").value.trim();
+    const desc  = document.getElementById("description").value.trim();
+    const pdf   = document.getElementById("file").files[0];
+
+    if (!title || title.length < 15) { alert("O título precisa ter pelo menos 15 caracteres."); return; }
+    if (!desc  || desc.length  < 50) { alert("A descrição precisa ter pelo menos 50 caracteres."); return; }
+    if (!pdf)                        { alert("Selecione um arquivo PDF."); return; }
+
+    const typeEl  = document.querySelector('input[name="content_type"]:checked');
+    const typeKey = typeEl ? typeEl.value : "—";
+    const bannerEl = document.querySelector('input[name="banner_id"]:checked');
+    const bannerLabel = bannerEl
+      ? bannerEl.closest("div").querySelector("span")?.textContent?.trim() || bannerEl.value
+      : "—";
+
+    document.getElementById("sum-title").textContent  = title;
+    document.getElementById("sum-type").textContent   = TYPE_LABELS[typeKey] || typeKey;
+    document.getElementById("sum-pdf").textContent    = pdf.name;
+    document.getElementById("sum-banner").textContent =
+      bannerMode === "own" && ownBannerDataUrl ? "Imagem própria" : bannerLabel;
+
+    document.getElementById("confirm-modal").classList.add("active");
+  }
+
+  function closeConfirm() {
+    document.getElementById("confirm-modal").classList.remove("active");
+  }
+
+  function submitForm() {
+    if (bannerMode === "default") {
+      const fi = document.getElementById("banner_file");
+      if (fi) fi.disabled = true;
+    }
+    document.getElementById("publish-form").submit();
+  }
+
+  document.getElementById("confirm-modal").addEventListener("click", function(e) {
+    if (e.target === this) closeConfirm();
+  });
+</script>
 
 </body>
 </html>

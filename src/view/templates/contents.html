@@ -217,25 +217,20 @@
     {% for c in contents %}
     <div class="course">
 
-      <!-- Se tiver imagem associada -->
-      {% if c.image %}
-        <img src="{{ url_for('static', filename=c.image) }}">
-      
-        {% else %}
-  <div style="
-      width: 100%;
-      height: 180px;
-      background: linear-gradient(90deg, #ff7a00, #00c853);
-    ">
-  </div>
-{% endif %}
-      
+      {% if c.banner %}
+        <img src="{{ url_for('contents.get_banner', content_id=c.id) }}"
+        
+             style="width:100%; height:180px; object-fit:cover;">
+      {% else %}
+       <img src="{{ url_for('contents.get_banner_default', banner_id='default_art') }}" 
+        </div>
+      {% endif %}
 
       <div class="course-content">
         <h3>{{ c.title }}</h3>
         <p>Autor: {{ c.author }} • Publicado: {{ c.creation_date }}</p>
 
-        <button onclick="location.href='{{ url_for('content_buss', content_id=c.id) }}'">
+        <button onclick="location.href='{{ url_for('contents.content_buss', content_id=c.id) }}'">
           Ver
         </button>
       </div>
