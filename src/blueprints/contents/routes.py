@@ -126,8 +126,8 @@ def publish_content():
         content_name = request.form.get("content_name", "").strip()
         description = request.form.get("description", "").strip()
         content_type = request.form.get("content_type", "other")
-        banner_file = request.form.get("banner_file")
-        banner_id = request.form.get("banner_id")
+        banner_file = request.files.get("banner_file")   # ← aqui
+        banner_id   = request.form.get("banner_id")
         file = request.files.get("file")
         
 
@@ -190,8 +190,10 @@ def publish_content():
 
     return render_template("publish_content.html", **tpl_ctx)
     
+
 @contents_bp.route("/contents/banner/default/<banner_id>")
 def get_banner_default(banner_id):
+    print("tentando pegar os banners padrão")
     from src.view.configs.statics_configs import DEFAULT_BANNERS
     for b in DEFAULT_BANNERS:
         if b["id"] == banner_id:
@@ -232,7 +234,8 @@ def select_content(content_id):
     return render_template("edit_content.html", content=content)
 
 
-# ── Editar / Excluir conteúdo ───────────────────────────────────@contents_bp.route("/contents/publications/selec_content/edit/<content_id>", methods=["POST", "GET"])
+# ── Editar / Excluir conteúdo ─────────────────────────────────────────────────
+@contents_bp.route("/contents/publications/selec_content/edit/<content_id>", methods=["POST", "GET"])
 def edit_content(content_id):
     if _cred() not in _PUBLISHER_CREDS:
         return redirect(url_for("auth.login"))
@@ -246,7 +249,7 @@ def edit_content(content_id):
     if not content:
         return redirect(url_for("contents.get_publications"))
 
-    from src.config.content_config import CONTENT_TYPES, DEFAULT_BANNERS
+    from src.view.configs.statics_configs import CONTENT_TYPES, DEFAULT_BANNERS
 
     def _update(field, value):
         if _cred() == "professor":
