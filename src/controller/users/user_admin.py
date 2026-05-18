@@ -187,7 +187,7 @@ class Management_Admins(Management_User_Default):
             
             
     @admin_required
-    def get_all_contents(self):
+    def get_all_contents_by_admin(self):
         print("vou tentar fazer conecao")
         conn = self.dataBase()
         print("fiz comeccao")
@@ -236,11 +236,19 @@ class Management_Admins(Management_User_Default):
         try:
             if content:
                 author = select_info(conn, User, "name", authorName)
-                
+                print("publicando conteudo", author)
                 if author:
-                    author = author.get("id")
+                    author = author.get("name")
                     print("meu id", self.userId)
-                    db_task = insert_info(conn, Contents, {"title" : content.get("title"), "desc" : content.get("desc"), "pdf" : content.get("pdf"), "author" : str(author), "publisher_id" : uuid.UUID(self.userId)})
+                    db_task = insert_info(conn, Contents, {
+                    "title":        content.get("title"),
+                    "desc":         content.get("desc"),
+                    "banner":       content.get("banner"),
+                    "content_type": content.get("content_type"),
+                    "pdf":          content.get("pdf"),
+                    "author":       str(author),
+                    "publisher_id": uuid.UUID(self.userId)
+                })
                     return True
             return False
         finally:

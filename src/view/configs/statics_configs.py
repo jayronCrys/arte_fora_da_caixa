@@ -23,11 +23,46 @@ CONTENT_TYPES = [
 DEFAULT_BANNERS = [
     {
         "id": "aurora",
-        "src": "/view/static/Banners/R1.jpg",
+        "src": "src/view/static/Banners/R1.jpg",
+        "name": "R1.jpg",
         "label": "Aurora",
-        "gradient": "linear-gradient(135deg, #ff7a00 0%, #00c853 100%)",
     },
-
+    {
+    "id" :      "matematica",
+    "src":     "src/view/static/Banners/matematica_banner.jpg",
+    "name": "matematica_banner.jpg",
+    "label":  "matematica",
+    },
+       {
+    "id" :      "biologia",
+    "src":     "src/view/static/Banners/biologia_banner.jpg",
+    "name": "biologia_banner.jpg",
+    "label":  "biologia",
+    },
+       {
+    "id" :      "historia",
+    "src":     "src/view/static/Banners/historia_banner.jpg",
+    "name": "historia_banner.jpg",
+    "label":  "historia",
+    },
+       {
+    "id" :      "portugues",
+    "src":     "src/view/static/Banners/portugues_banner.jpg",
+    "name": "portugues_banner.jpg",
+    "label":  "portugues",
+    },
+       {
+    "id" :      "geografia",
+    "src":     "src/view/static/Banners/geografia_banner.jpg",
+    "name": "geografia_banner.jpg", 
+    "label":  "geografia",
+    },
+       {
+    "id" :      "artes",
+    "src":     "src/view/static/Banners/artes_banner.jpg",
+    "name": "artes_banner.jpg",
+    "label":  "artes",
+       },
 ]
 
 # Especificações do banner para orientar o usuário

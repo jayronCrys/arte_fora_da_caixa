@@ -24,7 +24,7 @@ class Contents(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     title = Column(String(255), nullable=False)
     desc = Column(Text)
-    banner = Column(LargeBinary, nullable=True)   # imagem do banner em binário (pode ser None)
+    banner = Column(String(500), nullable=True)  # caminho relativo do arquivo
     content_type = Column(String(50), nullable=True)
     pdf = Column(LargeBinary, nullable=False)  # arquivo PDF em binário
     author = Column(String(100), nullable=False)  # nome público do autor

@@ -106,7 +106,15 @@ class Management_Professors(Management_User_Default):
             if content:               
                 if author:
                     conn = self.dataBase()
-                    db_task = insert_info(conn, Contents, {"title" : content.get("title"), "desc" : content.get("desc"), "pdf" : content.get("pdf"), "author" : str(author), "publisher_id" : uuid.UUID(self.userId)})
+                    db_task = insert_info(conn, Contents, {
+    "title":        content.get("title"),
+    "desc":         content.get("desc"),
+    "banner":       content.get("banner"),
+    "content_type": content.get("content_type"),
+    "pdf":          content.get("pdf"),
+    "author":       str(author),
+    "publisher_id": uuid.UUID(self.userId)
+})
                     return True
             return False
         finally:

@@ -394,6 +394,7 @@
   </div>
 
   <!-- Botões -->
+  <input type="hidden" id="banner-mode-input" name="banner_mode" value="default">
   <div class="row-btns">
     <a href="/user" class="btn btn-muted">Voltar</a>
     <button type="button" class="btn btn-accent" onclick="openConfirm()">
@@ -440,6 +441,7 @@
 
   // Inicializa o preview com o primeiro banner da galeria
   window.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("banner-mode-input").value = "default";
     const first = document.querySelector('input[name="banner_id"]:checked');
     if (first) onDefaultBannerChange(first.value);
     updatePreview();
@@ -447,6 +449,9 @@
 
   // ── Tabs ──────────────────────────────────────────────────────────────────
   function switchTab(tab) {
+    bannerMode = tab;
+    document.getElementById("banner-mode-input").value = tab;  // ← adiciona essa linha
+
     bannerMode = tab;
     document.querySelectorAll(".tab-btn").forEach((b, i) => {
       b.classList.toggle("active", (i === 0 && tab === "default") || (i === 1 && tab === "own"));

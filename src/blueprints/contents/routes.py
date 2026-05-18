@@ -47,6 +47,9 @@ def contents():
     print("tenho que pegar todos os contwudosz")
     try:
         items = g.user.get_all_contents()
+        print(type(items))
+        print("verificando..........")
+        
         return render_template("contents.html", contents=items)
     except Exception as exc:
         return f"Erro ao carregar conteúdos: {exc}", 500
@@ -64,53 +67,51 @@ def get_file(content_id):
         download_name=f"{content.get('title')}.pdf",
     )
     
-from io import BytesIO
-from flask import abort, redirect, url_for, send_file, send_from_directory
-import base64
+import os
+from flask import current_app, send_file, redirect, url_for, abort, g
 
 @contents_bp.route("/contents/banner/<content_id>")
 def get_banner(content_id):
-    print("entra em get_banner")              # agora vai aparecer!
+    print("chegou o id", content_id)
+    print("a raiz dos caminhos é", current_app.root_path)
     content = g.user.get_content_by_id(content_id)
+    content_i = content
+    content_i["pdf"] = "mudei"
+    print("essa é a porra do conteudo", content_i)
     if not content or not content.get("banner"):
+        print("nao tem banner nesse krl")
         abort(404)
 
     banner = content["banner"]
 
-    # Caso 1: bytes puros da imagem
-    if isinstance(banner, bytes):
-        # Se já é imagem, serve direto; se for base64 codificado em bytes, vai quebrar.
-        # Por segurança, podemos tentar decodificar se começar com caracteres de base64.
-        if banner[:4] == b'\xff\xd8\xff\xe0' or banner[:4] == b'\x89PNG':
-            return send_file(BytesIO(banner), mimetype="image/jpeg")
-        else:
-            # Tenta interpretar como base64
-            try:
-                img_data = base64.b64decode(banner)
-                return send_file(BytesIO(img_data), mimetype="image/jpeg")
-            except Exception:
-                abort(404)
+    # Banner padrão: valor curto sem "/" no início, ex: "aurora"
+    # Banner de usuário: caminho relativo, ex: "Banners/by_user/abc123.jpg"
+    if "/" not in banner:
+        # É um ID de banner padrão → delega para get_banner_default
+        return redirect(url_for("contents.get_banner_default", banner_id=banner))
 
-    # Caso 2: string -> pode ser base64 ou ID de banner padrão
-    elif isinstance(banner, str):
-        if banner.startswith("data:image"):
-            # data URI
-            img_data = base64.b64decode(banner.split(",")[1])
-            return send_file(BytesIO(img_data), mimetype="image/jpeg")
-        elif len(banner) > 200:  # provavelmente base64
-            try:
-                img_data = base64.b64decode(banner)
-                return send_file(BytesIO(img_data), mimetype="image/jpeg")
-            except Exception:
-                abort(404)
-        else:
-            # ID curto -> redireciona para banner padrão
-            return redirect(url_for("contents.get_banner_default", banner_id=banner))
+    # É caminho de arquivo do usuário → serve direto
+    # STATIC_DIR deve apontar para a pasta static do projeto
+    print("a raiz dos caminhos é", current_app.root_path)
+    static_dir = os.path.join(current_app.root_path, "view/static")
+    full_path  = os.path.join(static_dir, banner)   # ex: .../static/Banners/by_user/abc123.jpg
 
-    abort(404)
+    print(f"[get_banner] Servindo: {full_path}, existe: {os.path.exists(full_path)}")
+
+    if not os.path.exists(full_path):
+        abort(404)
+
+    return send_file(full_path, mimetype="image/jpeg")
 
 
 # ── Publicar ──────────────────────────────────────────────────────────────────
+
+import os
+import uuid
+
+# No topo do arquivo, defina o diretório base dos banners de usuário.
+# Ajuste BANNERS_BASE_DIR para o caminho absoluto correto do seu projeto.
+BANNERS_BASE_DIR = "/storage/emulated/0/arte_fora_da_caixa/src/view/static/Banners/by_user"
 
 @contents_bp.route("/publish_content", methods=["POST", "GET"])
 def publish_content():
@@ -124,55 +125,56 @@ def publish_content():
             return redirect(url_for("auth.login"))
 
         content_name = request.form.get("content_name", "").strip()
-        description = request.form.get("description", "").strip()
+        description     = request.form.get("description", "").strip()
         content_type = request.form.get("content_type", "other")
-        banner_file = request.files.get("banner_file")   # ← aqui
-        banner_id   = request.form.get("banner_id")
-        file = request.files.get("file")
-        
+        banner_id       = request.form.get("banner_id")    
+        banner_file     = request.files.get("banner_file")
+        file                    = request.files.get("file")
 
         if len(content_name) < 15:
-            return render_template("publish_content.html", error="Nome de conteúdo muito curto")
+            return render_template("publish_content.html", error="Nome de conteúdo muito curto", **tpl_ctx)
         if len(description) < 50:
-            return render_template("publish_content.html", error="Descrição de conteúdo muito curta")
+            return render_template("publish_content.html", error="Descrição de conteúdo muito curta", **tpl_ctx)
         if not file:
-            return render_template("publish_content.html", error="Nenhum documento selecionado")
-        if not (banner_file or banner_id):
-            return render_template("publish_content.html", error="Nenhum banner selecionado")
-            
+            return render_template("publish_content.html", error="Nenhum documento selecionado", **tpl_ctx)
+        if not banner_file and not banner_id:
+            return render_template("publish_content.html", error="Nenhum banner selecionado", **tpl_ctx)
+
+        # ── PDF ──────────────────────────────────────────────────────────────
         pdf_bytes = None
         if file and file.filename.lower().endswith(".pdf"):
             pdf_bytes = file.read()
-            logging.warning("Pdf Lido")
-        
-        banner_bytes = None
-        if banner_file or banner_id:
-           
-            banner_bytes = banner_file.read() if banner_file else banner_id # salvar no banco como bytes (coluna banner)
-            logging.warning("Banner Lido")
-            banner_id    = None
-            
-        if not (pdf_bytes and description and content_name and banner_bytes):
-            return render_template("publish_content.html", error="Formato inválido para documento")
 
-        content = { 
-        "title": content_name, 
-        "desc": description,
-        "banner": banner_bytes,
-        "content_type": content_type,
-        "pdf": pdf_bytes 
-        }
-        
+        # ── Banner ───────────────────────────────────────────────────────────
+        banner_path = None
+        if banner_id:
+            banner_path = banner_id
+        if banner_file and banner_file.filename:
+            banners_dir = os.path.join(current_app.root_path, "view", "static", "Banners", "by_user")
+            os.makedirs(banners_dir, exist_ok=True)
+            ext       = banner_file.filename.rsplit(".", 1)[-1].lower()
+            filename  = f"{uuid.uuid4().hex}.{ext}"
+            full_path = os.path.join(banners_dir, filename)
+            banner_file.save(full_path)
+            banner_path = f"Banners/by_user/{filename}"
+    
+        if not (pdf_bytes and description and content_name and banner_path):
+            return render_template("publish_content.html", error="Formato inválido para documento", **tpl_ctx)
         upload = False
-        author = False       
-            
-            
+        author = False
+        content = {
+        "title":        content_name,
+        "desc":         description,
+        "banner":       banner_path,
+        "content_type": content_type,
+        "pdf":          pdf_bytes
+        }
         if _cred() == "admin":
-            author_id = request.form.get("author")
-            author_obj = g.user.get_user_by_admin(author_id)
+            author_id    = request.form.get("author")
+            author_obj  = g.user.get_user_by_admin(author_id)
             if author_obj and author_obj.get("name"):
-                author = author_obj.get("name")
-                upload = g.user.publish_content_by_admin(content, author)
+                author      = author_obj.get("name")
+                upload     = g.user.publish_content_by_admin(content, author)
 
         elif _cred() == "professor":
             author = g.user.get_user_name()
@@ -182,27 +184,35 @@ def publish_content():
                 author = False
 
         if not author:
-            return render_template("publish_content.html", error="Nome de autor não existe")
+            return render_template("publish_content.html", error="Nome de autor não existe", **tpl_ctx)
         if not upload:
-            return render_template("publish_content.html", error="Não foi possível fazer upload do conteúdo, tente novamente.")
-
+            return render_template("publish_content.html", error="Não foi possível fazer upload do conteúdo, tente novamente.", **tpl_ctx)
+        
         return render_template("exito.html")
 
     return render_template("publish_content.html", **tpl_ctx)
+
     
+import os
+from flask import current_app
 
 @contents_bp.route("/contents/banner/default/<banner_id>")
 def get_banner_default(banner_id):
-    print("tentando pegar os banners padrão")
-    from src.view.configs.statics_configs import DEFAULT_BANNERS
+    print("o id é ", banner_id)
+    print("o raiz é: ", current_app.root_path)
+    """if banner_id:
+        return redirect(url_for("contents.get_banner", content_id = banner_id))"""
     for b in DEFAULT_BANNERS:
+        print("o B é", banner_id, "o default é", b)
         if b["id"] == banner_id:
-            # ajuste o caminho onde os arquivos ficam armazenados
-            
-
-            return send_from_directory("static/Banners", banner_id, mimetype="image/jpeg")
+            # monta o caminho absoluto a partir da raiz do app
+            path = os.path.join(current_app.root_path,"view", "static", "Banners", b["name"].split("/")[-1])
+            print(f"[get_banner_default] Servindo: {path}, existe: {os.path.exists(path)}")
+            if not os.path.exists(path):
+                abort(404)
+            return send_file(path, mimetype="image/jpg")
     abort(404)
-
+    
 # ── Minhas publicações ────────────────────────────────────────────────────────
 
 @contents_bp.route("/contents/publications", methods=["GET"])
@@ -234,7 +244,8 @@ def select_content(content_id):
     return render_template("edit_content.html", content=content)
 
 
-# ── Editar / Excluir conteúdo ─────────────────────────────────────────────────
+# ── Editar / Excluir conteúdo ─────────────────────────────
+
 @contents_bp.route("/contents/publications/selec_content/edit/<content_id>", methods=["POST", "GET"])
 def edit_content(content_id):
     if _cred() not in _PUBLISHER_CREDS:

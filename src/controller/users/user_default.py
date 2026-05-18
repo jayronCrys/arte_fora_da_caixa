@@ -364,24 +364,47 @@ class Management_User_Default(Login_Account):
             
     @Login_Account.is_loged   
     def get_content_by_id(self, contentId):
+        print(f"[get_content_by_id] contentId recebido: '{contentId}', tipo: {type(contentId)}")
         conn = self.dataBase()
-            
-        content = select_info(conn, Contents, "id",UUID(contentId), None)
+        try:
+            content = select_info(
+                conn,
+                Contents,
+                "id",
+               UUID(contentId),
+                ["id", "title", "desc", "banner", "content_type", "author", "creation_date", "publisher_id", "pdf"]
+            )
+            return content  # dict com banner como bytes/None, ou False se não encontrado
+        finally:
+            conn.close()
         
-        conteudo = db.session.query(Contents).first()
-        print(conteudo.banner)   # None? bytes?
-        conn.close()
-        return content
         
     @Login_Account.is_loged
     def get_all_contents(self):
-        print("Retornando todos os coteudos")
         conn = self.dataBase()
-        conteudo = db.session.query(Contents).first()
-        print(conteudo.banner)   # None? bytes?
-        print("Retorno com sucesso")
-        all_contents = conn.query(Contents).all()
-        conn.close()
-        return all_contents                    
+        print("entrando")
+        try:
+            print("entrei")
+            all_contents = conn.query(Contents).all()
+            # converte para dict ANTES de fechar a sessão
+            result = []
+            for c in all_contents:
+                
+                result.append({
+                    "id":            str(c.id),
+                    "title":         c.title,
+                    "desc":          c.desc,
+                    "banner":        c.banner,   # bytes ou None
+                    "content_type":  c.content_type,
+                    "author":        c.author,
+                    "creation_date": c.creation_date,
+                    "publisher_id":  str(c.publisher_id),
+                })
+            print("tento", result)
+            
+            return result
+        finally:
+            print("a buceta da erro>>>>>>>>>>>>>>>")
+            conn.close()      
         
         

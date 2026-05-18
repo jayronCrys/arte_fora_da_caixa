@@ -215,22 +215,26 @@
 
   {% if contents %}
     {% for c in contents %}
-<div class="course">
-    {% if c.banner %}
-        <img src="{{ url_for('contents.get_banner', content_id=c.id) }}" style="width:100%; height:180px; object-fit:cover;">
+    <div class="course">
+
+      {% if c["banner"] %}
+  <img src="{{ url_for('contents.get_banner', content_id=c['id']) }}"
+       style="width:100%; height:180px; object-fit:cover;">
     {% else %}
-        <img src="{{ url_for('contents.get_banner_default', banner_id='default_art') }}" style="width:100%; height:180px; object-fit:cover;">
+      <div style="width:100%; height:180px; background: linear-gradient(90deg,#ff7a00,#00c853);"></div>
     {% endif %}
 
-    <div class="course-content">
+      <div class="course-content">
         <h3>{{ c.title }}</h3>
         <p>Autor: {{ c.author }} • Publicado: {{ c.creation_date }}</p>
 
-        <button onclick="location.href='{{ url_for('contents.content_buss', content_id=c.id) }}'">
-    Ver
-</button>
+        <button onclick="location.href='{{ url_for('contents.content_buss', content_id=c['id']) }}'">
+          Ver
+        </button>
+      </div>
+
     </div>
-</div> {% endfor %}
+    {% endfor %}
   {% else %}
     <p style="text-align:center; font-size:18px; color:#555; grid-column: 1 / -1;">
       Nenhum conteúdo publicado.
