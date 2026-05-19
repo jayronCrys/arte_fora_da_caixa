@@ -1,119 +1,401 @@
-</html><!-- edit_content.html --><!DOCTYPE html><html lang="pt-BR">
+<!DOCTYPE html>
+<html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <title>Editar Conteúdo</title>
-    <style>
-        body {
-            background: #f3f4f6;
-            font-family: "Segoe UI", Roboto, sans-serif;
-            margin: 0;
-            padding: 0;
-        }.container {
-        max-width: 650px;
-        margin: 50px auto;
-        background: white;
-        padding: 40px;
-        border-radius: 18px;
-        box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+  <meta charset="UTF-8">
+  <title>Editar Conteúdo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --orange: #ff7a00;
+      --green:  #00c853;
+      --red:    #ff3b30;
+      --bg:     #f5f5f7;
+      --card:   #ffffff;
+      --text:   #111111;
+      --muted:  #666666;
+      --border: #e2e8f0;
+      --input-bg: #f8fafc;
     }
 
-    h3 {
-        text-align: center;
-        margin-bottom: 25px;
-        font-size: 22px;
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "DM Sans", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
 
-    label {
-        font-weight: 600;
-        display: block;
-        margin-bottom: 6px;
+    /* ── Header ── */
+    header {
+      background: #fff;
+      border-bottom: 1px solid var(--border);
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
     }
 
-    input, textarea {
-        width: 100%;
-        padding: 12px;
-        border-radius: 10px;
-        border: 1px solid #ccc;
-        background: #fafafa;
-        margin-bottom: 18px;
-        font-size: 14px;
-    }
-
-    textarea {
-        resize: vertical;
-        min-height: 80px;
-    }
-
-    .btn {
-        width: 100%;
-        padding: 12px 0;
-        border: none;
-        border-radius: 10px;
-        background: linear-gradient(90deg, #ff7a00, #00c853);
-        color: white;
-        font-weight: bold;
-        font-size: 15px;
-        cursor: pointer;
-        margin-top: 10px;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-        transition: 0.2s ease;
-    }
-
-    .btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 5px 14px rgba(0,0,0,0.20);
+    .logo {
+      font-family: "Plus Jakarta Sans", sans-serif;
+      font-size: 18px;
+      font-weight: 800;
+      background: linear-gradient(90deg, var(--orange), var(--green));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -0.3px;
     }
 
     .back-btn {
-        display: inline-block;
-        width: 100%;
-        padding: 12px 0;
-        border-radius: 10px;
-        text-decoration: none;
-        font-weight: bold;
-        font-size: 15px;
-        background: #00a651;
-        color: white;
-        text-align: center;
-        margin-top: 15px;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+      background: linear-gradient(90deg, var(--orange), var(--green));
+      color: white;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: opacity .15s, transform 0.1s;
+    }
+    .back-btn:hover { opacity: .85; }
+    .back-btn:active { transform: scale(0.97); }
+
+    /* ── Hero banner do conteúdo ── */
+    .content-hero {
+      height: 180px;
+      background: linear-gradient(135deg, var(--orange), var(--green));
+      position: relative;
+      overflow: hidden;
+    }
+    .content-hero img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+    }
+    .content-hero::after {
+      content: "";
+      position: absolute; inset: 0;
+      background: linear-gradient(to bottom, transparent 20%, rgba(0,0,0,0.65));
+    }
+    .hero-info {
+      position: absolute;
+      bottom: 18px; left: 20px; right: 20px;
+      z-index: 1;
+      min-width: 0;
+    }
+    .hero-type {
+      display: inline-block;
+      background: rgba(255,255,255,0.22);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.3);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      margin-bottom: 8px;
+      font-family: "Plus Jakarta Sans", sans-serif;
+    }
+    .hero-title {
+      font-family: "Plus Jakarta Sans", sans-serif;
+      font-size: 24px;
+      font-weight: 800;
+      color: #fff;
+      line-height: 1.2;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.35);
+      overflow-wrap: break-word;
+      word-break: break-word;
+    }
+    .hero-date {
+      font-size: 12px;
+      color: rgba(255,255,255,0.8);
+      margin-top: 5px;
+      font-weight: 500;
     }
 
-    .back-btn:hover {
-        background: #008d45;
-        transform: translateY(-2px);
+    /* ── Page ── */
+    .page {
+      max-width: 650px;
+      margin: 0 auto;
+      padding: 30px 16px 80px;
     }
 
-    .error {
-        color: #c0392b;
-        font-weight: bold;
-        text-align: center;
-        margin-bottom: 18px;
+    /* ── Seção ── */
+    .section {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 20px;
+      border: 1px solid var(--border);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
     }
-</style>
 
+    .section-title {
+      font-family: "Plus Jakarta Sans", sans-serif;
+      font-size: 13px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      color: #94a3b8;
+      margin-bottom: 20px;
+    }
+
+    /* ── Campo ── */
+    .field { margin-bottom: 20px; }
+    .field:last-child { margin-bottom: 0; }
+
+    .field label {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      color: #475569;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      margin-bottom: 8px;
+    }
+
+    .current-value {
+      font-size: 13px;
+      color: var(--muted);
+      background: #f1f5f9;
+      border-radius: 10px;
+      padding: 10px 14px;
+      margin-bottom: 10px;
+      line-height: 1.5;
+      border: 1px solid #e2e8f0;
+      overflow-wrap: break-word;
+      word-break: break-word;
+    }
+
+    input[type="text"],
+    textarea,
+    select {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      background: var(--input-bg);
+      font-family: "DM Sans", sans-serif;
+      font-size: 14px;
+      color: var(--text);
+      transition: border-color .18s, background .18s, box-shadow .18s;
+      outline: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+    }
+
+    select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23475569'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 16px center;
+      background-size: 16px;
+      cursor: pointer;
+    }
+
+    input[type="text"]:focus,
+    textarea:focus,
+    select:focus {
+      border-color: var(--orange);
+      background: #fff;
+      box-shadow: 0 0 0 4px rgba(255, 122, 0, 0.08);
+    }
+
+    textarea { resize: vertical; min-height: 100px; line-height: 1.5; }
+
+    /* Áreas de Upload */
+    .upload-area {
+      border: 2px dashed #cbd5e1;
+      border-radius: 12px;
+      padding: 24px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .18s, background .18s;
+      background: var(--input-bg);
+    }
+    .upload-area:hover { border-color: var(--orange); background: rgba(255,122,0,0.02); }
+    .upload-area input { display: none; }
+    .upload-icon { font-size: 30px; margin-bottom: 6px; }
+    .upload-text { font-size: 13px; color: #334155; font-weight: 500; }
+    .upload-hint { font-size: 11px; color: #94a3b8; margin-top: 4px; }
+    
+    .file-status {
+      font-size: 12px;
+      color: var(--green);
+      font-weight: 600;
+      margin-top: 8px;
+      display: none;
+    }
+
+    /* ── Erro ── */
+    .error-box {
+      background: #fef2f2;
+      border: 1px solid #fca5a5;
+      border-radius: 12px;
+      padding: 14px 18px;
+      color: var(--red);
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* ── Botões ── */
+    .btn-save {
+      width: 100%;
+      padding: 15px;
+      border: none;
+      border-radius: 14px;
+      background: linear-gradient(90deg, var(--orange), var(--green));
+      color: white;
+      font-family: "Plus Jakarta Sans", sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity .15s, transform .1s;
+      margin-bottom: 12px;
+    }
+    .btn-save:hover  { opacity: .92; }
+    .btn-save:active { transform: scale(.98); }
+
+    .btn-back {
+      display: block;
+      width: 100%;
+      padding: 14px;
+      border-radius: 14px;
+      background: #e2e8f0;
+      color: #475569;
+      font-family: "DM Sans", sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      text-align: center;
+      text-decoration: none;
+      transition: background .15s, color .15s;
+    }
+    .btn-back:hover { background: #cbd5e1; color: #1e293b; }
+  </style>
 </head>
 <body>
-<div class="container">
-    <h3>Editando conteúdo: {{ content.title }}</h3>{% if error %}
-    <div class="error">{{ error }}</div>
-{% endif %}
 
-<form method="POST"
-      enctype="multipart/form-data"
-      action="{{ url_for('contents.edit_content', content_id=content.id) }}">
-    <label>Novo título</label>
-    <input name="new_title" type="text" placeholder="Título atualizado...">
+<header>
+  <span class="logo">Arte Fora da Caixa</span>
+  <a href="/contents/publications" class="back-btn">← Voltar</a>
+</header>
 
-    <label>Nova descrição</label>
-    <textarea name="new_desc"></textarea>
-
-    <label>Novo PDF</label>
-    <input type="file" name="file" accept="application/pdf">
-
-    <button class="btn" type="submit">Salvar alterações</button>
-    <a href="/contents/publications" class="back-btn">Voltar</a>
-</form>
-
+<div class="content-hero">
+  {% if content.banner %}
+    <img src="{{ url_for('contents.get_banner', content_id=content.id) }}" alt="">
+  {% endif %}
+  <div class="hero-info">
+    {% if content.content_type %}
+      <div class="hero-type">{{ content.content_type }}</div>
+    {% endif %}
+    <div class="hero-title">{{ content.title }}</div>
+    {% if content.creation_date %}
+      <div class="hero-date">
+        Publicado em {{ content.creation_date.strftime('%d/%m/%Y') if content.creation_date is not string else content.creation_date[:10] }}
+      </div>
+    {% endif %}
+  </div>
 </div>
+
+<div class="page">
+
+  {% if error %}
+    <div class="error-box">⚠️ {{ error }}</div>
+  {% endif %}
+
+  <form method="POST" enctype="multipart/form-data"
+        action="{{ url_for('contents.edit_content', content_id=content.id) }}">
+
+    <div class="section">
+      <div class="section-title">Informações Básicas</div>
+
+      <div class="field">
+        <label>Título da Publicação</label>
+        <div class="current-value">Atual: {{ content.title }}</div>
+        <input type="text" name="new_title" placeholder="Novo título...">
+      </div>
+
+      <div class="field">
+        <label>Descrição</label>
+        <div class="current-value">Atual: {{ content.desc }}</div>
+        <textarea name="new_desc" placeholder="Nova descrição..."></textarea>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Parâmetros e Mídia</div>
+
+      <div class="field">
+        <label>Tipo de Conteúdo</label>
+        <select name="content_type">
+          <option value="" disabled selected>Selecione um tipo...</option>
+          {% for v, label, _ in content_types %}
+            <option value="{{ v }}" {% if content.content_type == v %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Alterar Capa (Banner)</label>
+        <div class="upload-area" onclick="document.getElementById('banner-input').click()">
+          <div class="upload-icon">🖼️</div>
+          <div class="upload-text">Clique para substituir a imagem de capa</div>
+          <div class="upload-hint">Formatos de imagem suportados</div>
+          <div id="banner-name" class="file-status"></div>
+          <input type="file" id="banner-input" name="banner_file" accept="image/*" onchange="onBannerChosen(this)">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Documento PDF</label>
+        <div class="upload-area" onclick="document.getElementById('pdf-input').click()">
+          <div class="upload-icon">📄</div>
+          <div class="upload-text">Clique para substituir o PDF atual</div>
+          <div class="upload-hint">Somente arquivos .pdf</div>
+          <div id="pdf-name" class="file-status"></div>
+          <input type="file" id="pdf-input" name="file" accept="application/pdf" onchange="onPdfChosen(this)">
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-save" type="submit">Salvar alterações</button>
+    <a href="/contents/publications" class="btn-back">Cancelar</a>
+
+  </form>
+</div>
+
+<script>
+  function onBannerChosen(input) {
+    const label = document.getElementById("banner-name");
+    if (input.files && input.files[0]) {
+      label.textContent = "✓ Capa selecionada: " + input.files[0].name;
+      label.style.display = "block";
+      input.closest(".upload-area").style.borderColor = "var(--green)";
+    }
+  }
+
+  function onPdfChosen(input) {
+    const label = document.getElementById("pdf-name");
+    if (input.files && input.files[0]) {
+      label.textContent = "✓ PDF selecionado: " + input.files[0].name;
+      label.style.display = "block";
+      input.closest(".upload-area").style.borderColor = "var(--green)";
+    }
+  }
+</script>
+
 </body>
+</html>

@@ -305,13 +305,41 @@ def edit_content(content_id):
             return _render_edit("Erro ao atualizar tipo de conteúdo")
 
     # ── Banner ────────────────────────────────────────────────────────────────
+   
     new_banner_file = request.files.get("banner_file")
     if new_banner_file and new_banner_file.filename:
-        banner_bytes = new_banner_file.read()
-        if banner_bytes:
-            action = _update("banner", banner_bytes)
+        import os
+        from uuid import uuid4
+        from werkzeug.utils import secure_filename
+
+        # 1. Define e cria a pasta de destino caso ela não exista
+        # Caminho absoluto: .../view/static/Banners/by_user
+        upload_dir = os.path.join(current_app.root_path, "view/static/Banners/by_user")
+        os.makedirs(upload_dir, exist_ok=True)
+
+        # 2. Gera um nome único mantendo a extensão original (ex: d3b07384d113.jpg)
+        _, ext = os.path.splitext(new_banner_file.filename)
+        filename = f"{uuid4().hex}{ext.lower()}"
+
+        # Caminho completo onde o arquivo físico vai ser salvo
+        full_path = os.path.join(upload_dir, filename)
+
+        try:
+            # 3. Salva o arquivo fisicamente no servidor
+            new_banner_file.save(full_path)
+            
+            # 4. Define o caminho relativo idêntico ao formato que o seu `get_banner` espera:
+            # Ex: "Banners/by_user/d3b07384d113.jpg"
+            relative_path = f"Banners/by_user/{filename}"
+
+            # 5. Salva essa string com o caminho no banco de dados
+            action = _update("banner", relative_path)
             if not action:
-                return _render_edit("Erro ao salvar banner")
+                return _render_edit("Erro ao atualizar o caminho do banner")
+
+        except Exception as e:
+            print(f"Erro ao salvar arquivo de banner: {e}")
+            return _render_edit("Erro interno ao processar o upload do banner")
 
     # ── PDF ───────────────────────────────────────────────────────────────────
     new_file = request.files.get("file")
