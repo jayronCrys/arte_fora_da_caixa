@@ -163,19 +163,6 @@
       margin-bottom: 8px;
     }
 
-    .current-value {
-      font-size: 13px;
-      color: var(--muted);
-      background: #f1f5f9;
-      border-radius: 10px;
-      padding: 10px 14px;
-      margin-bottom: 10px;
-      line-height: 1.5;
-      border: 1px solid #e2e8f0;
-      overflow-wrap: break-word;
-      word-break: break-word;
-    }
-
     input[type="text"],
     textarea,
     select {
@@ -210,7 +197,13 @@
       box-shadow: 0 0 0 4px rgba(255, 122, 0, 0.08);
     }
 
-    textarea { resize: vertical; min-height: 100px; line-height: 1.5; }
+    textarea { 
+      resize: vertical; 
+      min-height: 120px; 
+      max-height: 220px; 
+      overflow-y: auto; 
+      line-height: 1.5; 
+    }
 
     /* Áreas de Upload */
     .upload-area {
@@ -236,6 +229,51 @@
       display: none;
     }
 
+    /* ── Abas de Banner ── */
+    .banner-tabs {
+      display: flex; gap: 8px; margin-bottom: 15px;
+    }
+    .tab-btn {
+      flex: 1; padding: 10px; border-radius: 10px;
+      border: 1.5px solid var(--border); background: #f8fafc;
+      font-family: "DM Sans", sans-serif;
+      font-size: 13px; font-weight: 600; cursor: pointer;
+      transition: all .18s; color: #475569;
+    }
+    .tab-btn.active {
+      border-color: var(--orange);
+      background: #fff5ee; color: var(--orange);
+    }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── Galeria de Banners Padrão ── */
+    .banner-gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 10px;
+    }
+    .banner-opt { display: none; }
+    .banner-opt-label {
+      display: block; cursor: pointer;
+      border: 2px solid transparent; border-radius: 10px;
+      overflow: hidden; transition: border-color .18s;
+    }
+    .banner-opt:checked + .banner-opt-label {
+      border-color: var(--orange);
+      box-shadow: 0 0 0 3px rgba(255,122,0,.15);
+    }
+    .banner-opt-label img {
+      width: 100%; height: 65px;
+      object-fit: cover; display: block;
+      border-radius: 8px 8px 0 0;
+    }
+    .banner-opt-label span {
+      display: block; text-align: center;
+      font-size: 11px; padding: 6px 4px; color: #475569;
+      background: #f8fafc; font-weight: 500;
+    }
+
     /* ── Erro ── */
     .error-box {
       background: #fef2f2;
@@ -251,7 +289,7 @@
       gap: 10px;
     }
 
-    /* ── Botões ── */
+    /* ── GERENCIAMENTO PADRÃO DE BOTÕES ── */
     .btn-save {
       width: 100%;
       padding: 15px;
@@ -269,10 +307,32 @@
     .btn-save:hover  { opacity: .92; }
     .btn-save:active { transform: scale(.98); }
 
+    /* Novo Botão de Excluir Padronizado */
+    .delete-btn {
+      width: 100%;
+      padding: 15px;
+      border: none;
+      border-radius: 14px;
+      background: linear-gradient(90deg, #e63946, #ff7a00);
+      color: #ffffff;
+      font-family: "Plus Jakarta Sans", sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(230, 57, 70, 0.15);
+      transition: opacity .15s, transform .1s, box-shadow .2s;
+      margin-bottom: 12px;
+    }
+    .delete-btn:hover { 
+      opacity: .92;
+      box-shadow: 0 6px 16px rgba(230, 57, 70, 0.3);
+    }
+    .delete-btn:active { transform: scale(.98); }
+
     .btn-back {
       display: block;
       width: 100%;
-      padding: 14px;
+      padding: 15px;
       border-radius: 14px;
       background: #e2e8f0;
       color: #475569;
@@ -281,9 +341,10 @@
       font-weight: 600;
       text-align: center;
       text-decoration: none;
-      transition: background .15s, color .15s;
+      transition: background .15s, color .15s, transform .1s;
     }
     .btn-back:hover { background: #cbd5e1; color: #1e293b; }
+    .btn-back:active { transform: scale(.98); }
   </style>
 </head>
 <body>
@@ -292,16 +353,18 @@
   <span class="logo">Arte Fora da Caixa</span>
   <a href="/contents/publications" class="back-btn">← Voltar</a>
 </header>
-
+ 
 <div class="content-hero">
   {% if content.banner %}
-    <img src="{{ url_for('contents.get_banner', content_id=content.id) }}" alt="">
+    <img id="hero-img" src="{{ url_for('contents.get_banner', content_id=content.id) }}" alt="Banner">
+  {% else %}
+    <img id="hero-img" src="" alt="Banner" style="display: none;">
   {% endif %}
   <div class="hero-info">
     {% if content.content_type %}
       <div class="hero-type">{{ content.content_type }}</div>
     {% endif %}
-    <div class="hero-title">{{ content.title }}</div>
+    <div id="hero-title-preview" class="hero-title">{{ content.title }}</div>
     {% if content.creation_date %}
       <div class="hero-date">
         Publicado em {{ content.creation_date.strftime('%d/%m/%Y') if content.creation_date is not string else content.creation_date[:10] }}
@@ -316,7 +379,7 @@
     <div class="error-box">⚠️ {{ error }}</div>
   {% endif %}
 
-  <form method="POST" enctype="multipart/form-data"
+  <form method="POST" enctype="multipart/form-data" id="edit-form"
         action="{{ url_for('contents.edit_content', content_id=content.id) }}">
 
     <div class="section">
@@ -324,14 +387,12 @@
 
       <div class="field">
         <label>Título da Publicação</label>
-        <div class="current-value">Atual: {{ content.title }}</div>
-        <input type="text" name="new_title" placeholder="Novo título...">
+        <input type="text" id="input-title" name="new_title" value="{{ content.title }}" placeholder="Digite o título..." oninput="updateHeroTitle(this.value)">
       </div>
 
       <div class="field">
         <label>Descrição</label>
-        <div class="current-value">Atual: {{ content.desc }}</div>
-        <textarea name="new_desc" placeholder="Nova descrição..."></textarea>
+        <textarea name="new_desc" placeholder="Digite a descrição...">{{ content.desc }}</textarea>
       </div>
     </div>
 
@@ -349,17 +410,6 @@
       </div>
 
       <div class="field">
-        <label>Alterar Capa (Banner)</label>
-        <div class="upload-area" onclick="document.getElementById('banner-input').click()">
-          <div class="upload-icon">🖼️</div>
-          <div class="upload-text">Clique para substituir a imagem de capa</div>
-          <div class="upload-hint">Formatos de imagem suportados</div>
-          <div id="banner-name" class="file-status"></div>
-          <input type="file" id="banner-input" name="banner_file" accept="image/*" onchange="onBannerChosen(this)">
-        </div>
-      </div>
-
-      <div class="field">
         <label>Documento PDF</label>
         <div class="upload-area" onclick="document.getElementById('pdf-input').click()">
           <div class="upload-icon">📄</div>
@@ -369,22 +419,134 @@
           <input type="file" id="pdf-input" name="file" accept="application/pdf" onchange="onPdfChosen(this)">
         </div>
       </div>
+
+      <div class="field">
+        <label>Alterar Capa (Banner)</label>
+        
+        <div class="banner-tabs">
+          <button type="button" class="tab-btn active" id="btn-tab-default" onclick="switchTab('default')">
+            🎨 Banners do site
+          </button>
+          <button type="button" class="tab-btn" id="btn-tab-own" onclick="switchTab('own')">
+            📁 Enviar meu banner
+          </button>
+        </div>
+
+        <div class="tab-panel active" id="tab-default">
+          <div class="banner-gallery">
+            {% for b in default_banners %}
+            <div>
+              <input class="banner-opt" type="radio" name="new_banner_id"
+                     id="banner-{{ b.id }}" value="{{ b.id }}"
+                     {% if content.banner == b.id %}checked{% endif %}
+                     onchange="onDefaultBannerChange('{{ b.id }}')">
+              <label class="banner-opt-label" for="banner-{{ b.id }}">
+                <img src="{{ url_for('contents.get_banner_default', banner_id=b.id) }}" alt="{{ b.label }}">
+                <span>{{ b.label }}</span>
+              </label>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="tab-panel" id="tab-own">
+          <div class="upload-area" onclick="document.getElementById('banner-input').click()">
+            <div class="upload-icon">🖼️</div>
+            <div class="upload-text">Clique para carregar uma imagem do seu dispositivo</div>
+            <div class="upload-hint">Formatos: JPG, PNG, WEBP (Máx. 2 MB)</div>
+            <div id="banner-name" class="file-status"></div>
+            <input type="file" id="banner-input" name="new_banner_file" accept="image/jpeg,image/png,image/webp" onchange="onBannerChosen(this)">
+          </div>
+        </div>
+
+        <input type="hidden" id="banner-mode-input" name="banner_mode" value="default">
+      </div>
+
     </div>
 
     <button class="btn-save" type="submit">Salvar alterações</button>
-    <a href="/contents/publications" class="btn-back">Cancelar</a>
 
   </form>
+
+  <form method="POST" action="/delete_content/{{ content.id }}" style="margin: 0;" onsubmit="return confirm('Tem certeza que deseja excluir esta publicação?');">
+    <button type="submit" class="delete-btn">Excluir Publicação</button>
+  </form>
+
+  <a href="/contents/publications" class="btn-back">Cancelar</a>
 </div>
 
 <script>
+  const BANNER_URLS = {
+    {% for b in default_banners %}
+    "{{ b.id }}": "{{ url_for('contents.get_banner_default', banner_id=b.id) }}",
+    {% endfor %}
+  };
+
+  let bannerMode = "default";
+
+  function updateHeroTitle(text) {
+    const preview = document.getElementById("hero-title-preview");
+    if (preview) {
+      preview.textContent = text.trim() === "" ? "Sem título" : text;
+    }
+  }
+
+  function switchTab(tab) {
+    bannerMode = tab;
+    document.getElementById("banner-mode-input").value = tab;
+
+    document.getElementById("btn-tab-default").classList.toggle("active", tab === "default");
+    document.getElementById("btn-tab-own").classList.toggle("active", tab === "own");
+    
+    document.getElementById("tab-default").classList.toggle("active", tab === "default");
+    document.getElementById("tab-own").classList.toggle("active", tab === "own");
+
+    if (tab === "default") {
+      const checked = document.querySelector('input[name="new_banner_id"]:checked');
+      if (checked) onDefaultBannerChange(checked.value);
+    } else {
+      const fileInput = document.getElementById("banner-input");
+      if (fileInput.files && fileInput.files[0]) {
+        applyFilePreview(fileInput.files[0]);
+      }
+    }
+  }
+
+  function onDefaultBannerChange(bannerId) {
+    const url = BANNER_URLS[bannerId];
+    const heroImg = document.getElementById("hero-img");
+    if (url && heroImg) {
+      heroImg.src = url;
+      heroImg.style.display = "block";
+    }
+  }
+
   function onBannerChosen(input) {
     const label = document.getElementById("banner-name");
     if (input.files && input.files[0]) {
-      label.textContent = "✓ Capa selecionada: " + input.files[0].name;
+      const file = input.files[0];
+      if (file.size > 2 * 1024 * 1024) {
+        alert("A imagem deve ter no máximo 2 MB.");
+        input.value = "";
+        return;
+      }
+      label.textContent = "✓ Imagem selecionada: " + file.name;
       label.style.display = "block";
       input.closest(".upload-area").style.borderColor = "var(--green)";
+      applyFilePreview(file);
     }
+  }
+
+  function applyFilePreview(file) {
+    const reader = new FileReader();
+    const heroImg = document.getElementById("hero-img");
+    reader.onload = e => {
+      if (heroImg) {
+        heroImg.src = e.target.result;
+        heroImg.style.display = "block";
+      }
+    };
+    reader.readAsDataURL(file);
   }
 
   function onPdfChosen(input) {

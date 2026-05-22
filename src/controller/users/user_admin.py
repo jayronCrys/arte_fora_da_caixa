@@ -14,7 +14,7 @@ class Management_Admins(Management_User_Default):
     def __init__(self, Account, database=database):
         super().__init__(Account, database)
         self.validFields = ["name", "email", "password", "cred"]
-        self.contentValidFields = ["desc", "title", "banner", "pdf"]
+        self.contentValidFields = ["desc", "title", "banner", "pdf", "content_type"]
         # assume que self.user é um dict vindo do select_info
         self.userRole = self.user.get("cred") if isinstance(self.user, dict) else None
 

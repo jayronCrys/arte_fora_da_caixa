@@ -9,6 +9,13 @@ from . import contents_bp
 _PUBLISHER_CREDS = ("admin", "professor")
 
 from src.view.configs.statics_configs import CONTENT_TYPES, DEFAULT_BANNERS
+
+tpl_ctx = dict(
+        content_types=CONTENT_TYPES,
+        default_banners=DEFAULT_BANNERS,
+        now=datetime.now().strftime("%d/%m/%Y"),
+    )
+    
 def _cred():
     return session.get("cred")
 
@@ -20,7 +27,7 @@ def home_page():
     return redirect(url_for("contents.contents"))
 
 
-@contents_bp.route("/contents/content/<content_id>", methods=["GET"])
+@contents_bp.route("/contents/content/<content_id>", methods=["GET", "POST"])
 def content_buss(content_id):
     
     print("=====> passo em content buss")
@@ -32,14 +39,8 @@ def content_buss(content_id):
 
     if not content:
         abort(404)
-
-    # Extrai HTML do PDF em tempo de execução
-    # (rápido o suficiente: ~50–200ms por PDF normal)
-    from pdf_to_html import pdf_bytes_to_html
-    html_body = pdf_bytes_to_html(content.get("pdf") or b"")
-    content["html_body"] = html_body  # None se falhar → template usa fallback
-
-    return render_template("content_view.html", content=content)
+    print("REQUEST", request.method)
+    return render_template("content_preview.html", content=content) if request.method == "GET" else render_template("edit_content.html", content = content, **tpl_ctx)
 
 
 @contents_bp.route("/contents", methods=["GET", "POST"])
@@ -83,18 +84,12 @@ def get_banner(content_id):
         abort(404)
 
     banner = content["banner"]
-
-    # Banner padrão: valor curto sem "/" no início, ex: "aurora"
-    # Banner de usuário: caminho relativo, ex: "Banners/by_user/abc123.jpg"
     if "/" not in banner:
-        # É um ID de banner padrão → delega para get_banner_default
         return redirect(url_for("contents.get_banner_default", banner_id=banner))
 
-    # É caminho de arquivo do usuário → serve direto
-    # STATIC_DIR deve apontar para a pasta static do projeto
     print("a raiz dos caminhos é", current_app.root_path)
     static_dir = os.path.join(current_app.root_path, "view/static")
-    full_path  = os.path.join(static_dir, banner)   # ex: .../static/Banners/by_user/abc123.jpg
+    full_path  = os.path.join(static_dir, banner)
 
     print(f"[get_banner] Servindo: {full_path}, existe: {os.path.exists(full_path)}")
 
@@ -109,17 +104,11 @@ def get_banner(content_id):
 import os
 import uuid
 
-# No topo do arquivo, defina o diretório base dos banners de usuário.
-# Ajuste BANNERS_BASE_DIR para o caminho absoluto correto do seu projeto.
 BANNERS_BASE_DIR = "/storage/emulated/0/arte_fora_da_caixa/src/view/static/Banners/by_user"
 
 @contents_bp.route("/publish_content", methods=["POST", "GET"])
 def publish_content():
-    tpl_ctx = dict(
-        content_types=CONTENT_TYPES,
-        default_banners=DEFAULT_BANNERS,
-        now=datetime.now().strftime("%d/%m/%Y"),
-    )
+    
     if request.method == "POST":
         if _cred() not in _PUBLISHER_CREDS:
             return redirect(url_for("auth.login"))
@@ -198,10 +187,10 @@ from flask import current_app
 
 @contents_bp.route("/contents/banner/default/<banner_id>")
 def get_banner_default(banner_id):
+    
     print("o id é ", banner_id)
     print("o raiz é: ", current_app.root_path)
-    """if banner_id:
-        return redirect(url_for("contents.get_banner", content_id = banner_id))"""
+ 
     for b in DEFAULT_BANNERS:
         print("o B é", banner_id, "o default é", b)
         if b["id"] == banner_id:
@@ -230,6 +219,7 @@ def get_publications():
 
 @contents_bp.route("/contents/publications/selec_content/<content_id>", methods=["POST", "GET"])
 def select_content(content_id):
+    
     if _cred() not in _PUBLISHER_CREDS:
         return redirect(url_for("auth.login"))
 
@@ -238,10 +228,14 @@ def select_content(content_id):
     else:
         content = g.user.get_content_by_admin(content_id)
 
-    if not content:
+    if not content_id:
         return redirect(url_for("contents.get_publications"))
-
-    return render_template("edit_content.html", content=content)
+        
+    from pdf_to_html import pdf_bytes_to_html
+    html_body = pdf_bytes_to_html(content.get("pdf") or b"")
+    content["html_body"] = html_body 
+    print("\n\n eu existo" if content["html_body"] else "")
+    return render_template("content_view.html",content = content)
 
 
 # ── Editar / Excluir conteúdo ─────────────────────────────
@@ -260,7 +254,7 @@ def edit_content(content_id):
     if not content:
         return redirect(url_for("contents.get_publications"))
 
-    from src.view.configs.statics_configs import CONTENT_TYPES, DEFAULT_BANNERS
+    
 
     def _update(field, value):
         if _cred() == "professor":
@@ -271,9 +265,8 @@ def edit_content(content_id):
         return render_template(
             "edit_content.html",
             content=content,
-            content_types=CONTENT_TYPES,
-            default_banners=DEFAULT_BANNERS,
-            error=error,
+            **tpl_ctx,
+            error=error
         )
 
     action = False
@@ -305,41 +298,13 @@ def edit_content(content_id):
             return _render_edit("Erro ao atualizar tipo de conteúdo")
 
     # ── Banner ────────────────────────────────────────────────────────────────
-   
     new_banner_file = request.files.get("banner_file")
     if new_banner_file and new_banner_file.filename:
-        import os
-        from uuid import uuid4
-        from werkzeug.utils import secure_filename
-
-        # 1. Define e cria a pasta de destino caso ela não exista
-        # Caminho absoluto: .../view/static/Banners/by_user
-        upload_dir = os.path.join(current_app.root_path, "view/static/Banners/by_user")
-        os.makedirs(upload_dir, exist_ok=True)
-
-        # 2. Gera um nome único mantendo a extensão original (ex: d3b07384d113.jpg)
-        _, ext = os.path.splitext(new_banner_file.filename)
-        filename = f"{uuid4().hex}{ext.lower()}"
-
-        # Caminho completo onde o arquivo físico vai ser salvo
-        full_path = os.path.join(upload_dir, filename)
-
-        try:
-            # 3. Salva o arquivo fisicamente no servidor
-            new_banner_file.save(full_path)
-            
-            # 4. Define o caminho relativo idêntico ao formato que o seu `get_banner` espera:
-            # Ex: "Banners/by_user/d3b07384d113.jpg"
-            relative_path = f"Banners/by_user/{filename}"
-
-            # 5. Salva essa string com o caminho no banco de dados
-            action = _update("banner", relative_path)
+        banner_bytes = new_banner_file.read()
+        if banner_bytes:
+            action = _update("banner", banner_bytes)
             if not action:
-                return _render_edit("Erro ao atualizar o caminho do banner")
-
-        except Exception as e:
-            print(f"Erro ao salvar arquivo de banner: {e}")
-            return _render_edit("Erro interno ao processar o upload do banner")
+                return _render_edit("Erro ao salvar banner")
 
     # ── PDF ───────────────────────────────────────────────────────────────────
     new_file = request.files.get("file")

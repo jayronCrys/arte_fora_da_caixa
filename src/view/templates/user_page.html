@@ -101,20 +101,32 @@
     }
     .btn-password:hover { opacity: .88; transform: translateY(-2px); }
 
-    .action-bar { margin: 40px 0; display: flex; justify-content: center; gap: 25px; flex-wrap: wrap; }
+    .action-bar { margin: 40px 0; display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; }
 
+    /* Estilização corrigida para melhor integração com o layout */
     .advanced-toggle {
-      background: #666; color: white; border: none; border-radius: 10px;
+      background: #1e293b; color: white; border: none; border-radius: 10px;
       padding: 12px 24px; font-weight: bold; cursor: pointer; font-size: 15px;
       transition: .2s; display: inline-flex; align-items: center; gap: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
     }
-    .advanced-toggle:hover { background: #555; }
+    .advanced-toggle:hover { background: #0f172a; transform: translateY(-2px); }
+    
     .advanced-content {
-      display: none; margin-top: 20px; padding: 20px;
-      background: #fafafa; border: 1px solid #e0e0e0; border-radius: 14px;
+      display: none; margin-top: 20px; padding: 25px;
+      background: #fafafa; border: 1px solid #e5e7eb; border-radius: 14px;
       flex-direction: column; gap: 15px; align-items: center;
     }
     .advanced-content.active { display: flex; }
+
+    /* Estilo dos cards de curso dentro da nova aba */
+    .course-card {
+      background: #ffffff; padding: 14px 20px; border-radius: 10px;
+      margin-bottom: 10px; display: flex; justify-content: space-between;
+      align-items: center; border: 1px solid #e5e7eb; width: 100%;
+      max-width: 500px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    }
+    .course-card .status { font-weight: bold; color: #00c853; font-size: 14px; }
 
     footer { text-align: center; padding: 20px; margin-top: 40px; color: #777; font-size: 14px; }
 
@@ -217,12 +229,14 @@
         ⚙️ Informações avançadas
         <span id="advanced-arrow" style="transition: .3s;">▼</span>
       </button>
+
+      <button class="advanced-toggle" type="button" onclick="togglePublications()">
+        📚 Publicações e conteúdos
+        <span id="publications-arrow" style="transition: .3s;">▼</span>
+      </button>
+
       {% if session.get("cred") == "admin" %}
         <a href="/admin" class="btn-home-style btn-fixed">Painel de Administração</a>
-      {% endif %}
-      {% if session.get("cred") in ["admin", "professor"] %}
-        <a href="/publish_content" class="btn-home-style btn-fixed">Publicar Conteúdo</a>
-        <a href="/contents/publications" class="btn-home-style btn-fixed">Minhas Publicações</a>
       {% endif %}
     </div>
 
@@ -231,25 +245,33 @@
       <a href="#" class="btn-logout btn-fixed" onclick="openLogoutModal(event)">Sair da conta</a>
       <a href="/change_password" class="btn-password btn-fixed">🔒 Alterar senha</a>
     </div>
-  </div>
 
-  <div class="courses-section">
-    <h3>Meus cursos</h3>
-    {% if enrolled_courses %}
-      {% for course in enrolled_courses %}
-      <div class="course-card">
-        <span>{{ course.name }}</span>
-        <span class="status">{{ course.status }}</span>
+    <div class="advanced-content" id="publications-content">
+      <div style="display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; width: 100%; margin-bottom: 15px;">
+        {% if session.get("cred") in ["admin", "professor"] %}
+          <a href="/publish_content" class="btn-home-style btn-fixed">Publicar Conteúdo</a>
+          <a href="/contents/publications" class="btn-home-style btn-fixed">Minhas Publicações</a>
+        {% endif %}
       </div>
-      {% endfor %}
-    {% else %}
-      <p>Você ainda não se inscreveu em nenhum curso.</p>
-    {% endif %}
+      
+      <div class="courses-section" style="width: 100%; display: flex; flex-direction: column; align-items: center; border-top: 1px solid #eee; padding-top: 20px;">
+        <h3 style="width: 100%; text-align: center; margin-bottom: 15px;">Meus cursos</h3>
+        {% if enrolled_courses %}
+          {% for course in enrolled_courses %}
+          <div class="course-card">
+            <span>{{ course.name }}</span>
+            <span class="status">{{ course.status }}</span>
+          </div>
+          {% endfor %}
+        {% else %}
+          <p style="color: #666; font-size: 15px;">Você ainda não se inscreveu em nenhum curso.</p>
+        {% endif %}
+      </div>
+    </div>
   </div>
 
 </div>
 
-<!-- MODAL DE LOGOUT -->
 <div class="modal-overlay" id="logout-modal">
   <div class="modal-box">
     <h2>Deseja realmente sair?</h2>
@@ -317,6 +339,25 @@
     const arrow = document.getElementById('advanced-arrow');
     const isActive = content.classList.toggle('active');
     arrow.textContent = isActive ? '▲' : '▼';
+    
+    // Fecha a outra aba caso esteja aberta
+    if (isActive) {
+      document.getElementById('publications-content').classList.remove('active');
+      document.getElementById('publications-arrow').textContent = '▼';
+    }
+  }
+
+  function togglePublications() {
+    const content = document.getElementById('publications-content');
+    const arrow = document.getElementById('publications-arrow');
+    const isActive = content.classList.toggle('active');
+    arrow.textContent = isActive ? '▲' : '▼';
+
+    // Fecha a outra aba caso esteja aberta
+    if (isActive) {
+      document.getElementById('advanced-content').classList.remove('active');
+      document.getElementById('advanced-arrow').textContent = '▼';
+    }
   }
 
   function showToast(msg) {

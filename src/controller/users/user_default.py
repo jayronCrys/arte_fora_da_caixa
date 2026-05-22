@@ -278,7 +278,7 @@ class Management_User_Default(Login_Account):
 
         self.get_infor_user_verif(account)
 
-        self.manager_fields = ["name", "email", "password", "picture"]
+        self.manager_fields = ["name", "email", "password", "picture", "subs"]
 
     @Login_Account.is_loged
     def get_user(self):
@@ -399,12 +399,56 @@ class Management_User_Default(Login_Account):
                     "author":        c.author,
                     "creation_date": c.creation_date,
                     "publisher_id":  str(c.publisher_id),
-                })
-            print("tento", result)
-            
+                })     
             return result
+        finally:            
+            conn.close()
+            
+
+    @Login_Account.is_loged
+    def check_inscription(self, contentId):
+        conn = self.dataBase()
+        
+        sub = conn.query(Subs).filter_by(
+            student_id=self.useId,
+            content_id=contentId
+        ).first()
+        
+        if not sub:
+            return False
+            
+        else:
+            conn.close()
+            return sub.id
+               
+        
+    @Login_Account.is_loged
+    def my_inscriptions(self):
+        conn = self.dataBase()
+        
+                             
+    @Login_Account.is_loged
+    def new_inscription(self, inscription):
+        conn = self.dataBase()
+        if self.check_inscription(inscription["content_id"]):
+            return False
+               
+        try:
+            conn.insert_info(conn, Subs, inscription):
+            return True
+                             
+        except:
+             return False
+             
         finally:
-            print("a buceta da erro>>>>>>>>>>>>>>>")
-            conn.close()      
+             conn.close()
+         
+    @Login_Account.is_loged
+    def remove_incription(self, contentId):
+        conn = self.dataBase()
+        if not self.check_inscription(contentId):
+            return False
+            
+        delete_info()        
         
         

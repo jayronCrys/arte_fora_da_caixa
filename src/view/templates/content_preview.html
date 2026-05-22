@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ content.title or 'Visualizar Conteúdo' }} - Arte Fora da Caixa</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            background: #ffffff;
+            color: #333;
+        }
+
+        /* ── TOAST DE NOTIFICAÇÃO SUPERIOR ── */
+        .toast-notification {
+            position: fixed;
+            top: -120px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 2000;
+            background: #ffffff;
+            border-radius: 14px;
+            padding: 16px 28px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+            transition: top 0.45s cubic-bezier(0.22, 0.61, 0.36, 1);
+            min-width: 380px;
+            max-width: 95vw;
+            border-left: 5px solid #00c853;
+        }
+        .toast-notification.show {
+            top: 20px;
+        }
+        .toast-notification .toast-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #00c853, #00e676);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            color: #fff;
+            flex-shrink: 0;
+        }
+        .toast-notification .toast-text {
+            flex: 1;
+            font-size: 15px;
+            color: #333;
+            line-height: 1.4;
+            font-weight: 500;
+        }
+        .toast-notification .toast-text strong {
+            color: #222;
+            font-weight: 700;
+        }
+        .toast-notification .toast-close {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: #999;
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        .toast-notification .toast-close:hover {
+            color: #333;
+            background: #f0f0f0;
+        }
+        .toast-notification.toast-warning {
+            border-left-color: #ff7a00;
+        }
+        .toast-notification.toast-warning .toast-icon {
+            background: linear-gradient(135deg, #ff7a00, #f9a826);
+        }
+
+        /* ── MODAL / POPUP OVERLAY ── */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.55);
+            z-index: 1500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .modal-box {
+            background: #ffffff;
+            border-radius: 18px;
+            width: 90%;
+            max-width: 460px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+            overflow: hidden;
+            transform: translateY(30px) scale(0.95);
+            transition: transform 0.35s cubic-bezier(0.22, 0.61, 0.36, 1);
+        }
+        .modal-overlay.active .modal-box {
+            transform: translateY(0) scale(1);
+        }
+        .modal-accent-bar {
+            height: 6px;
+            background: linear-gradient(90deg, #00c853, #ff7a00);
+            border-radius: 18px 18px 0 0;
+        }
+        .modal-body {
+            padding: 28px 30px 20px;
+            text-align: center;
+        }
+        .modal-body h3 {
+            font-size: 20px;
+            font-weight: 700;
+            color: #222;
+            margin-bottom: 10px;
+        }
+        .modal-body p {
+            font-size: 15px;
+            color: #555;
+            line-height: 1.5;
+            margin-bottom: 24px;
+        }
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        
+          
+        .btn-modal {
+            padding: 13px 28px;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            border: none;
+            transition: all 0.25s ease;
+            letter-spacing: 0.3px;
+            min-width: 130px;
+        }
+        .btn-modal-confirm {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 14px;
+          
+            background: linear-gradient(90deg, #ff7a00, #00c853);
+            color: #fff;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+        }
+        .btn-modal-confirm:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 7px 20px rgba(0, 0, 0, 0.25);
+        }
+        
+        .btn-modal-unsubscribe {
+            background: #fff;
+            color: #c0392b;
+            border: 2px solid #e0c0c0;
+        }
+        .btn-modal-unsubscribe:hover {
+            background: #fef5f5;
+            border-color: #c0392b;
+        }
+
+        /* ── HEADER ── */
+        header {
+            background: #ffffff;
+            padding: 18px 34px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        header h1 {
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            color: #222;
+        }
+        .btn-back {
+            font-size: 15px;
+            text-decoration: none;
+            color: #555;
+            font-weight: 600;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-back:hover {
+            color: #ff7a00;
+        }
+
+        /* ── CONTAINER PRINCIPAL ── */
+        main {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        /* Banner da Imagem com Borda Gradiente */
+        .banner-container {
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            background: linear-gradient(90deg, #00c853, #ff7a00);
+            padding: 4px;
+            border-radius: 16px;
+            margin-bottom: 30px;
+        }
+        .banner-container img,
+        .banner-container .default-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            border-radius: 12px;
+            background: #e2e8f0;
+        }
+
+        /* Conteúdo Textual */
+        .info-section {
+            padding: 0 10px;
+        }
+        .badge-type {
+            display: inline-block;
+            background: linear-gradient(90deg, #ff7a00, #f9a826);
+            color: white;
+            font-size: 13px;
+            font-weight: bold;
+            text-transform: uppercase;
+            padding: 6px 14px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            letter-spacing: 0.5px;
+        }
+        .content-title {
+            font-size: 32px;
+            font-weight: 700;
+            line-height: 1.3;
+            margin-bottom: 20px;
+            color: #222;
+        }
+        .desc-container {
+            margin-bottom: 30px;
+        }
+        .content-description {
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            font-size: 17px;
+            line-height: 1.7;
+            color: #444;
+            transition: all 0.3s ease;
+        }
+        .btn-read-more {
+            background: none;
+            border: none;
+            color: #00c853;
+            font-weight: 700;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: color 0.2s;
+        }
+        .btn-read-more:hover {
+            color: #009624;
+        }
+
+        /* Metadados */
+        .content-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            font-size: 15px;
+            color: #666;
+            align-items: center;
+            border-top: 1px solid #eaeaea;
+            border-bottom: 1px solid #eaeaea;
+            padding: 20px 0;
+            margin-bottom: 40px;
+        }
+        .meta-author strong {
+            color: #222;
+        }
+
+        /* ── ÁREA DE CTA (INSCRIÇÃO / VISUALIZAR) ── */
+        .cta-section {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        /* Botão Inscrever-se (gradiente laranja→verde) */
+        .btn-enroll {
+            display: block;
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 18px 0;
+            border-radius: 12px;
+            border: none;
+            background: linear-gradient(90deg, #ff7a00, #00c853);
+            color: white;
+            font-size: 19px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+            transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.3s ease;
+            letter-spacing: 0.3px;
+        }
+        .btn-enroll:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Botão Desinscrever (estilo outlined / neutro) */
+        .btn-enroll.unsubscribed-state {
+            background: #ffffff;
+            color: #888;
+            border: 2px solid #d5d5d5;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+        .btn-enroll.unsubscribed-state:hover {
+            color: #c0392b;
+            border-color: #e0b0b0;
+            background: #fefafa;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Botão Visualizar Curso */
+        .btn-view-course {
+            background: linear-gradient(90deg, #ff7a00, #00c853);
+            color: #fff;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+            display: block;
+            width: 100%;
+            max-width: 400px;
+            margin: 16px auto 0;
+            padding: 16px 0;
+            border-radius: 12px;
+            border: none;
+            
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+            letter-spacing: 0.3px;
+        }
+        
+        
+        .btn-view-course:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 22px rgba(0, 200, 83, 0.4);
+        }
+        .btn-modal-cancel{
+          width: 100%;
+          padding: 15px;
+          border: none;
+          border-radius: 14px;
+          background: linear-gradient(90deg, #e63946, #ff7a00);
+          color: #ffffff;
+          font-family: "Plus Jakarta Sans", sans-serif;
+          font-size: 15px;
+          font-weight: 700;
+          cursor: pointer;
+          box-shadow: 0 4px 12px rgba(230, 57, 70, 0.15);
+          transition: opacity .15s, transform .1s, box-shadow .2s;
+          margin-bottom: 12px;
+        }
+        .btn-modal-cancel: hover { 
+          opacity: .92;
+          box-shadow: 0 6px 16px rgba(230, 57, 70, 0.3);
+        }
+        .btn-modal-cancel:active { transform: scale(.98); }
+    
+        .extra-info {
+            margin-top: 24px;
+            font-size: 15px;
+            color: #666;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 24px;
+        }
+        .extra-info-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        footer {
+            text-align: center;
+            color: #777;
+            padding: 30px;
+            font-size: 14px;
+            margin-top: 60px;
+            background: #f9fafb;
+        }
+
+        /* ── RESPONSIVO ── */
+        @media (max-width: 600px) {
+            header {
+                padding: 14px 18px;
+            }
+            header h1 {
+                font-size: 18px;
+            }
+            .content-title {
+                font-size: 24px;
+            }
+            .toast-notification {
+                min-width: auto;
+                width: 92vw;
+                padding: 12px 18px;
+                gap: 10px;
+            }
+            .toast-notification .toast-text {
+                font-size: 13px;
+            }
+            .modal-box {
+                max-width: 92vw;
+            }
+            .modal-body {
+                padding: 22px 18px 16px;
+            }
+            .btn-modal {
+                padding: 12px 20px;
+                font-size: 14px;
+                min-width: 100px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ─── TOAST DE NOTIFICAÇÃO SUPERIOR ─── -->
+    <div id="toast-notification" class="toast-notification" role="status" aria-live="polite">
+        <div class="toast-icon" id="toast-icon-content">✅</div>
+        <span class="toast-text" id="toast-text-content"></span>
+        <button class="toast-close" onclick="hideToast()" aria-label="Fechar notificação">&times;</button>
+    </div>
+
+    <!-- ─── MODAL / POPUP DE CONFIRMAÇÃO ─── -->
+    <div id="modal-overlay" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <div class="modal-box">
+            <div class="modal-accent-bar"></div>
+            <div class="modal-body">
+                <h3 id="modal-title">Confirmar inscrição</h3>
+                <p id="modal-message">Tem certeza que deseja se inscrever neste curso?</p>
+                <div class="modal-actions">
+                    <button id="btn-modal-cancel" class="btn-modal btn-modal-cancel" onclick="closeModal()">Cancelar</button>
+                    <button id="btn-modal-confirm" class="btn-modal btn-modal-confirm" onclick="confirmModalAction()">Sim, inscrever-me</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ─── HEADER ─── -->
+    <header>
+        <h1>Arte Fora da Caixa</h1>
+        <a href="/contents" class="btn-back">⬅ Voltar</a>
+    </header>
+
+    <!-- ─── CONTEÚDO PRINCIPAL ─── -->
+    <main>
+        <div class="banner-container">
+            {% if content.banner %}
+            <img src="{{ url_for('contents.get_banner', content_id=content.id) }}" alt="Banner do Conteúdo: {{ content.title }}">
+            {% else %}
+            <div class="default-img"></div>
+            {% endif %}
+        </div>
+
+        <div class="info-section">
+            <div class="badge-type">{{ content.content_type or 'Conteúdo' }}</div>
+            <h2 class="content-title">{{ content.title or 'Sem Título' }}</h2>
+
+            <div class="desc-container">
+                <p id="content-desc" class="content-description">
+                    {{ content.desc or 'Nenhuma descrição fornecida para este conteúdo.' }}
+                </p>
+                <button id="btn-read-more" class="btn-read-more" onclick="toggleDescription()">Ler mais ▼</button>
+            </div>
+
+            <div class="content-meta">
+                <div class="meta-author">
+                    Criado por <strong>{{ content.author or 'Autor Desconhecido' }}</strong>
+                </div>
+                <div>•</div>
+                <div>Publicado em: {{ content.creation_date or now }}</div>
+                {% if content.pdf %}
+                <div>•</div>
+                <div style="color: #00c853; font-weight: 600;">📄 Possui Material PDF</div>
+                {% endif %}
+            </div>
+
+            <!-- ─── ÁREA DE INSCRIÇÃO / VISUALIZAÇÃO ─── -->
+            <div class="cta-section">
+                <!-- Botão de Inscrever-se / Desinscrever -->
+                <button
+                id="btn-subscribe-toggle"
+                class="btn-enroll"
+                onclick="handleSubscribeToggle()"
+                >
+                🚀 Inscrever-se nesse curso
+            </button>
+
+            <!-- Botão Visualizar Curso (aparece após inscrição) -->
+            <form
+            id="form-view-course"
+            method="POST"
+            action="{{ url_for('contents.select_content', content_id=content.id) }}"
+            style="display: none;"
+            >
+            <button type="submit" class="btn-modal btn-view-course">
+                📖 Visualizar Curso
+            </button>
+        </form>
+
+        <div class="extra-info">
+            <div class="extra-info-item">⏱️ Acesso vitalício</div>
+            {% if content.pdf %}
+            <div class="extra-info-item">📂 1 arquivo complementar</div>
+            {% endif %}
+            <div class="extra-info-item">🏅 Certificado de conclusão</div>
+        </div>
+    </div>
+</div>
+</main>
+
+<footer>© 2026 Arte Fora da Caixa — Todos os direitos reservados</footer>
+
+<script>
+    // ──────────────────────────────────────
+    // DADOS DO CONTEÚDO (injetados via Jinja2)
+    // ──────────────────────────────────────
+    const contentId = "{{ content.id }}";
+    const contentTitle = "{{ content.title|e or 'Sem Título' }}";
+    const storageKey = `subscribed_${contentId}`;
+
+    // ──────────────────────────────────────
+    // GERENCIAMENTO DO TOAST
+    // ──────────────────────────────────────
+    let toastTimer = null;
+    const toastEl = document.getElementById('toast-notification');
+    const toastText = document.getElementById('toast-text-content');
+    const toastIcon = document.getElementById('toast-icon-content');
+
+    function showToast(message, type = 'success') {
+        // Limpa timer anterior
+        if (toastTimer) clearTimeout(toastTimer);
+
+        toastText.textContent = message;
+        toastIcon.textContent = type === 'warning' ? '⚠️' : '✅';
+
+        // Alterna classe de cor
+        toastEl.classList.remove('toast-warning');
+        if (type === 'warning') {
+            toastEl.classList.add('toast-warning');
+        }
+
+        // Exibe o toast
+        toastEl.classList.add('show');
+
+        // Esconde automaticamente após 5 segundos
+        toastTimer = setTimeout(() => {
+            hideToast();
+        }, 5000);
+    }
+
+    function hideToast() {
+        toastEl.classList.remove('show');
+        if (toastTimer) {
+            clearTimeout(toastTimer);
+            toastTimer = null;
+        }
+    }
+
+    // ──────────────────────────────────────
+    // GERENCIAMENTO DO MODAL
+    // ──────────────────────────────────────
+    const modalOverlay = document.getElementById('modal-overlay');
+    const modalTitle = document.getElementById('modal-title');
+    const modalMessage = document.getElementById('modal-message');
+    const btnModalConfirm = document.getElementById('btn-modal-confirm');
+    const btnModalCancel = document.getElementById('btn-modal-cancel');
+
+    // Callback armazenado para quando o usuário confirmar
+    let modalConfirmCallback = null;
+
+    function openModal(title, message, confirmText, confirmClass, callback) {
+        modalTitle.textContent = title;
+        modalMessage.textContent = message;
+        btnModalConfirm.textContent = confirmText;
+
+        // Reseta classes do botão de confirmação
+        btnModalConfirm.className = 'btn-modal';
+        btnModalConfirm.classList.add(confirmClass || 'btn-modal-confirm');
+
+        // Aplica classe do botão cancelar (sempre cancel)
+        btnModalCancel.className = 'btn-modal btn-modal-confirm';
+        btnModalCancel.textContent = 'Cancelar';
+
+        // Armazena callback
+        modalConfirmCallback = callback;
+
+        // Exibe o modal
+        modalOverlay.classList.add('active');
+    }
+
+    function closeModal() {
+        modalOverlay.classList.remove('active');
+        modalConfirmCallback = null;
+    }
+
+    function confirmModalAction() {
+        if (typeof modalConfirmCallback === 'function') {
+            modalConfirmCallback();
+        }
+        closeModal();
+    }
+
+    // Fecha modal ao clicar fora da caixa (no overlay)
+    modalOverlay.addEventListener('click', function(e) {
+        if (e.target === modalOverlay) {
+            closeModal();
+        }
+    });
+
+    // Fecha modal com tecla Escape
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && modalOverlay.classList.contains('active')) {
+            closeModal();
+        }
+    });
+
+    // ──────────────────────────────────────
+    // GERENCIAMENTO DO ESTADO DE INSCRIÇÃO
+    // ──────────────────────────────────────
+    const btnSubscribeToggle = document.getElementById('btn-subscribe-toggle');
+    const formViewCourse = document.getElementById('form-view-course');
+
+    function isSubscribed() {
+        return localStorage.getItem(storageKey) === 'true';
+    }
+
+    function setSubscribedState(subscribed) {
+        if (subscribed) {
+            localStorage.setItem(storageKey, 'true');
+        } else {
+            localStorage.removeItem(storageKey);
+        }
+        updateUIForSubscriptionState(subscribed);
+    }
+
+    function updateUIForSubscriptionState(subscribed) {
+        if (subscribed) {
+            // Estado: inscrito
+            btnSubscribeToggle.textContent = '🔓 Desinscrever-se';
+            btnSubscribeToggle.classList.add('btn-modal-cancel');
+            btnSubscribeToggle.setAttribute('aria-label', 'Desinscrever-se deste curso');
+            formViewCourse.style.display = 'block';
+        } else {
+            // Estado: não inscrito
+            btnSubscribeToggle.textContent = '🚀 Inscrever-se nesse curso';
+            btnSubscribeToggle.classList.remove('unsubscribed-state');
+            btnSubscribeToggle.setAttribute('aria-label', 'Inscrever-se neste curso');
+            formViewCourse.style.display = 'none';
+        }
+    }
+
+    // ──────────────────────────────────────
+    // HANDLER DO BOTÃO INSCREVER/DESINSCREVER
+    // ──────────────────────────────────────
+    function handleSubscribeToggle() {
+        if (isSubscribed()) {
+            // ➜ Desinscrever: abre popup de confirmação
+            openModal(
+                'Desinscrever-se',
+                `Tem certeza que deseja se <strong>desinscrever</strong> do curso "<em>${escapeHTML(contentTitle)}</em>"?`,
+                'Sim, desinscrever',
+                'btn-modal-cancel',
+                function() {
+                    // Confirmação da desinscrição
+                    setSubscribedState(false);
+                    showToast(
+                        `Você se desinscreveu do curso <strong>"${escapeHTML(contentTitle)}"</strong>.`,
+                        'warning'
+                    );
+                }
+            );
+        } else {
+            // ➜ Inscrever: abre popup de confirmação
+            openModal(
+                'Confirmar inscrição',
+                `Tem certeza que deseja se <strong>inscrever</strong> no curso "<em>${escapeHTML(contentTitle)}</em>"?`,
+                'Sim, inscrever-me',
+                'btn-modal-confirm',
+                function() {
+                    // Confirmação da inscrição
+                    setSubscribedState(true);
+                    showToast(
+                        `Você se inscreveu no curso <strong>"${escapeHTML(contentTitle)}"</strong> e já pode visualizar o conteúdo! ✅`,
+                        'success'
+                    );
+                }
+            );
+        }
+    }
+
+    // Função auxiliar para escapar HTML (evita injection ao usar innerHTML indiretamente)
+    function escapeHTML(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    // ──────────────────────────────────────
+    // INICIALIZAÇÃO AO CARREGAR A PÁGINA
+    // ──────────────────────────────────────
+    function initSubscriptionState() {
+        const subscribed = isSubscribed();
+        updateUIForSubscriptionState(subscribed);
+    }
+
+    // ──────────────────────────────────────
+    // DESCRIÇÃO (LER MAIS / LER MENOS)
+    // ──────────────────────────────────────
+    let currentLines = 3;
+    const linesToAdd = 5;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const desc = document.getElementById('content-desc');
+        const btn = document.getElementById('btn-read-more');
+
+        // Define o limite inicial
+        desc.style.webkitLineClamp = currentLines;
+
+        // Verifica se o texto é pequeno o suficiente para não precisar do botão
+        setTimeout(() => {
+            if (desc.scrollHeight <= desc.clientHeight) {
+                btn.style.display = 'none';
+            }
+        }, 50);
+
+        // Inicializa estado de inscrição
+        initSubscriptionState();
+    });
+
+    function toggleDescription() {
+        const desc = document.getElementById('content-desc');
+        const btn = document.getElementById('btn-read-more');
+
+        if (btn.innerText.includes('Ler menos')) {
+            currentLines = 3;
+            desc.style.webkitLineClamp = currentLines;
+            btn.innerText = 'Ler mais ▼';
+        } else {
+            currentLines += linesToAdd;
+            desc.style.webkitLineClamp = currentLines;
+
+            requestAnimationFrame(() => {
+                if (desc.scrollHeight <= desc.clientHeight) {
+                    btn.innerText = 'Ler menos ▲';
+                } else {
+                    btn.innerText = 'Ler mais ▼';
+                }
+            });
+        }
+    }
+</script>
+
+</body>
+</html>

@@ -207,13 +207,11 @@
             </div>
 
             <div class="actions-container">
-                <form method="POST" action="/contents/publications/selec_content/{{ c.id }}" style="margin: 0;">
+                <form method="POST" action="{{ url_for('contents.content_buss', content_id = c.id)}}" style="margin: 0;">
                     <button type="submit" class="btn">Editar</button>
                 </form>
 
-                <form method="POST" action="/delete_content/{{ c.id }}" style="margin: 0;" onsubmit="return confirm('Tem certeza que deseja excluir esta publicação?');">
-                    <button type="submit" class="btn delete-btn">Excluir</button>
-                </form>
+                
             </div>
         </div>
     </div>

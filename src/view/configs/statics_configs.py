@@ -7,13 +7,12 @@
 
 # Cada item: (valor_salvo_no_banco, rótulo_exibido, emoji)
 CONTENT_TYPES = [
-    ("aula",        "Aula",             "📖"),
-    ("exercicio",   "Exercício",        "✏️"),
-    ("artigo",      "Artigo",           "📄"),
-    ("projeto",     "Projeto",          "🛠️"),
-    ("resumo",      "Resumo",           "📝"),
-    ("prova",       "Prova / Avaliação","📋"),
-    ("outro",       "Outro",            "📦"),
+    ("Português",        "Português",             "📖"),
+    ("História",   "História",        "✏️"),
+    ("Geografia",      "Geografia",           "📄"),
+    ("Biologia",     "Biologia",          "🛠️"),
+    ("Matemática",      "Matemática",           "📝"),
+    ("Artes",       "Artes",  "📋"),
 ]
 
 # Banners padrão do site.

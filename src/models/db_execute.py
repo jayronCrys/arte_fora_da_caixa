@@ -28,17 +28,46 @@ def insert_info(session: Session, model: Type[DeclarativeMeta], data: dict) -> b
         return False
 
 
-def select_info(session: Session, model: Type[DeclarativeMeta],
-                columnReference: str, valueReference: Union[str, int],
-                items_to_select: Union[List[str], None] = None) -> Union[bool, dict]:
 
+def select_info(
+    session: Session,
+    model: Type[DeclarativeMeta],
+    columnReference: Union[List[str], str],
+    valueReference: Union[str, int, List[Union[str, int]]],
+    items_to_select: Optional[List[str]] = None
+) -> Union[bool, dict]:
+    """
+    Seleciona um registro da tabela.
+
+    - Se columnReference for str, usa condição simples: coluna = valor.
+    - Se columnReference for list, valueReference deve ser uma lista de mesmo
+      tamanho e monta um AND entre todas as condições.
+
+    Retorna um dict com as colunas solicitadas ou False.
+    """
     try:
-        stmt = select(model).where(getattr(model, columnReference) == valueReference)
+        # Monta a cláusula WHERE conforme o tipo de columnReference
+        if isinstance(columnReference, list):
+            if not isinstance(valueReference, list) or len(columnReference) != len(valueReference):
+                raise ValueError(
+                    "Para columnReference em lista, valueReference deve ser uma lista de mesmo tamanho."
+                )
+            conditions = []
+            for col_name, val in zip(columnReference, valueReference):
+                conditions.append(getattr(model, col_name) == val)
+            where_clause = and_(*conditions)
+        else:
+            # Caso string única
+            where_clause = getattr(model, columnReference) == valueReference
+
+        # Executa a consulta
+        stmt = select(model).where(where_clause)
         result = session.execute(stmt).scalars().first()
 
         if not result:
             return False
 
+        # Define quais colunas retornar
         cols = items_to_select or [col.name for col in model.__table__.columns]
         data = {}
 
@@ -55,7 +84,6 @@ def select_info(session: Session, model: Type[DeclarativeMeta],
     except Exception as e:
         logger.error(f"Erro ao selecionar: {e}")
         return False
-
 def update_info(session: Session, model: Type[DeclarativeMeta],
                 columnUpdate: str, newValue: Union[str, int, float],
                 columnReference: str, valueReference: Union[str, int]) -> bool:
