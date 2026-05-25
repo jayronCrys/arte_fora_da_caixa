@@ -8,7 +8,7 @@ from flask import (
 
 from src.controller.users.user_default import Login_Account, check_user
 from extensions import convert_heic_to_jpeg, make_session_from_dbuser
-
+from .inscriptions import get_my_courses
 from . import user_bp
 
 
@@ -31,8 +31,19 @@ def user():
             user_data = session.get("user")
     else:
         user_data = session.get("user")
-
-    return render_template("user_page.html", session_user=user_data, total_courses=0, enrolled_courses=[])
+    
+    enrolled_courses = get_my_courses()
+    
+    if enrolled_courses is None:
+        total_courses = 0
+        print("tudo isso okha")
+    
+    else:
+        print("amigo nao tem nada eu acho", enrolled_courses[0]["title"])
+        total_courses = len(enrolled_courses)
+        print(total_courses)
+        
+    return render_template("user_page.html", session_user=user_data, total_courses=total_courses, enrolled_courses=enrolled_courses)
 
 
 @user_bp.route("/edit_user", methods=["POST"])

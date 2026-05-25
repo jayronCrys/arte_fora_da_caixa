@@ -1,5 +1,5 @@
 # /controller/users/user_default.py
-
+import traceback
 from src.controller.apis.google.google_login_api import client_ifo
 from src.models.passwords import make_hash
 from src.models.passwords import compare_password as compare
@@ -361,11 +361,12 @@ class Management_User_Default(Login_Account):
             return False
         finally:
             conn.close()
-            
+                    
     @Login_Account.is_loged   
     def get_content_by_id(self, contentId):
         print(f"[get_content_by_id] contentId recebido: '{contentId}', tipo: {type(contentId)}")
         conn = self.dataBase()
+        
         try:
             content = select_info(
                 conn,
@@ -374,7 +375,11 @@ class Management_User_Default(Login_Account):
                UUID(contentId),
                 ["id", "title", "desc", "banner", "content_type", "author", "creation_date", "publisher_id", "pdf"]
             )
-            return content  # dict com banner como bytes/None, ou False se não encontrado
+            return content
+            
+        except:
+            conn.rollback()
+            return False            
         finally:
             conn.close()
         
@@ -382,9 +387,9 @@ class Management_User_Default(Login_Account):
     @Login_Account.is_loged
     def get_all_contents(self):
         conn = self.dataBase()
-        print("entrando")
+        
         try:
-            print("entrei")
+            
             all_contents = conn.query(Contents).all()
             # converte para dict ANTES de fechar a sessão
             result = []
@@ -401,6 +406,10 @@ class Management_User_Default(Login_Account):
                     "publisher_id":  str(c.publisher_id),
                 })     
             return result
+        except:
+            conn.rollback()
+            return False
+            
         finally:            
             conn.close()
             
@@ -408,36 +417,95 @@ class Management_User_Default(Login_Account):
     @Login_Account.is_loged
     def check_inscription(self, contentId):
         conn = self.dataBase()
-        
-        sub = conn.query(Subs).filter_by(
-            student_id=self.useId,
-            content_id=contentId
-        ).first()
-        
-        if not sub:
-            return False
+        if not self.get_content_by_id(contentId):
             
-        else:
-            conn.close()
-            return sub.id
-               
-        
+            return False
+                   
+        try:            
+            sub = conn.query(Subs).filter_by(
+                student_id=UUID(self.userId),
+                content_id=UUID(contentId)
+            ).first()
+            
+            if not sub:
+                return False
+              
+            else:
+                print("está incrito olha", sub.id)      
+                conn.close()
+                return str(sub.id)
+        except Exception as e:
+            traceback.print_exc()
+            conn.rollback()
+            return True
+        finally:                         
+             conn.close()
+             
+             
+             
     @Login_Account.is_loged
     def my_inscriptions(self):
         conn = self.dataBase()
         
-                             
-    @Login_Account.is_loged
-    def new_inscription(self, inscription):
-        conn = self.dataBase()
-        if self.check_inscription(inscription["content_id"]):
-            return False
-               
         try:
-            conn.insert_info(conn, Subs, inscription):
+            all_contents = conn.query(Subs).filter_by(student_id=UUID(self.userId)).all()
+            
+            if not all_contents:               
+                return None
+                
+            print(all_contents)                
+            result = []
+            
+            for c in all_contents:
+                result.append({
+                        "id":            str(c.id),
+                        "student_id":         str(c.student_id),
+                        "content_id":          str(c.content_id),
+                        "creation_date":        c.creation_date,
+                    })
+                    
+            print(result, "fujo antes ou nem?")                    
+            return result
+            
+        except:
+            print("estou fugindo dos meis problemas")
+            conn.rollback()
+            return False
+            
+        finally:
+            conn.close()
+    @Login_Account.is_loged
+    def new_inscription(self, contentId):
+        
+        try:
+            if self.check_inscription(contentId):
+                print("já inscrito nezze contudo")
+            print("nao inscrito")                            
+        except:
+            print("Y"*25)
+            traceback.print_exc()
             return True
+            
+        try:
+            
+            conn = self.dataBase()
+            if not self.get_content_by_id(contentId):
+                print("nao achei no banco")
+                return False
+                
+            inscription = {
+            "content_id": UUID(contentId),
+            "student_id": UUID(self.userId)
+            }
+            if insert_info(conn, Subs, inscription):
+                print("Aqui deu certo")
+                return True
                              
         except:
+             print("Y"*25)
+             traceback.print_exc()
+             print("cai vem aki")
+             conn.rollback()
              return False
              
         finally:
@@ -446,9 +514,19 @@ class Management_User_Default(Login_Account):
     @Login_Account.is_loged
     def remove_incription(self, contentId):
         conn = self.dataBase()
-        if not self.check_inscription(contentId):
+        inscriptionId = check_inscription(content_id)  
+        if not isncriptionId:
+            return False
+        
+        try:
+            if delete_info(conn, Subs, "id", inscriptionId):
+                return True
+                
+        except:
+            conn.rollback()
             return False
             
-        delete_info()        
+        finally:
+            conn.close()            
         
         

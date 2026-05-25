@@ -34,7 +34,7 @@ def select_info(
     model: Type[DeclarativeMeta],
     columnReference: Union[List[str], str],
     valueReference: Union[str, int, List[Union[str, int]]],
-    items_to_select: Optional[List[str]] = None
+    items_to_select: [List[str]] = None
 ) -> Union[bool, dict]:
     """
     Seleciona um registro da tabela.

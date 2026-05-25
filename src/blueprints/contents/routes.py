@@ -30,7 +30,7 @@ def home_page():
 @contents_bp.route("/contents/content/<content_id>", methods=["GET", "POST"])
 def content_buss(content_id):
     
-    print("=====> passo em content buss")
+    print("=====> passo em content buss <======")
     try:
         content = g.user.get_content_by_id(content_id)
     except Exception as exc:
@@ -42,18 +42,40 @@ def content_buss(content_id):
     print("REQUEST", request.method)
     return render_template("content_preview.html", content=content) if request.method == "GET" else render_template("edit_content.html", content = content, **tpl_ctx)
 
-
-@contents_bp.route("/contents", methods=["GET", "POST"])
-def contents():
-    print("tenho que pegar todos os contwudosz")
+@contents_bp.route("/contents/", defaults={"publications":None})
+@contents_bp.route("/contents/<publications>", methods=["GET", "POST"])
+def contents(publications):
+    print("Acessando a central de conteúdos da SPA...")
     try:
+        # 1. Busca todos os conteúdos para a listagem principal
         items = g.user.get_all_contents()
-        print(type(items))
-        print("verificando..........")
         
-        return render_template("contents.html", contents=items)
+        # 2. Captura o parâmetro 'tab' enviado via redirecionamento (?tab=...)
+        # Se não houver nada na URL, ele assume 'my-publications-view' por padrão
+        active_tab = request.args.get("tab", "my-publications-view")
+        
+        # 3. Busca publicações específicas se o usuário for um publicador logado
+        pub_items = []
+        if _cred() in _PUBLISHER_CREDS:
+            try:
+                pub_items = g.user.select_contents_by_publisher_id() if _cred() == "professor" else items
+            except Exception:
+                pub_items = []
+
+        # Envia TODAS as variáveis de controle que o front-end precisa para decidir o que exibir e marcar
+        return render_template(
+            "contents.html", 
+            contents=items, 
+            publications=publications, # mantém a compatibilidade com o que você já tinha
+            pub_items=pub_items,       # a lista de publicações do professor/admin
+            active_tab=active_tab,     # Diz EXATAMENTE qual sub-aba (label) deve vir ativa
+            **tpl_ctx                  # Injeta os tipos de conteúdos, banners default e data atual
+        )
+        
     except Exception as exc:
+        logging.error("Erro na rota principal de conteúdos: %s", exc)
         return f"Erro ao carregar conteúdos: {exc}", 500
+
 
 
 @contents_bp.route("/contents/view/<content_id>", methods=["GET"])
@@ -105,29 +127,51 @@ import os
 import uuid
 
 BANNERS_BASE_DIR = "/storage/emulated/0/arte_fora_da_caixa/src/view/static/Banners/by_user"
+# ── Publicar ──────────────────────────────────────────────────────────────────
 
+# ── Publicar ──────────────────────────────────────────────────────────────────
+
+@contents_bp.route("/redirect_publish_content", methods=["POST", "GET"])
+def redirect_publish_content():
+    # Garante que o redirecionamento jogue o usuário de volta para a SPA com a âncora certa
+    return redirect(url_for("contents.contents", _anchor="publications-section", tab="publish-content-view"))
+    
 @contents_bp.route("/publish_content", methods=["POST", "GET"])
 def publish_content():
-    
+    # Se o usuário tentar acessar via GET diretamente (ex: recarregar a página),
+    # nós apenas mandamos ele de volta para a rota principal dos conteúdos
+    if request.method == "GET":
+        return redirect(url_for("contents.contents", _anchor="publications-section", tab="publish-content-view"))
+
     if request.method == "POST":
         if _cred() not in _PUBLISHER_CREDS:
             return redirect(url_for("auth.login"))
 
         content_name = request.form.get("content_name", "").strip()
-        description     = request.form.get("description", "").strip()
+        description  = request.form.get("description", "").strip()
         content_type = request.form.get("content_type", "other")
-        banner_id       = request.form.get("banner_id")    
-        banner_file     = request.files.get("banner_file")
-        file                    = request.files.get("file")
+        banner_id    = request.form.get("banner_id")    
+        banner_file  = request.files.get("banner_file")
+        file         = request.files.get("file")
 
+        # Função auxiliar para recarregar a SPA mantendo os dados da listagem vivos em caso de erro
+        def _render_error(msg):
+            try:
+                items = g.user.get_all_contents()
+                pub_items = g.user.select_contents_by_publisher_id() if _cred() == "professor" else items
+            except Exception:
+                items, pub_items = [], []
+            return render_template("contents.html", error=msg, contents=items, publications=pub_items, **tpl_ctx)
+
+        # Validações rígidas
         if len(content_name) < 15:
-            return render_template("publish_content.html", error="Nome de conteúdo muito curto", **tpl_ctx)
+            return _render_error("Nome de conteúdo muito curto (mínimo 15 caracteres)")
         if len(description) < 50:
-            return render_template("publish_content.html", error="Descrição de conteúdo muito curta", **tpl_ctx)
+            return _render_error("Descrição de conteúdo muito curta (mínimo 50 caracteres)")
         if not file:
-            return render_template("publish_content.html", error="Nenhum documento selecionado", **tpl_ctx)
+            return _render_error("Nenhum documento PDF selecionado")
         if not banner_file and not banner_id:
-            return render_template("publish_content.html", error="Nenhum banner selecionado", **tpl_ctx)
+            return _render_error("Nenhum banner selecionado")
 
         # ── PDF ──────────────────────────────────────────────────────────────
         pdf_bytes = None
@@ -148,22 +192,24 @@ def publish_content():
             banner_path = f"Banners/by_user/{filename}"
     
         if not (pdf_bytes and description and content_name and banner_path):
-            return render_template("publish_content.html", error="Formato inválido para documento", **tpl_ctx)
+            return _render_error("Formato inválido ou arquivos corrompidos")
+            
         upload = False
         author = False
         content = {
-        "title":        content_name,
-        "desc":         description,
-        "banner":       banner_path,
-        "content_type": content_type,
-        "pdf":          pdf_bytes
+            "title":        content_name,
+            "desc":         description,
+            "banner":       banner_path,
+            "content_type": content_type,
+            "pdf":          pdf_bytes
         }
+        
         if _cred() == "admin":
-            author_id    = request.form.get("author")
+            author_id   = request.form.get("author")
             author_obj  = g.user.get_user_by_admin(author_id)
             if author_obj and author_obj.get("name"):
-                author      = author_obj.get("name")
-                upload     = g.user.publish_content_by_admin(content, author)
+                author  = author_obj.get("name")
+                upload  = g.user.publish_content_by_admin(content, author)
 
         elif _cred() == "professor":
             author = g.user.get_user_name()
@@ -173,24 +219,20 @@ def publish_content():
                 author = False
 
         if not author:
-            return render_template("publish_content.html", error="Nome de autor não existe", **tpl_ctx)
+            return _render_error("Nome de autor não existe no banco de dados")
         if not upload:
-            return render_template("publish_content.html", error="Não foi possível fazer upload do conteúdo, tente novamente.", **tpl_ctx)
+            return _render_error("Não foi possível salvar no banco de dados. Tente novamente.")
         
-        return render_template("exito.html")
+        # SUCESSO TOTAL: Redireciona para a rota principal (/contents) forçando a hashtag no navegador
+        return redirect(url_for("contents.contents", _anchor="publications-section", tab = "publish-content-view"))
 
-    return render_template("publish_content.html", **tpl_ctx)
 
-    
 import os
 from flask import current_app
 
 @contents_bp.route("/contents/banner/default/<banner_id>")
 def get_banner_default(banner_id):
     
-    print("o id é ", banner_id)
-    print("o raiz é: ", current_app.root_path)
- 
     for b in DEFAULT_BANNERS:
         print("o B é", banner_id, "o default é", b)
         if b["id"] == banner_id:
@@ -203,7 +245,11 @@ def get_banner_default(banner_id):
     abort(404)
     
 # ── Minhas publicações ────────────────────────────────────────────────────────
-
+@contents_bp.route("/contents/redirect_publications", methods=["GET"])
+def redirect_get_publications():
+    return redirect(url_for("contents.contents", _anchor="publications-section", tab="my-publications-view"))
+    
+    
 @contents_bp.route("/contents/publications", methods=["GET"])
 def get_publications():
     if _cred() not in _PUBLISHER_CREDS:
@@ -214,7 +260,7 @@ def get_publications():
     else:
         publications = g.user.get_all_contents()
 
-    return render_template("my_publications.html", publications=publications)
+    return redirect(url_for("contents.contents", _anchor = "publications-section" , tab = "my-publications-view", publications=publications))
 
 
 @contents_bp.route("/contents/publications/selec_content/<content_id>", methods=["POST", "GET"])

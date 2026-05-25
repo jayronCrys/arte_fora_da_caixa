@@ -11,6 +11,7 @@ from extensions import load_g_user
 # Blueprints
 from blueprints.auth import auth_bp
 from blueprints.user import user_bp
+from blueprints.user import inscriptions_bp
 from blueprints.contents import contents_bp
 from blueprints.admin import admin_bp
 
@@ -39,6 +40,7 @@ def create_app() -> Flask:
     # ── Registro dos blueprints ───────────────────────────────────────────────
     app.register_blueprint(auth_bp)
     app.register_blueprint(user_bp)
+    app.register_blueprint(inscriptions_bp)
     app.register_blueprint(contents_bp)
     app.register_blueprint(admin_bp)
 

@@ -6,6 +6,12 @@
   <title>Perfil do Usuário</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Segoe UI", Roboto, sans-serif; }
+    
+    /* MODIFICAÇÃO 1: Adicionado scroll suave para a página deslizar elegantemente */
+    html {
+      scroll-behavior: smooth;
+    }
+    
     body { background: #f3f4f6; color: #333; }
 
     header { background: #ffffff; box-shadow: 0 2px 8px rgba(0,0,0,0.06); padding: 16px 32px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
@@ -103,7 +109,6 @@
 
     .action-bar { margin: 40px 0; display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; }
 
-    /* Estilização corrigida para melhor integração com o layout */
     .advanced-toggle {
       background: #1e293b; color: white; border: none; border-radius: 10px;
       padding: 12px 24px; font-weight: bold; cursor: pointer; font-size: 15px;
@@ -119,39 +124,45 @@
     }
     .advanced-content.active { display: flex; }
 
-    /* Estilo dos cards de curso dentro da nova aba */
-    .course-card {
-      background: #ffffff; padding: 14px 20px; border-radius: 10px;
-      margin-bottom: 10px; display: flex; justify-content: space-between;
-      align-items: center; border: 1px solid #e5e7eb; width: 100%;
-      max-width: 500px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-    }
-    .course-card .status { font-weight: bold; color: #00c853; font-size: 14px; }
+    .courses-section { width: 100%; border-top: 1px solid #eee; padding-top: 20px; margin-top: 5px; }
+    .courses-section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; padding: 0 4px; }
+    .courses-section-header h3 { font-size: 15px; font-weight: 600; color: #374151; margin: 0; }
+    .courses-section-header span { font-size: 13px; color: #6b7280; }
+
+    .courses-scroll-wrapper { position: relative; }
+    .courses-scroll-wrapper::before, .courses-scroll-wrapper::after { content: ''; position: absolute; top: 0; bottom: 0; width: 40px; z-index: 2; pointer-events: none; }
+    .courses-scroll-wrapper::before { left: 0; background: linear-gradient(to right, #fafafa, transparent); }
+    .courses-scroll-wrapper::after { right: 0; background: linear-gradient(to left, #fafafa, transparent); }
+
+    .courses-scroll-track { display: flex; gap: 14px; overflow-x: auto; padding: 8px 6px 16px; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+    .courses-scroll-track::-webkit-scrollbar { display: none; }
+
+    .course-card-new { flex-shrink: 0; width: 200px; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.05); scroll-snap-align: start; transition: transform .2s, box-shadow .2s; display: flex; flex-direction: column; }
+    .course-card-new:hover { transform: translateY(-3px); box-shadow: 0 6px 18px rgba(0,0,0,0.10); }
+
+    .card-banner { width: 100%; height: 100px; object-fit: cover; display: block; background: linear-gradient(135deg, #e0e7ff, #f0fdf4); }
+    .card-banner-placeholder { width: 100%; height: 100px; background: linear-gradient(135deg, #e0e7ff 0%, #f0fdf4 100%); display: flex; align-items: center; justify-content: center; font-size: 28px; color: #a5b4fc; }
+
+    .card-body { padding: 12px 12px 10px; display: flex; flex-direction: column; gap: 4px; flex: 1; }
+    .card-tipo { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: #ff7a00; background: #fff4ec; border-radius: 4px; padding: 2px 6px; display: inline-block; width: fit-content; }
+    .card-title { font-size: 13px; font-weight: 600; color: #111827; line-height: 1.35; margin-top: 2px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .card-date { font-size: 11px; color: #9ca3af; margin-top: 2px; }
+    .card-autor { font-size: 11px; color: #6b7280; }
+
+    .card-btn { display: block; margin: 8px 12px 12px; padding: 8px 0; text-align: center; font-size: 12px; font-weight: 700; color: white; background: linear-gradient(90deg, #ff7a00, #00c853); border-radius: 8px; text-decoration: none; transition: opacity .2s, transform .15s; }
+    .card-btn:hover { opacity: .88; transform: translateY(-1px); }
+
+    .courses-empty { text-align: center; padding: 30px 20px; color: #9ca3af; font-size: 14px; width: 100%; }
+    .courses-empty span { font-size: 28px; display: block; margin-bottom: 8px; }
 
     footer { text-align: center; padding: 20px; margin-top: 40px; color: #777; font-size: 14px; }
 
-    /* ── TOAST ── */
-    .toast {
-      position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(20px);
-      background: #222; color: white; padding: 10px 22px; border-radius: 10px;
-      font-size: 14px; opacity: 0; pointer-events: none;
-      transition: opacity .3s, transform .3s; z-index: 999;
-    }
+    .toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(20px); background: #222; color: white; padding: 10px 22px; border-radius: 10px; font-size: 14px; opacity: 0; pointer-events: none; transition: opacity .3s, transform .3s; z-index: 999; }
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-    /* ── MODAL ── */
-    .modal-overlay {
-      display: none;
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.5);
-      z-index: 200; justify-content: center; align-items: center;
-    }
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 200; justify-content: center; align-items: center; }
     .modal-overlay.active { display: flex; }
-    .modal-box {
-      background: white; padding: 30px; border-radius: 16px;
-      max-width: 400px; width: 90%; text-align: center;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-    }
+    .modal-box { background: white; padding: 30px; border-radius: 16px; max-width: 400px; width: 90%; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
     .modal-box h2 { margin-bottom: 15px; }
     .modal-buttons { display: flex; gap: 15px; justify-content: center; margin-top: 25px; }
     .modal-btn { padding: 10px 24px; border-radius: 10px; font-weight: bold; border: none; cursor: pointer; font-size: 15px; transition: .2s; }
@@ -236,7 +247,7 @@
       </button>
 
       {% if session.get("cred") == "admin" %}
-        <a href="/admin" class="btn-home-style btn-fixed">Painel de Administração</a>
+        <a href="/admin" id="admin-panel-link" class="btn-home-style btn-fixed">Painel de Administração</a>
       {% endif %}
     </div>
 
@@ -247,26 +258,58 @@
     </div>
 
     <div class="advanced-content" id="publications-content">
-      <div style="display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; width: 100%; margin-bottom: 15px;">
-        {% if session.get("cred") in ["admin", "professor"] %}
-          <a href="/publish_content" class="btn-home-style btn-fixed">Publicar Conteúdo</a>
-          <a href="/contents/publications" class="btn-home-style btn-fixed">Minhas Publicações</a>
-        {% endif %}
+
+      {% if session.get("cred") in ["admin", "professor"] %}
+      <div style="display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; width: 100%; margin-bottom: 5px;">
+        <a href="{{ url_for('contents.redirect_publish_content') }} " class="btn-home-style btn-fixed">Publicar Conteúdo</a>
+        <a href="{{ url_for('contents.redirect_get_publications') }}" class="btn-home-style btn-fixed">Minhas Publicações</a>
       </div>
-      
-      <div class="courses-section" style="width: 100%; display: flex; flex-direction: column; align-items: center; border-top: 1px solid #eee; padding-top: 20px;">
-        <h3 style="width: 100%; text-align: center; margin-bottom: 15px;">Meus cursos</h3>
+      {% endif %}
+
+      <div class="courses-section">
+        <div class="courses-section-header">
+          <h3>Meus cursos</h3>
+          {% if enrolled_courses %}
+            <span>{{ enrolled_courses|length }} inscrito{% if enrolled_courses|length != 1 %}s{% endif %}</span>
+          {% endif %}
+        </div>
+
         {% if enrolled_courses %}
-          {% for course in enrolled_courses %}
-          <div class="course-card">
-            <span>{{ course.name }}</span>
-            <span class="status">{{ course.status }}</span>
+          <div class="courses-scroll-wrapper">
+            <div class="courses-scroll-track" id="courses-track">
+              {% for course in enrolled_courses %}
+              <div class="course-card-new">
+                {% if course.banner %}
+                  <img class="card-banner" src="{{ url_for('contents.get_banner', content_id = course.id) }}" alt="Banner de {{ course.title }}">
+                {% else %}
+                  <div class="card-banner-placeholder">🎨</div>
+                {% endif %}
+
+                <div class="card-body">
+                  {% if course.content_type %}
+                    <span class="card-tipo">{{ course.content_type }}</span>
+                  {% endif %}
+                  <div class="card-title">{{ course.title }}</div>
+                  {% if course.author %}
+                    <div class="card-autor">{{ course.author }}</div>
+                  {% endif %}
+                  {% if course.creation_date %}
+                    <div class="card-date">{{ course.creation_date }}</div>
+                  {% endif %}
+                </div>
+                <a href="/home" class="card-btn">Acessar →</a>
+              </div>
+              {% endfor %}
+            </div>
           </div>
-          {% endfor %}
         {% else %}
-          <p style="color: #666; font-size: 15px;">Você ainda não se inscreveu em nenhum curso.</p>
+          <div class="courses-empty">
+            <span>📭</span>
+            Você ainda não se inscreveu em nenhum curso.
+          </div>
         {% endif %}
       </div>
+
     </div>
   </div>
 
@@ -339,8 +382,6 @@
     const arrow = document.getElementById('advanced-arrow');
     const isActive = content.classList.toggle('active');
     arrow.textContent = isActive ? '▲' : '▼';
-    
-    // Fecha a outra aba caso esteja aberta
     if (isActive) {
       document.getElementById('publications-content').classList.remove('active');
       document.getElementById('publications-arrow').textContent = '▼';
@@ -352,8 +393,6 @@
     const arrow = document.getElementById('publications-arrow');
     const isActive = content.classList.toggle('active');
     arrow.textContent = isActive ? '▲' : '▼';
-
-    // Fecha a outra aba caso esteja aberta
     if (isActive) {
       document.getElementById('advanced-content').classList.remove('active');
       document.getElementById('advanced-arrow').textContent = '▼';
@@ -374,6 +413,30 @@
       {% endfor %}
     {% endif %}
   {% endwith %}
+
+  /* ────────────────────────────────────────────────────────
+     MODIFICAÇÃO 2: DETECTOR DE ÂNCORA (HASH) AO CARREGAR A TELA
+     Garante que o colapso abra sozinho se vier linkado de fora
+     ──────────────────────────────────────────────────────── */
+  window.addEventListener('DOMContentLoaded', () => {
+    const hash = window.location.hash;
+    
+    if (hash === '#publications-content') {
+      // Abre a aba de publicações
+      togglePublications();
+      // Espera um microsegundo para o display flex renderizar e faz o scroll suave
+      setTimeout(() => {
+        document.getElementById('publications-content').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
+    } 
+    else if (hash === '#advanced-content') {
+      // Abre a aba de ações avançadas / admin
+      toggleAdvanced();
+      setTimeout(() => {
+        document.getElementById('advanced-content').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
+    }
+  });
 </script>
 
 </body>
