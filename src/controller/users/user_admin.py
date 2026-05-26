@@ -198,7 +198,7 @@ class Management_Admins(Management_User_Default):
     @admin_required
     def get_content_by_admin(self, contentId):
         conn = self.dataBase()
-        
+        print("TENHO I TUPO",contentId)
         content = select_info(conn, Contents, "id", uuid.UUID(contentId), None)
         conn.close()
         return content
@@ -249,7 +249,9 @@ class Management_Admins(Management_User_Default):
                     "author":       str(author),
                     "publisher_id": uuid.UUID(self.userId)
                 })
-                    return True
+                    if db_task:
+                        content = conn.query(Contents).filter_by(title = content.get("title"), publisher_id = uuid.UUID(self.userId)).first()
+                        return content.id
             return False
         finally:
             conn.close()

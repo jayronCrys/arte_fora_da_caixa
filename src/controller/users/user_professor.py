@@ -9,7 +9,7 @@ class Management_Professors(Management_User_Default):
     def __init__(self, account, dataBase=database):
         super().__init__(account, dataBase)
         self.userRole = self.user.get("cred") if isinstance(self.user, dict) else None
-        self.contentValidFields = ["desc", "title", "banner", "pdf"]
+        self.contentValidFields = ["desc", "title", "banner", "pdf", "content_type"]
     def professor_required(func):
         @wraps(func)
         def wrapper(self, *args, **kwargs):
@@ -115,7 +115,10 @@ class Management_Professors(Management_User_Default):
     "author":       str(author),
     "publisher_id": uuid.UUID(self.userId)
 })
-                    return True
+                    
+                    if db_task:
+                        content = conn.query(Contents).filter_by(title=content.get("title"), publisher_id=uuid.UUID(self.userId)).first()
+                        return content.id
             return False
         finally:
             conn.close()

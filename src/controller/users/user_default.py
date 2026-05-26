@@ -474,6 +474,23 @@ class Management_User_Default(Login_Account):
             
         finally:
             conn.close()
+    @Login_Account.is_loged            
+    def get_my_couses(self):
+        
+        my_inscriptions = self.my_inscriptions()
+        my_courses = []
+        try:
+            for inscription in my_inscriptions:
+                course = self.get_content_by_id(inscription["content_id"])
+                if not course:
+                    continue
+                            
+                my_courses.append(course)
+            return my_courses                
+        except:
+            print("é complicado isso ai cara")
+            return False
+            
     @Login_Account.is_loged
     def new_inscription(self, contentId):
         

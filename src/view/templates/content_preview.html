@@ -543,9 +543,22 @@
     // ──────────────────────────────────────
     // DADOS DO CONTEÚDO (injetados via Jinja2)
     // ──────────────────────────────────────
-    const contentId = "{{ content.id }}";
+    const contentId = "{{ content['id'] }}";
     const contentTitle = "{{ content.title|e or 'Sem Título' }}";
-    const storageKey = `subscribed_${contentId}`;
+
+    // ── VALIDAÇÃO REAL DO SERVIDOR VIA JINJA2 ──
+    // Varre a lista 'my_courses' retornada por G.user.get_my_courses()
+    {% set ns = namespace(inscrito=false) %}
+    {% if my_courses %}
+        {% for curso in my_courses %}
+            {% if curso.id|string == content.id|string %}
+                {% set ns.inscrito = true %}
+            {% endif %}
+        {% endfor %}
+    {% endif %}
+    
+    // Esta variável herda diretamente o estado real do banco de dados do usuário logado
+    let userIsSubscribed = {{ 'true' if ns.inscrito else 'false' }};
 
     // ──────────────────────────────────────
     // GERENCIAMENTO DO TOAST
@@ -638,15 +651,11 @@
     const formViewCourse = document.getElementById('form-view-course');
 
     function isSubscribed() {
-        return localStorage.getItem(storageKey) === 'true';
+        return userIsSubscribed;
     }
 
     function setSubscribedState(subscribed) {
-        if (subscribed) {
-            localStorage.setItem(storageKey, 'true');
-        } else {
-            localStorage.removeItem(storageKey);
-        }
+        userIsSubscribed = subscribed;
         updateUIForSubscriptionState(subscribed);
     }
 
@@ -675,7 +684,6 @@
                 'Sim, desinscrever',
                 'btn-modal-cancel',
                 function() {
-                    // 1. Envia requisição para o endpoint de desinscrição via POST (ou DELETE)
                     fetch(`/unsubscribe/${contentId}`, { method: 'POST' })
                     .then(response => {
                         if (response.ok) {
@@ -701,7 +709,6 @@
                 'Sim, inscrever-me',
                 'btn-modal-confirm',
                 function() {
-                    // 2. Envia requisição para o endpoint de inscrição via POST
                     fetch(`/subscribe/${contentId}`, { method: 'POST' })
                     .then(response => {
                         if (response.ok) {
@@ -711,8 +718,6 @@
                                 'success'
                             );
                             
-                            // Como o seu backend redireciona com sucesso para 'content.content_buss', 
-                            // capturamos essa URL final de destino e enviamos o usuário para lá após 1 segundo
                             setTimeout(() => {
                                 window.location.href = response.url || `../../contents/content/${contentId}`;
                             }, 1200);

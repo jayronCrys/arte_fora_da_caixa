@@ -32,14 +32,14 @@ def user():
     else:
         user_data = session.get("user")
     
-    enrolled_courses = get_my_courses()
+    enrolled_courses = g.user.get_my_couses()
     
-    if enrolled_courses is None:
+    if enrolled_courses is (None or False):
         total_courses = 0
         print("tudo isso okha")
     
     else:
-        print("amigo nao tem nada eu acho", enrolled_courses[0]["title"])
+        print("amigo nao tem nada eu acho", enrolled_courses)
         total_courses = len(enrolled_courses)
         print(total_courses)
         
