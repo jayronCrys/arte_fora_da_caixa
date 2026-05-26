@@ -49,7 +49,6 @@ def contents(publications):
     try:
         # 1. Busca todos os conteúdos para a listagem principal
         items = g.user.get_all_contents()
-        
         # 2. Captura o parâmetro 'tab' enviado via redirecionamento (?tab=...)
         # Se não houver nada na URL, ele assume 'my-publications-view' por padrão
         active_tab = request.args.get("tab", "my-publications-view")
@@ -58,11 +57,13 @@ def contents(publications):
         pub_items = []
         if _cred() in _PUBLISHER_CREDS:
             try:
-                pub_items = g.user.select_contents_by_publisher_id() if _cred() == "professor" else items
+                pub_items = g.user.select_contents_by_publisher_id() if _cred() == "professor" else g.user.get_all_contents()
             except Exception:
                 pub_items = []
-
+        if publications is None:
+            publications = pub_items
         # Envia TODAS as variáveis de controle que o front-end precisa para decidir o que exibir e marcar
+        print("estou envianfp", pub_items)
         return render_template(
             "contents.html", 
             contents=items, 

@@ -514,8 +514,8 @@ class Management_User_Default(Login_Account):
     @Login_Account.is_loged
     def remove_incription(self, contentId):
         conn = self.dataBase()
-        inscriptionId = check_inscription(content_id)  
-        if not isncriptionId:
+        inscriptionId = self.check_inscription(contentId)  
+        if not self.isncriptionId:
             return False
         
         try:
