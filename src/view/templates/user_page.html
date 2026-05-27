@@ -134,7 +134,12 @@
     .courses-scroll-wrapper::before { left: 0; background: linear-gradient(to right, #fafafa, transparent); }
     .courses-scroll-wrapper::after { right: 0; background: linear-gradient(to left, #fafafa, transparent); }
 
-    .courses-scroll-track { display: flex; gap: 14px; overflow-x: auto; padding: 8px 6px 16px; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+    .courses-scroll-track { 
+      display: flex; gap: 14px; overflow-x: auto; padding: 8px 6px 16px; 
+      scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; 
+      scrollbar-width: none; 
+      scroll-behavior: smooth; /* Rolagem suave interna para os cards */
+    }
     .courses-scroll-track::-webkit-scrollbar { display: none; }
 
     .course-card-new { flex-shrink: 0; width: 200px; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.05); scroll-snap-align: start; transition: transform .2s, box-shadow .2s; display: flex; flex-direction: column; }
@@ -422,21 +427,32 @@
     const hash = window.location.hash;
     
     if (hash === '#publications-content') {
-      // Abre a aba de publicações
       togglePublications();
-      // Espera um microsegundo para o display flex renderizar e faz o scroll suave
       setTimeout(() => {
         document.getElementById('publications-content').scrollIntoView({ behavior: 'smooth', block: 'center' });
       }, 100);
     } 
     else if (hash === '#advanced-content') {
-      // Abre a aba de ações avançadas / admin
       toggleAdvanced();
       setTimeout(() => {
         document.getElementById('advanced-content').scrollIntoView({ behavior: 'smooth', block: 'center' });
       }, 100);
     }
   });
+
+  /* ────────────────────────────────────────────────────────
+     MODIFICAÇÃO 3: ROLAGEM HORIZONTAL COM O SCROLL DO MOUSE
+     Transforma o scroll vertical em horizontal ao passar o mouse sobre os cards
+     ──────────────────────────────────────────────────────── */
+  const track = document.getElementById('courses-track');
+  if (track) {
+    track.addEventListener('wheel', (e) => {
+      if (e.deltaY !== 0) {
+        e.preventDefault();
+        track.scrollLeft += e.deltaY * 1.2; // Multiplicador para ajustar a velocidade da rolagem
+      }
+    });
+  }
 </script>
 
 </body>

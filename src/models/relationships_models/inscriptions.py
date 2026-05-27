@@ -27,6 +27,7 @@ class Subs(Base):
     # ------------------------------------------------
     content_id = Column(UUID(as_uuid=True), ForeignKey("conteudos.id"), nullable=False)
     creation_date = Column(DateTime(timezone=True), default=func.now())
+    is_favorite = Column(Boolean, default=False)
 
     # ------------------------------------------------
     # Relacionamentos:

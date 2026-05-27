@@ -362,6 +362,223 @@
   </style>
 </head>
 <body>
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Arte Fora da Caixa</title>
+  <style>
+    /* ═══════════════════════════════════════════════════════════
+       NOVOS ESTILOS PARA DESIGN DE FILTROS LATERAIS E RESPONSIVIDADE
+       ═══════════════════════════════════════════════════════════ */
+    .courses-layout {
+      display: flex;
+      gap: 24px;
+      margin-top: 20px;
+    }
+    .filter-sidebar {
+      width: 260px;
+      flex-shrink: 0;
+      background: #f8fafc;
+      padding: 20px;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      height: fit-content;
+    }
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .filter-group label {
+      font-weight: 6px;
+      font-size: 13px;
+      color: #475569;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .filter-control {
+      width: 100%;
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid #cbd5e1;
+      background-color: #fff;
+      font-size: 14px;
+      color: #1e293b;
+      box-sizing: border-box;
+    }
+    .filter-control:focus {
+      outline: none;
+      border-color: #ff7a00;
+    }
+    .courses-grid-container {
+      flex-grow: 1;
+    }
+    .search-container {
+      margin-bottom: 20px;
+    }
+    .search-input-wrapper {
+      position: relative;
+      width: 100%;
+    }
+    .search-input-wrapper input {
+      width: 100%;
+      padding: 12px 16px;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      font-size: 15px;
+      box-sizing: border-box;
+    }
+    .search-input-wrapper input:focus {
+      outline: none;
+      border-color: #00c853;
+    }
+    .rating-stars {
+      color: #f59e0b;
+      font-size: 13px;
+      margin-top: 4px;
+    }
+    @media (max-width: 768px) {
+      .courses-layout {
+        flex-direction: column;
+      }
+      .filter-sidebar {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Arte Fora da Caixa</title>
+  <style>
+    /* ═══════════════════════════════════════════════════════════
+       NOVOS ESTILOS PARA DESIGN DE FILTROS LATERAIS E RESPONSIVIDADE
+       ═══════════════════════════════════════════════════════════ */
+    .courses-layout {
+      display: flex;
+      gap: 24px;
+      margin-top: 20px;
+    }
+    .filter-sidebar {
+      width: 260px;
+      flex-shrink: 0;
+      background: #f8fafc;
+      padding: 20px;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      height: fit-content;
+    }
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .filter-group label {
+      font-weight: 6px;
+      font-size: 13px;
+      color: #475569;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .filter-control {
+      width: 100%;
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid #cbd5e1;
+      background-color: #fff;
+      font-size: 14px;
+      color: #1e293b;
+      box-sizing: border-box;
+    }
+    .filter-control:focus {
+      outline: none;
+      border-color: #ff7a00;
+    }
+    .courses-grid-container {
+      flex-grow: 1;
+    }
+    .search-container {
+      margin-bottom: 20px;
+    }
+    .search-input-wrapper {
+      position: relative;
+      width: 100%;
+    }
+    .search-input-wrapper input {
+      width: 100%;
+      padding: 12px 16px;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      font-size: 15px;
+      box-sizing: border-box;
+    }
+    .search-input-wrapper input:focus {
+      outline: none;
+      border-color: #00c853;
+    }
+    .rating-stars {
+      color: #f59e0b;
+      font-size: 13px;
+      margin-top: 4px;
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       SUPORTE A ROLAGEM DOS CURSOS MATRICULADOS NO PERFIL
+       ═══════════════════════════════════════════════════════════ */
+    .courses-scroll-wrapper {
+      width: 100%;
+      overflow-x: auto;
+      padding-bottom: 12px;
+      margin-top: 10px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .courses-scroll-track {
+      display: flex;
+      gap: 16px;
+      width: max-content;
+    }
+    .course-card-new {
+      flex: 0 0 260px;
+      box-sizing: border-box;
+    }
+    /* Customização elegante da barra de rolagem */
+    .courses-scroll-wrapper::-webkit-scrollbar {
+      height: 8px;
+    }
+    .courses-scroll-wrapper::-webkit-scrollbar-track {
+      background: #f1f5f9;
+      border-radius: 10px;
+    }
+    .courses-scroll-wrapper::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 10px;
+    }
+    .courses-scroll-wrapper::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    @media (max-width: 768px) {
+      .courses-layout {
+        flex-direction: column;
+      }
+      .filter-sidebar {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
 
 <header>
   <h1>Arte Fora da Caixa</h1>
@@ -393,42 +610,81 @@
     <p>Cursos gratuitos e criativos para expandir seu conhecimento</p>
   </div>
 
-  <div class="filters">
-    <select>
-      <option>Todas as Áreas</option>
-      <option>Ciência</option>
-      <option>Matemática</option>
-      <option>Artes</option>
-    </select>
-
-    <select>
-      <option>Mais Popular</option>
-      <option>Mais Recente</option>
-      <option>Mais Curtido</option>
-    </select>
+  <div class="search-container">
+    <div class="search-input-wrapper">
+      <input type="text" id="all-courses-search" placeholder="🔍 Buscar conteúdos pelo nome..." oninput="runAllCoursesFilters()">
+    </div>
   </div>
 
-  <main class="courses">
-    {% if contents %}
-      {% for c in contents %}
-      <div class="course">
-        {% if c["banner"] %}
-          <img src="{{ url_for('contents.get_banner', content_id=c['id']) }}" style="width:100%; height:180px; object-fit:cover;">
-        {% else %}
-          <div style="width:100%; height:180px; background: linear-gradient(90deg,#ff7a00,#00c853);"></div>
-        {% endif %}
-
-        <div class="course-content">
-          <h3>{{ c.title }}</h3>
-          <p>Autor: {{ c.author }} • Publicado: {{ c.creation_date }}</p>
-          <button onclick="location.href='{{ url_for('contents.content_buss', content_id=c['id']) }}'">Ver</button>
-        </div>
+  <div class="courses-layout">
+    <aside class="filter-sidebar">
+      <div class="filter-group">
+        <label for="filter-type">Tipo de Conteúdo</label>
+        <select id="filter-type" class="filter-control" onchange="runAllCoursesFilters()">
+          <option value="all">Todas as Áreas</option>
+          {% if content_types %}
+            {% for value, label, emoji in content_types %}
+              <option value="{{ value }}">{{ emoji }} {{ label }}</option>
+            {% endfor %}
+          {% endif %}
+        </select>
       </div>
-      {% endfor %}
-    {% else %}
-      <p style="text-align:center; font-size:18px; color:#555; grid-column: 1 / -1;">Nenhum conteúdo publicado.</p>
-    {% endif %}
-  </main>
+
+      <div class="filter-group">
+        <label for="filter-popularity">Popularidade</label>
+        <select id="filter-popularity" class="filter-control" onchange="runAllCoursesFilters()">
+          <option value="all">Todos os conteúdos</option>
+          <option value="most_enrolled">🔥 Mais Inscritos</option>
+          <option value="most_reviewed">💬 Mais Avaliados (Volume)</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label for="filter-sort">Ordenar por Data</label>
+        <select id="filter-sort" class="filter-control" onchange="runAllCoursesFilters()">
+          <option value="recent">Mais recentes primeiro</option>
+          <option value="oldest">Mais antigos primeiro</option>
+        </select>
+      </div>
+    </aside>
+
+    <div class="courses-grid-container">
+      <main class="courses" id="all-courses-grid">
+        {% if contents %}
+          {% for c in contents %}
+          <div class="course" 
+               data-title="{{ c.title | lower }}" 
+               data-type="{{ c.content_type or 'aula' }}" 
+               data-rating="{{ c.rating or 5 }}" 
+               data-date="{{ c.creation_date or '01/01/2026' }}"
+               data-enrollments="{{ c.enrollments_count or 0 }}"
+               data-reviews="{{ c.reviews_count or 0 }}">
+            
+            {% if c["banner"] %}
+              <img src="{{ url_for('contents.get_banner', content_id=c['id']) }}" style="width:100%; height:180px; object-fit:cover;">
+            {% else %}
+              <div style="width:100%; height:180px; background: linear-gradient(90deg,#ff7a00,#00c853);"></div>
+            {% endif %}
+
+            <div class="course-content">
+              <h3>{{ c.title }}</h3>
+              <p>Autor: {{ c.author }} • Publicado: {{ c.creation_date }}</p>
+              
+              <div class="rating-stars">
+                {% set rating_int = (c.rating or 5) | int %}
+                {% for n in range(rating_int) %}⭐{% endfor %} <span>({{ c.rating or '5.0' }})</span>
+              </div>
+              
+              <button onclick="location.href='{{ url_for('contents.content_buss', content_id=c.id) }}'" style="margin-top: 10px;">Ver</button>
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <p style="text-align:center; font-size:18px; color:#555; grid-column: 1 / -1;">Nenhum conteúdo publicado.</p>
+        {% endif %}
+      </main>
+    </div>
+  </div>
 </section>
 
 <section id="my-courses" class="view-section">
@@ -605,7 +861,6 @@
           </div>
         </div>
 
-        <!-- Card 3: banner CORRIGIDO -->
         <div class="form-card">
           <div class="form-card-title">🖼️ Banner</div>
 
@@ -618,7 +873,6 @@
             </button>
           </div>
 
-          <!-- Galeria de banners padrão -->
           <div class="tab-panel active" id="tab-default">
             <div class="banner-gallery">
               {% if default_banners %}
@@ -639,7 +893,6 @@
             </div>
           </div>
 
-          <!-- Upload próprio -->
           <div class="tab-panel" id="tab-own">
             <p class="hint" style="margin-bottom:12px">
               Recomendado: <strong>1280 × 720 px</strong> (proporção 16:9) •
@@ -656,7 +909,6 @@
             <img id="banner-preview-own" alt="preview do banner">
           </div>
 
-          <!-- Preview do card público -->
           <div class="preview-wrapper visible" id="preview-wrapper">
             <p class="preview-label">Como ficará para o público</p>
             <div class="pub-card">
@@ -784,7 +1036,7 @@
                 {% if course.author %}<div class="card-autor">{{ course.author }}</div>{% endif %}
                 {% if course.creation_date %}<div class="card-date">{{ course.creation_date }}</div>{% endif %}
               </div>
-              <a href="/success_page_mock" class="card-btn-new">Acessar →</a>
+              <a href="/contents/content/{{course.id}}" class="card-btn-new">Acessar →</a>
             </div>
             {% endfor %}
           </div>
@@ -831,25 +1083,80 @@
 <div class="toast" id="toast"></div>
 
 <script>
-  // ═══════════════════════════════════════════════════════════
-  // MAPA DE URLs DOS BANNERS PADRÃO (GERADO PELO JINJA2)
-  // ═══════════════════════════════════════════════════════════
+  // BANNER E TIPOS INTERNOS
   const BANNER_URLS = {
-    // eslint-disable-next-line
     {% for b in default_banners %}
     "{{ b.id }}": "{{ url_for('contents.get_banner_default', banner_id=b.id) }}",
     {% endfor %}
-};
+  };
 
-// prettier-ignore
-const TYPE_LABELS = {
-    // eslint-disable-next-line
+  const TYPE_LABELS = {
     {% for value, label, emoji in content_types %}
     "{{ value }}": "{{ emoji }} {{ label }}",
     {% endfor %}
-};
+  };
+
   /* ==========================================
-     1. SISTEMA SPA: CHAVEAMENTO DE ABAS PRINCIPAIS
+     MOTOR DE FILTRAGEM DINÂMICA DA ABA "TODOS OS CURSOS"
+     ========================================== */
+  const allCourseCards = Array.from(document.querySelectorAll('#all-courses-grid .course'));
+  const allCoursesGrid = document.getElementById('all-courses-grid');
+
+  function parseDateString(dateStr) {
+    if (!dateStr) return new Date(0);
+    const parts = dateStr.split('/');
+    if (parts.length === 3) {
+      return new Date(parts[2], parts[1] - 1, parts[0]);
+    }
+    return new Date(dateStr);
+  }
+
+  function runAllCoursesFilters() {
+    const searchQuery = document.getElementById('all-courses-search').value.toLowerCase().trim();
+    const selectedType = document.getElementById('filter-type').value;
+    const selectedPopularity = document.getElementById('filter-popularity').value;
+    const selectedSort = document.getElementById('filter-sort').value;
+
+    // 1. Filtragem por busca textual e tipo
+    let filteredCards = allCourseCards.filter(card => {
+      const title = card.dataset.title || '';
+      const type = card.dataset.type || '';
+
+      const matchesSearch = title.includes(searchQuery);
+      const matchesType = (selectedType === 'all' || type === selectedType);
+
+      return matchesSearch && matchesType;
+    });
+
+    // 2. Ordenação combinada (Popularidade / Engajamento + Data de Criação)
+    filteredCards.sort((a, b) => {
+      if (selectedPopularity === 'most_enrolled') {
+        const enrollA = parseInt(a.dataset.enrollments || '0');
+        const enrollB = parseInt(b.dataset.enrollments || '0');
+        if (enrollB !== enrollA) return enrollB - enrollA; 
+      } else if (selectedPopularity === 'most_reviewed') {
+        const reviewA = parseInt(a.dataset.reviews || '0');
+        const reviewB = parseInt(b.dataset.reviews || '0');
+        if (reviewB !== reviewA) return reviewB - reviewA;
+      }
+
+      // Fallback/Critério secundário: Ordenação cronológica por Data
+      const dateA = parseDateString(a.dataset.date);
+      const dateB = parseDateString(b.dataset.date);
+      return selectedSort === 'recent' ? dateB - dateA : dateA - dateB;
+    });
+
+    // 3. Renderização reativa em tela
+    allCoursesGrid.innerHTML = '';
+    if (filteredCards.length > 0) {
+      filteredCards.forEach(card => allCoursesGrid.appendChild(card));
+    } else {
+      allCoursesGrid.innerHTML = '<p style="text-align:center; font-size:18px; color:#555; grid-column: 1 / -1;">Nenhum conteúdo atende aos filtros selecionados.</p>';
+    }
+  }
+
+  /* ==========================================
+     SISTEMA SPA: CHAVEAMENTO DE ABAS PRINCIPAIS
      ========================================== */
   function switchTab(targetSectionId, button) {
     document.querySelectorAll('.view-section').forEach(sec => sec.classList.remove('active'));
@@ -861,7 +1168,7 @@ const TYPE_LABELS = {
   }
 
   /* ==========================================
-     2. CHAVEAMENTO DE SUBSEÇÕES: CONTEÚDOS E PUBLICAÇÕES
+     CHAVEAMENTO DE SUBSEÇÕES: CONTEÚDOS E PUBLICAÇÕES
      ========================================== */
   function switchSubSection(subSectionId, button) {
     document.getElementById('my-publications-view').style.display = 'none';
@@ -875,7 +1182,7 @@ const TYPE_LABELS = {
   }
 
   /* ==========================================
-     3. MECANISMO DE FILTROS (MEUS CURSOS)
+     MECANISMO DE FILTROS SECUNDÁRIOS (MEUS CURSOS)
      ========================================== */
   let activeSubTab = 'all';
   const myCards = Array.from(document.querySelectorAll('.my-course-card'));
@@ -924,7 +1231,7 @@ const TYPE_LABELS = {
   }
 
   /* ==========================================
-     4. CONTROLE LOGOUT & COMPORTAMENTO DO PERFIL
+     CONTROLE LOGOUT & COMPORTAMENTO DO PERFIL
      ========================================== */
   function openLogoutModal(e) { e.preventDefault(); document.getElementById('logout-modal').classList.add('active'); }
   function closeLogoutModal() { document.getElementById('logout-modal').classList.remove('active'); }
@@ -961,7 +1268,7 @@ const TYPE_LABELS = {
   }
 
   /* ==========================================
-     5. PROCESSAMENTO: FORMULÁRIO PUBLICAR CONTEÚDO
+     PROCESSAMENTO: FORMULÁRIO PUBLICAR CONTEÚDO
      ========================================== */
   let bannerMode = "default";
   let ownBannerDataUrl = null;
@@ -983,7 +1290,6 @@ const TYPE_LABELS = {
     }
   }
 
-  // ── Banner padrão selecionado (USANDO O MAPA BANNER_URLS) ──
   function onDefaultBannerChange(bannerId) {
     const url = BANNER_URLS[bannerId];
     const bannerDiv = document.getElementById("preview-banner");
@@ -994,7 +1300,6 @@ const TYPE_LABELS = {
       img.src = url;
       img.style.display = "block";
     } else {
-      // fallback: sem imagem, mostra gradiente
       bannerDiv.style.background = "linear-gradient(135deg,#ff7a00,#00c853)";
       img.style.display = "none";
     }
@@ -1003,8 +1308,7 @@ const TYPE_LABELS = {
 
   function onBannerChosen(input) {
     if (!input.files || !input.files[0]) return;
-    const file = input.files[0];
-    if (file.size > 2 * 1024 * 1024) { alert("A imagem deve ter no máximo 2 MB."); input.value = ""; return; }
+    if (input.files[0].size > 2 * 1024 * 1024) { alert("A imagem deve ter no máximo 2 MB."); input.value = ""; return; }
     const reader = new FileReader();
     reader.onload = e => {
       ownBannerDataUrl = e.target.result;
@@ -1012,7 +1316,7 @@ const TYPE_LABELS = {
       document.getElementById("banner-preview-own").style.display = "block";
       applyOwnBannerPreview(ownBannerDataUrl);
     };
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(input.files[0]);
   }
 
   function applyOwnBannerPreview(dataUrl) {
@@ -1065,48 +1369,36 @@ const TYPE_LABELS = {
     document.getElementById("publish-form").submit();
   }
 
-  
-  /* TOAST */
   function showToast(msg) {
     const t = document.getElementById('toast');
     t.textContent = msg; t.classList.add('show');
     setTimeout(() => t.classList.remove('show'), 2800);
   }
 
-  /* EXECUÇÃO INTEGRADA AO CARREGAR A PÁGINA */
+  /* ON LOAD */
   document.addEventListener('DOMContentLoaded', () => {
     initTypeFilter();
     updatePreview();
 
-    // Inicializa o preview com o banner padrão selecionado
     const firstDefaultBanner = document.querySelector('input[name="banner_id"]:checked');
-    if (firstDefaultBanner) {
-      onDefaultBannerChange(firstDefaultBanner.value);
-    }
+    if (firstDefaultBanner) onDefaultBannerChange(firstDefaultBanner.value);
 
-    // 1. Captura o comando enviado pelo Flask (Jinja2)
+    // Inicializa filtros com ordenação default ativa
+    runAllCoursesFilters();
+
     const activeTabFromServer = "{{ active_tab }}"; 
     const hash = window.location.hash;
 
-    // 2. Fluxo: Direcionar para a Seção de Conteúdos e Publicações
     if (hash === '#publications-section' || activeTabFromServer === 'publish-content-view' || activeTabFromServer === 'my-publications-view') {
-      
-      // Ativa a aba mãe usando a sua função nativa do projeto
       const mainPubBtn = document.getElementById('publications-tab-btn');
       switchTab('publications-section', mainPubBtn);
-      
-      // Decide qual sub-aba interna exibir
       if (activeTabFromServer === 'publish-content-view') {
         switchSubSection('publish-content-view', document.getElementById('sub-publish-btn'));
       } else {
         switchSubSection('my-publications-view', document.getElementById('sub-my-pubs-btn'));
       }
-    }
-    
-    // 3. Fluxo secundário: Direcionar para o Perfil do Usuário
-    else if (hash === '#user-profile') {
-      const profileBtn = document.getElementById('profile-tab-btn');
-      switchTab('user-profile', profileBtn);
+    } else if (hash === '#user-profile') {
+      switchTab('user-profile', document.getElementById('profile-tab-btn'));
     }
   });
 </script>
