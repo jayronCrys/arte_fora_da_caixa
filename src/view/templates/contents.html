@@ -809,7 +809,7 @@
 
   <div id="publish-content-view" class="sub-section-content" style="display: none;">
     <div style="padding: 10px 0 40px;">
-      <form method="POST" enctype="multipart/form-data" id="publish-form">
+      <form method="POST" action="{{ url_for('contents.publish_content') }}" enctype="multipart/form-data" id="publish-form">
         
         <div class="form-card">
           <div class="form-card-title">📋 Informações do conteúdo</div>

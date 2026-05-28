@@ -178,8 +178,6 @@ def publish_content():
             author = author_obj["name"]
             upload = g.user.publish_content_by_admin(content, author)
             
-            if upload:
-                upload = g.user.publish_content_by_admin(content, author)
     elif _cred() == "professor":
         author = g.user.get_user_name()
         if author == session.get("name"):

@@ -4,7 +4,7 @@
 #src/models/__init__.py
 
 from sqlalchemy import (
-    Column, Integer, String, Text, DateTime, ForeignKey,
+    Column, Integer, String, Boolean, Text, DateTime, ForeignKey,
     LargeBinary, Enum, func
 )
 from sqlalchemy.orm import relationship
@@ -17,6 +17,6 @@ from .database import Base, engine, get_session
 
 __all__ = [
     "Base", "engine", "get_session",
-    "Column", "Integer", "String", "Text", "DateTime", "ForeignKey",
+    "Column", "Integer", "String", "Text", "Boolean", "DateTime", "ForeignKey",
     "LargeBinary", "Enum", "func", "relationship", "UUID"
 ]
