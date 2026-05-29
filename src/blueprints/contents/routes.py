@@ -78,7 +78,8 @@ def redirect_get_publications():
 @contents_bp.route("/contents/<publications>", methods=["GET", "POST"])
 def contents(publications):
     try:
-        items = g.user.get_all_contents()
+
+        items = g.user.GET_FULL_CONTENT(all_contents=True, content_to_select=None, review=True)
         active_tab = request.args.get("tab", "all-courses")
         
         enrolled_contents = g.user.get_my_couses()

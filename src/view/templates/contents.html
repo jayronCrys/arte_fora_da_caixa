@@ -655,7 +655,7 @@
           <div class="course" 
                data-title="{{ c.title | lower }}" 
                data-type="{{ c.content_type or 'aula' }}" 
-               data-rating="{{ c.rating or 5 }}" 
+               data-rating="{{ c['rating']['rating_distribution'] or 5 }}" 
                data-date="{{ c.creation_date or '01/01/2026' }}"
                data-enrollments="{{ c.enrollments_count or 0 }}"
                data-reviews="{{ c.reviews_count or 0 }}">

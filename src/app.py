@@ -5,9 +5,10 @@ import logging
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from flask import Flask, send_from_directory
-
 from extensions import load_g_user
+from src.models.create_mongo_db import init_mongo_db
 
+init_mongo_db()
 # Blueprints
 from blueprints.auth import auth_bp
 from blueprints.user import user_bp

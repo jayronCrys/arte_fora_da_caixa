@@ -8,7 +8,7 @@ from src.models.db_execute import insert_info, select_info, delete_info, update_
 from src.models.contents_models.content_models import Contents
 from src.models.users_models.user_models import User
 from src.models.relationships_models.inscriptions import Subs
-
+from src.models.db_mongo_execute import get_comments, get_rating, new_comment,  new_inscription
 from typing import Union
 import re
 import logging
@@ -284,13 +284,16 @@ class Management_User_Default(Login_Account):
     def get_user(self):
         return self.user
 
+
     @Login_Account.is_loged
     def get_user_name(self):
         return self.userName
 
+
     @Login_Account.is_loged
     def get_email(self):
         return self.email if self.email else "nenhum email associado á este perfil"
+
 
     @Login_Account.is_loged
     def update_user(self, field, newValue1, newValue2=None):
@@ -346,6 +349,7 @@ class Management_User_Default(Login_Account):
 
         return False
 
+
     @Login_Account.is_loged
     def delete_user(self):
         conn = self.dataBase()
@@ -361,7 +365,18 @@ class Management_User_Default(Login_Account):
             return False
         finally:
             conn.close()
-                    
+
+
+    @Login_Account.is_loged
+    def get_content_review(self):
+        pass
+
+
+    @Login_Account.is_loged
+    def get_contents_comments(self):
+        pass
+
+
     @Login_Account.is_loged   
     def get_content_by_id(self, contentId):
         print(f"[get_content_by_id] contentId recebido: '{contentId}', tipo: {type(contentId)}")
@@ -382,8 +397,8 @@ class Management_User_Default(Login_Account):
             return False            
         finally:
             conn.close()
-        
-        
+
+
     @Login_Account.is_loged
     def get_all_contents(self):
         conn = self.dataBase()
@@ -412,7 +427,32 @@ class Management_User_Default(Login_Account):
             
         finally:            
             conn.close()
-            
+
+
+    @Login_Account.is_loged
+    def GET_FULL_CONTENT(self, all_contents=False, content_to_select=None, review=False, comments=False):
+
+        if not all_contents and content_to_select:
+            contents = self.get_content_by_id()
+
+        elif all_contents and content_to_select is None:
+            contents = self.get_all_contents()
+
+        full_content = []
+        for content in contents:
+            content_id = content["id"]
+            if review:
+                content_review = get_rating(content_id)
+                content["rating"] = content_review
+
+            if comments:
+                content_comments = get_comments(content_id)
+                content["comments"] = content_comments
+
+            full_content.append(content)
+
+        return full_content
+                   
 
     @Login_Account.is_loged
     def check_inscription(self, contentId):
@@ -440,11 +480,11 @@ class Management_User_Default(Login_Account):
             return True
         finally:                         
              conn.close()
-             
-             
-             
+                       
+                              
     @Login_Account.is_loged
     def my_inscriptions(self):
+
         conn = self.dataBase()
         
         try:
@@ -474,6 +514,8 @@ class Management_User_Default(Login_Account):
             
         finally:
             conn.close()
+
+
     @Login_Account.is_loged            
     def get_my_couses(self):
         
@@ -490,7 +532,8 @@ class Management_User_Default(Login_Account):
         except:
             print("é complicado isso ai cara")
             return False
-            
+
+
     @Login_Account.is_loged
     def new_inscription(self, contentId):
         
@@ -527,7 +570,8 @@ class Management_User_Default(Login_Account):
              
         finally:
              conn.close()
-         
+
+
     @Login_Account.is_loged
     def remove_incription(self, contentId):
         conn = self.dataBase()

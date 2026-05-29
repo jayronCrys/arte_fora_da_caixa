@@ -34,7 +34,7 @@ def select_info(
     model: Type[DeclarativeMeta],
     columnReference: Union[List[str], str],
     valueReference: Union[str, int, List[Union[str, int]]],
-    items_to_select: [List[str]] = None
+    items_to_select: List[str] = None
 ) -> Union[bool, dict]:
     """
     Seleciona um registro da tabela.
@@ -57,7 +57,7 @@ def select_info(
                 conditions.append(getattr(model, col_name) == val)
             where_clause = and_(*conditions)
         else:
-            # Caso string única
+            # Caso string única 
             where_clause = getattr(model, columnReference) == valueReference
 
         # Executa a consulta

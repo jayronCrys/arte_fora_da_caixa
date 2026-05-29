@@ -1,4 +1,4 @@
-from src.models.content_models.rating_models import course_stats, course_comments
+from src.models.contents_models.rating_models import course_stats, course_comments
 from datetime import datetime
 
 
@@ -19,8 +19,6 @@ def new_inscription(course_id):
         upsert=True
     )
     
-from db_mongo import comments_col
-from datetime import datetime
 
 def new_comment(course_id, user_id, user_name, rating, texto_comentario):
     comentario_doc = {
