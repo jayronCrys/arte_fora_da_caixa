@@ -276,13 +276,21 @@ def content_buss(content_id):
         abort(404)
         
     if request.method == "GET":
+        
         content = g.user.GET_FULL_CONTENT( all_contents=False, content_to_select=content_id, review=True, comments=True)
+        
+        print(f"[RETORNO DE CONTENT_BUSS de tipo {type(content)}<0>\n", content)
+        
         content = content[0] if content[0]["id"] == content_id else False
+        
         if not content:
             abort(404)
+            
+        print(f"[RETORNO DE CONTENT_BUSS de tipo {type(content)}<1>\n", content)
         return render_template("content_preview.html", content=content, my_courses=my_courses)
         
-    content = content[0] if content[0]["id"] == content_id else False        
+    content = content[0] if content[0]["id"] == content_id else False
+    print(f"[RETORNO DE CONTENT_BUSS de tipo {type(content)}", content)
     if not content:
         abort(404)        
     content = g.user.GET_FULL_CONTENT( all_contents=False, content_to_select=content_id, review=True, comments=False)        

@@ -37,9 +37,21 @@ def unsubscribe_by_my_content_pages(content_id):
     
 @inscriptions_bp.route('/unsubscribe/<content_id>', methods=['DELETE', 'POST'])
 def unsubscribe_preview(content_id):
-    if unsubscribe(content_id):
-        return render_template("content_preview.html", content = g.user.get_content_by_id(content_id))
-    return render_template("content_preview.html", content = g.user.get_content_by_id(content_id))       
+    
+    
+    unsubscribe_response = unsubscribe(content_id)
+    
+    
+    if not unsubscribe_response:
+        jsonify({'error': 'Não foi possível se desinscrever do conteúdo'}), 404
+        
+    content = g.user.GET_FULL_CONTENT(all_contents=False, content_to_select=content_id, review=True, comments=True)
+            
+    content = content[0] if content[0]["id"] == content_id else False
+    
+    if not content:
+        jsonify({'error': 'Conteúdo não encontrado'}), 404        
+    return render_template("content_preview.html", content = content)       
 
 def get_my_courses():
         

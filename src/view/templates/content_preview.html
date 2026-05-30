@@ -555,7 +555,7 @@
             <h2 class="content-title">{{ content.title or 'Sem Título' }}</h2>
 
             <div class="rating-display">
-                {% set avg_rating = content.rating.average_rating if content.rating else 0 %}
+                {% set avg_rating = content.rating.average_rating if content.rating.average_rating  else 0 %}
                 {% set percentage = (avg_rating / 5) * 100 %}
                 <div class="stars-outer">
                     <div class="stars-inner" style="width: {{ percentage }}%;"></div>

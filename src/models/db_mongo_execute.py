@@ -62,6 +62,30 @@ def new_review(course_id, review=0, new_inscription=False):
         upsert=True
     )
 
+def remove_inscription(course_id):
+    """
+    Abordagem direta usando $inc clássico. 
+    Só decrementa se o documento contiver total_inscriptions maior que 0.
+    """
+    course_stats_col = rating_models.get_course_stats_col()
+
+    print(f"[REMOVE_INSCRIPTION]: Executando $inc negativo para o curso {course_id}...")
+
+    resultado = course_stats_col.update_one(
+        {
+            "course_id": course_id,
+            "total_inscriptions": {"$gt": 0} # Só decrementa se for maior que 0
+        },
+        {
+            "$inc": {"total_inscriptions": -1},
+            "$set": {"last_updated": datetime.utcnow()}
+        },
+        upsert=False # Não faz sentido criar um documento novo com inscrição negativa
+    )
+
+    print(f"[REMOVE_INSCRIPTION] MATCHED: {resultado.matched_count} | MODIFIED: {resultado.modified_count}")
+
+                        
 def new_comment(course_id, user_id, user_name, rating, texto_comentario):
     # 🌟 CORRIGIDO: Busca a coleção através da função de acesso seguro
     course_comments_col = rating_models.get_course_comments_col()

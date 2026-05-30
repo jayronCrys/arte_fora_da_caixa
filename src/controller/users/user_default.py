@@ -8,7 +8,7 @@ from src.models.db_execute import insert_info, select_info, delete_info, update_
 from src.models.contents_models.content_models import Contents
 from src.models.users_models.user_models import User
 from src.models.relationships_models.inscriptions import Subs
-from src.models.db_mongo_execute import get_comments, get_reviews, new_comment,  new_review
+from src.models.db_mongo_execute import get_comments, get_reviews, new_comment,  new_review, remove_inscription
 from typing import Union
 import re
 import logging
@@ -413,7 +413,7 @@ class Management_User_Default(Login_Account):
                 Contents,
                 "id",
                 UUID(contentId),
-                ["id", "title", "desc", "banner", "content_type", "author", "creation_date", "publisher_id", "pdf"]
+                ["id", "title", "desc", "banner", "content_type", "author", "creation_date", "publisher_id"]
             )
             print(f"[GET_CONTENT_BY_ID]: RETORNO COM SUCESSO DE #{content['title']}:{content['id']}#")
             return content
@@ -565,11 +565,13 @@ class Management_User_Default(Login_Account):
         my_courses = []
         try:
             for inscription in my_inscriptions:
-                course = self.get_content_by_id(inscription["content_id"])
+                content_id = inscription["content_id"]
+                course = self.GET_FULL_CONTENT( all_contents=False, content_to_select=content_id, review=True, comments=False)
+                
                 if not course:
                     continue
-                            
-                my_courses.append(course)
+                                            
+                my_courses.append(course[0])
                     
             print(f"[GET_MY_COURSES]: RETORNO COM SUCESSO DE #{len(my_courses)} conteúdos#")                            
             return my_courses                
@@ -615,9 +617,16 @@ class Management_User_Default(Login_Account):
         
         try:
             if delete_info(conn, Subs, "id", UUID(inscriptionId)):
-                print(f"[REMOVE_INSCRIPTION]: RETORNO COM SUCESSO DE #DESINSCRIÇÃO#")
-                return True
                 
+                try:
+                    
+                    remove_inscription(contentId)
+                    print(f"[REMOVE_INSCRIPTION]: RETORNO COM SUCESSO DE #DESINSCRIÇÃO#", type(inscriptionId))
+                    return True
+                    
+                except:
+                    print(f"[REMOVE_INSCRIPTION]: RETORNO SEM SUCESSO DE #DESINSCRIÇÃO#")
+                    return False                
         except Exception as e:
             print(f"Erro em remove_inscription: {e}")
             conn.rollback()

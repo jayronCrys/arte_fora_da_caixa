@@ -657,7 +657,7 @@
                data-type="{{ c.content_type or 'aula' }}" 
                data-rating="{{ c.rating.average_rating or 5 }}" 
                data-date="{{ c.creation_date or '01/01/2026' }}"
-               data-enrollments="{{ c.rating.total_students or 0 }}"
+               data-enrollments="{{ c.rating.total_inscriptions or 0 }}"
                data-reviews="{{ c.rating.total_reviews or 0 }}">
             
             {% if c["banner"] %}
@@ -672,7 +672,7 @@
               
               <div class="rating-stars">
                 {% set rating_int = (c.rating.average_rating) | int %}
-                {% for n in range(rating_int) %}⭐{% endfor %} <span>({{ c.rating.average_rating or '0.0' }})</span><span> {{ c.rating.total_students }} alunos inscritos </span>
+                {% for n in range(rating_int) %}⭐{% endfor %} <span>({{ c.rating.average_rating or '0.0' }})</span><span> {{ c.rating.total_inscriptions }} alunos inscritos </span>
                 <br>
                 <span>{{c.rating.total_reviews}} avaliações </span>
                 
@@ -754,7 +754,7 @@
             </div>
 
             <div class="my-course-body">
-              <div class="my-course-title">{% if mc.title %}{{ mc.title }}{% else %}Título Indisponível{% endif %}</div>
+              <div class="my-course-title">{% if mc.title %}{{ mc.title }}{% else %}Título Indisponível{% endif %} criado em {{mc.creation_date}}{{mc.rating.average_rating}}</div>
               <a href="/contents/content/{{mc.id}}" class="btn-continue">Continuar estudando</a>
             </div>
           </div>
