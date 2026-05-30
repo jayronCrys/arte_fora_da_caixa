@@ -14,7 +14,7 @@ def init_mongo_db():
         
         # O comando 'ping' força o banco a responder imediatamente
         client.admin.command('ping')
-        print("🔌 Conexão com o MongoDB estabelecida com sucesso!")
+        print("🔌 Conexão cohahaham o MongoDB estabelecida com sucesso!")
         
         return client["arte_fora_da_caixa"]
         
@@ -23,4 +23,3 @@ def init_mongo_db():
         print("💡 Dica: Se a senha estiver certa, verifique se liberou o IP (0.0.0.0/0) no painel do MongoDB Atlas!")
         return False
 
-a = init_mongo_db()

@@ -168,16 +168,6 @@
             box-shadow: 0 7px 20px rgba(0, 0, 0, 0.25);
         }
         
-        .btn-modal-unsubscribe {
-            background: #fff;
-            color: #c0392b;
-            border: 2px solid #e0c0c0;
-        }
-        .btn-modal-unsubscribe:hover {
-            background: #fef5f5;
-            border-color: #c0392b;
-        }
-
         /* ── HEADER ── */
         header {
             background: #ffffff;
@@ -217,7 +207,6 @@
             padding: 0 20px;
         }
 
-        /* Banner da Imagem com Borda Gradiente */
         .banner-container {
             width: 100%;
             aspect-ratio: 16 / 9;
@@ -236,7 +225,6 @@
             background: #e2e8f0;
         }
 
-        /* Conteúdo Textual */
         .info-section {
             padding: 0 10px;
         }
@@ -256,9 +244,40 @@
             font-size: 32px;
             font-weight: 700;
             line-height: 1.3;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
             color: #222;
         }
+
+        /* Exibição de Estrelas (Média) */
+        .rating-display {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+        .stars-outer {
+            display: inline-block;
+            position: relative;
+            font-size: 20px;
+            color: #e0e0e0;
+            letter-spacing: 2px;
+        }
+        .stars-inner {
+            position: absolute;
+            top: 0;
+            left: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            color: #f9a826;
+        }
+        .stars-outer::before { content: "★★★★★"; }
+        .stars-inner::before { content: "★★★★★"; }
+        .rating-text {
+            font-size: 14px;
+            color: #666;
+            font-weight: 500;
+        }
+
         .desc-container {
             margin-bottom: 30px;
         }
@@ -285,7 +304,6 @@
             color: #009624;
         }
 
-        /* Metadados */
         .content-meta {
             display: flex;
             flex-wrap: wrap;
@@ -302,13 +320,12 @@
             color: #222;
         }
 
-        /* ── ÁREA DE CTA (INSCRIÇÃO / VISUALIZAR) ── */
+        /* ── ÁREA DE CTA ── */
         .cta-section {
             text-align: center;
             margin-top: 20px;
+            margin-bottom: 40px;
         }
-
-        /* Botão Inscrever-se (gradiente laranja→verde) */
         .btn-enroll {
             display: block;
             width: 100%;
@@ -324,28 +341,11 @@
             cursor: pointer;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
             transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.3s ease;
-            letter-spacing: 0.3px;
         }
         .btn-enroll:hover {
             transform: translateY(-3px);
             box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
         }
-
-        /* Botão Desinscrever (estilo outlined / neutro) */
-        .btn-enroll.unsubscribed-state {
-            background: #ffffff;
-            color: #888;
-            border: 2px solid #d5d5d5;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-        }
-        .btn-enroll.unsubscribed-state:hover {
-            color: #c0392b;
-            border-color: #e0b0b0;
-            background: #fefafa;
-            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
-        }
-
-        /* Botão Visualizar Curso */
         .btn-view-course {
             background: linear-gradient(90deg, #ff7a00, #00c853);
             color: #fff;
@@ -361,34 +361,21 @@
             font-weight: bold;
             cursor: pointer;
             transition: transform 0.25s ease, box-shadow 0.25s ease;
-            letter-spacing: 0.3px;
         }
-        
-        .btn-view-course:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 22px rgba(0, 200, 83, 0.4);
+        .btn-modal-cancel {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 14px;
+            background: linear-gradient(90deg, #e63946, #ff7a00);
+            color: #ffffff;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(230, 57, 70, 0.15);
+            margin-bottom: 12px;
         }
-        .btn-modal-cancel{
-          width: 100%;
-          padding: 15px;
-          border: none;
-          border-radius: 14px;
-          background: linear-gradient(90deg, #e63946, #ff7a00);
-          color: #ffffff;
-          font-family: "Plus Jakarta Sans", sans-serif;
-          font-size: 15px;
-          font-weight: 700;
-          cursor: pointer;
-          box-shadow: 0 4px 12px rgba(230, 57, 70, 0.15);
-          transition: opacity .15s, transform .1s, box-shadow .2s;
-          margin-bottom: 12px;
-        }
-        .btn-modal-cancel:hover { 
-          opacity: .92;
-          box-shadow: 0 6px 16px rgba(230, 57, 70, 0.3);
-        }
-        .btn-modal-cancel:active { transform: scale(.98); }
-    
+
         .extra-info {
             margin-top: 24px;
             font-size: 15px;
@@ -398,10 +385,117 @@
             flex-wrap: wrap;
             gap: 24px;
         }
-        .extra-info-item {
+
+        /* ── SEÇÃO DE AVALIAÇÕES E COMENTÁRIOS ── */
+        .reviews-section {
+            margin-top: 50px;
+            padding-top: 30px;
+            border-top: 2px solid #f0f0f0;
+        }
+        .reviews-section h3 {
+            font-size: 24px;
+            color: #222;
+            margin-bottom: 20px;
+        }
+
+        /* Formulário de Avaliação (Escondido por padrão) */
+        .review-form-container {
+            background: #f9fafb;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 30px;
+            border: 1px solid #eaeaea;
+            display: none; /* Visível apenas se inscrito */
+        }
+        .review-form-container h4 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+        .star-selector {
             display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+            direction: rtl; /* Para o hover funcionar da direita para a esquerda */
+            justify-content: flex-end;
+            width: fit-content;
+        }
+        .star-selector input {
+            display: none;
+        }
+        .star-selector label {
+            font-size: 30px;
+            color: #ddd;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .star-selector label:hover,
+        .star-selector label:hover ~ label,
+        .star-selector input:checked ~ label {
+            color: #f9a826;
+        }
+        .review-textarea {
+            width: 100%;
+            height: 100px;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            resize: none;
+            font-size: 15px;
+            margin-bottom: 15px;
+            font-family: inherit;
+        }
+        .btn-submit-review {
+            background: #00c853;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-submit-review:hover {
+            background: #009624;
+        }
+
+        /* Lista de Comentários */
+        .comments-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .comment-card {
+            background: #fff;
+            border: 1px solid #eaeaea;
+            border-radius: 10px;
+            padding: 16px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+        }
+        .comment-header {
+            display: flex;
+            justify-content: space-between;
             align-items: center;
-            gap: 6px;
+            margin-bottom: 8px;
+        }
+        .comment-author {
+            font-weight: 700;
+            color: #222;
+        }
+        .comment-date {
+            font-size: 12px;
+            color: #999;
+        }
+        .comment-stars {
+            color: #f9a826;
+            font-size: 14px;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+        .comment-text {
+            color: #555;
+            font-size: 15px;
+            line-height: 1.5;
         }
 
         footer {
@@ -413,37 +507,10 @@
             background: #f9fafb;
         }
 
-        /* ── RESPONSIVO ── */
         @media (max-width: 600px) {
-            header {
-                padding: 14px 18px;
-            }
-            header h1 {
-                font-size: 18px;
-            }
-            .content-title {
-                font-size: 24px;
-            }
-            .toast-notification {
-                min-width: auto;
-                width: 92vw;
-                padding: 12px 18px;
-                gap: 10px;
-            }
-            .toast-notification .toast-text {
-                font-size: 13px;
-            }
-            .modal-box {
-                max-width: 92vw;
-            }
-            .modal-body {
-                padding: 22px 18px 16px;
-            }
-            .btn-modal {
-                padding: 12px 20px;
-                font-size: 14px;
-                min-width: 100px;
-            }
+            header { padding: 14px 18px; }
+            .content-title { font-size: 24px; }
+            .btn-modal { padding: 12px 20px; font-size: 14px; }
         }
     </style>
 </head>
@@ -487,6 +554,18 @@
             <div class="badge-type">{{ content.content_type or 'Conteúdo' }}</div>
             <h2 class="content-title">{{ content.title or 'Sem Título' }}</h2>
 
+            <div class="rating-display">
+                {% set avg_rating = content.rating.average_rating if content.rating else 0 %}
+                {% set percentage = (avg_rating / 5) * 100 %}
+                <div class="stars-outer">
+                    <div class="stars-inner" style="width: {{ percentage }}%;"></div>
+                </div>
+                <span class="rating-text">
+                    {{ avg_rating|round(1) }} ({{ content.rating.total_reviews if content.rating else 0 }} avaliações) 
+                    • {{ content.rating.total_inscriptions if content.rating else 0 }} alunos
+                </span>
+            </div>
+
             <div class="desc-container">
                 <p id="content-desc" class="content-description">
                     {{ content.desc or 'Nenhuma descrição fornecida para este conteúdo.' }}
@@ -507,47 +586,83 @@
             </div>
 
             <div class="cta-section">
-                <button
-                id="btn-subscribe-toggle"
-                class="btn-enroll"
-                onclick="handleSubscribeToggle()"
-                >
-                🚀 Inscrever-se nesse curso
-            </button>
+                <button id="btn-subscribe-toggle" class="btn-enroll" onclick="handleSubscribeToggle()">
+                    🚀 Inscrever-se nesse curso
+                </button>
 
-            <form
-            id="form-view-course"
-            method="POST"
-            action="{{ url_for('contents.select_content', content_id=content.id) }}"
-            style="display: none;"
-            >
-            <button type="submit" class="btn-modal btn-view-course">
-                📖 Visualizar Curso
-            </button>
-        </form>
+                <form id="form-view-course" method="POST" action="{{ url_for('contents.select_content', content_id=content.id) }}" style="display: none;">
+                    <button type="submit" class="btn-modal btn-view-course">
+                        📖 Visualizar Curso
+                    </button>
+                </form>
 
-        <div class="extra-info">
-            <div class="extra-info-item">⏱️ Acesso vitalício</div>
-            {% if content.pdf %}
-            <div class="extra-info-item">📂 1 arquivo complementar</div>
-            {% endif %}
-            <div class="extra-info-item">🏅 Certificado de conclusão</div>
+                <div class="extra-info">
+                    <div class="extra-info-item">⏱️ Acesso vitalício</div>
+                    {% if content %}
+                    <div class="extra-info-item">📂 1 arquivo complementar</div>
+                    {% endif %}
+                    <div class="extra-info-item">🏅 Certificado de conclusão</div>
+                </div>
+            </div>
+
+            <section class="reviews-section" id="reviews-section">
+                <h3>Avaliações e Comentários</h3>
+
+                <div id="review-form-container" class="review-form-container">
+                    <h4>Avalie este curso</h4>
+                    <form id="course-review-form" onsubmit="submitReview(event)">
+                        
+                        <div class="star-selector">
+                            <input type="radio" id="star5" name="rating" value="5" required>
+                            <label for="star5" title="5 estrelas">★</label>
+                            
+                            <input type="radio" id="star4" name="rating" value="4">
+                            <label for="star4" title="4 estrelas">★</label>
+                            
+                            <input type="radio" id="star3" name="rating" value="3">
+                            <label for="star3" title="3 estrelas">★</label>
+                            
+                            <input type="radio" id="star2" name="rating" value="2">
+                            <label for="star2" title="2 estrelas">★</label>
+                            
+                            <input type="radio" id="star1" name="rating" value="1">
+                            <label for="star1" title="1 estrela">★</label>
+                        </div>
+
+                        <textarea id="review-comment" class="review-textarea" placeholder="Deixe um comentário sobre a sua experiência (opcional)..."></textarea>
+                        <button type="submit" class="btn-submit-review">Enviar Avaliação</button>
+                    </form>
+                </div>
+
+                <div class="comments-list">
+                    {% if content.comments and content.comments|length > 0 %}
+                        {% for comment in content.comments %}
+                        <div class="comment-card">
+                            <div class="comment-header">
+                                <span class="comment-author">{{ comment.user_name }}</span>
+                                <span class="comment-date">{{ comment.created_at.strftime('%d/%m/%Y') if comment.created_at else '' }}</span>
+                            </div>
+                            <div class="comment-stars">
+                                {% for i in range(comment.rating) %}★{% endfor %}{% for i in range(5 - comment.rating) %}☆{% endfor %}
+                            </div>
+                            <p class="comment-text">{{ comment.comment }}</p>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p style="color: #777;">Nenhuma avaliação ainda. Seja o primeiro a avaliar após se inscrever!</p>
+                    {% endif %}
+                </div>
+            </section>
         </div>
-    </div>
-</div>
-</main>
+    </main>
 
-<footer>© 2026 Arte Fora da Caixa — Todos os direitos reservados</footer>
+    <footer>© 2026 Arte Fora da Caixa — Todos os direitos reservados</footer>
 
 <script>
-    // ──────────────────────────────────────
-    // DADOS DO CONTEÚDO (injetados via Jinja2)
-    // ──────────────────────────────────────
     const contentId = "{{ content['id'] }}";
     const contentTitle = "{{ content.title|e or 'Sem Título' }}";
 
-    // ── VALIDAÇÃO REAL DO SERVIDOR VIA JINJA2 ──
-    // Varre a lista 'my_courses' retornada por G.user.get_my_courses()
+    // VALIDAÇÃO JINJA
     {% set ns = namespace(inscrito=false) %}
     {% if my_courses %}
         {% for curso in my_courses %}
@@ -557,12 +672,9 @@
         {% endfor %}
     {% endif %}
     
-    // Esta variável herda diretamente o estado real do banco de dados do usuário logado
     let userIsSubscribed = {{ 'true' if ns.inscrito else 'false' }};
 
-    // ──────────────────────────────────────
-    // GERENCIAMENTO DO TOAST
-    // ──────────────────────────────────────
+    // FUNÇÕES TOAST
     let toastTimer = null;
     const toastEl = document.getElementById('toast-notification');
     const toastText = document.getElementById('toast-text-content');
@@ -570,89 +682,49 @@
 
     function showToast(message, type = 'success') {
         if (toastTimer) clearTimeout(toastTimer);
-
         toastText.textContent = message;
         toastIcon.textContent = type === 'warning' ? '⚠️' : '✅';
-
         toastEl.classList.remove('toast-warning');
-        if (type === 'warning') {
-            toastEl.classList.add('toast-warning');
-        }
-
+        if (type === 'warning') toastEl.classList.add('toast-warning');
         toastEl.classList.add('show');
-
-        toastTimer = setTimeout(() => {
-            hideToast();
-        }, 5000);
+        toastTimer = setTimeout(() => hideToast(), 5000);
     }
-
     function hideToast() {
         toastEl.classList.remove('show');
-        if (toastTimer) {
-            clearTimeout(toastTimer);
-            toastTimer = null;
-        }
+        if (toastTimer) { clearTimeout(toastTimer); toastTimer = null; }
     }
 
-    // ──────────────────────────────────────
-    // GERENCIAMENTO DO MODAL
-    // ──────────────────────────────────────
+    // FUNÇÕES MODAL
     const modalOverlay = document.getElementById('modal-overlay');
     const modalTitle = document.getElementById('modal-title');
     const modalMessage = document.getElementById('modal-message');
     const btnModalConfirm = document.getElementById('btn-modal-confirm');
     const btnModalCancel = document.getElementById('btn-modal-cancel');
-
     let modalConfirmCallback = null;
 
     function openModal(title, message, confirmText, confirmClass, callback) {
         modalTitle.innerHTML = title;
         modalMessage.innerHTML = message;
         btnModalConfirm.textContent = confirmText;
-
         btnModalConfirm.className = 'btn-modal';
         btnModalConfirm.classList.add(confirmClass || 'btn-modal-confirm');
-
         btnModalCancel.className = 'btn-modal btn-modal-confirm';
         btnModalCancel.textContent = 'Cancelar';
-
         modalConfirmCallback = callback;
         modalOverlay.classList.add('active');
     }
+    function closeModal() { modalOverlay.classList.remove('active'); modalConfirmCallback = null; }
+    function confirmModalAction() { if (typeof modalConfirmCallback === 'function') modalConfirmCallback(); closeModal(); }
 
-    function closeModal() {
-        modalOverlay.classList.remove('active');
-        modalConfirmCallback = null;
-    }
+    modalOverlay.addEventListener('click', e => { if (e.target === modalOverlay) closeModal(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && modalOverlay.classList.contains('active')) closeModal(); });
 
-    function confirmModalAction() {
-        if (typeof modalConfirmCallback === 'function') {
-            modalConfirmCallback();
-        }
-        closeModal();
-    }
-
-    modalOverlay.addEventListener('click', function(e) {
-        if (e.target === modalOverlay) {
-            closeModal();
-        }
-    });
-
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && modalOverlay.classList.contains('active')) {
-            closeModal();
-        }
-    });
-
-    // ──────────────────────────────────────
-    // GERENCIAMENTO DO ESTADO DE INSCRIÇÃO
-    // ──────────────────────────────────────
+    // ESTADO DE INSCRIÇÃO E UI
     const btnSubscribeToggle = document.getElementById('btn-subscribe-toggle');
     const formViewCourse = document.getElementById('form-view-course');
+    const reviewFormContainer = document.getElementById('review-form-container');
 
-    function isSubscribed() {
-        return userIsSubscribed;
-    }
+    function isSubscribed() { return userIsSubscribed; }
 
     function setSubscribedState(subscribed) {
         userIsSubscribed = subscribed;
@@ -663,19 +735,16 @@
         if (subscribed) {
             btnSubscribeToggle.textContent = '🔓 Desinscrever-se';
             btnSubscribeToggle.classList.add('btn-modal-cancel');
-            btnSubscribeToggle.setAttribute('aria-label', 'Desinscrever-se deste curso');
             formViewCourse.style.display = 'block';
+            reviewFormContainer.style.display = 'block'; // Mostra o form de avaliação
         } else {
             btnSubscribeToggle.textContent = '🚀 Inscrever-se nesse curso';
             btnSubscribeToggle.classList.remove('btn-modal-cancel');
-            btnSubscribeToggle.setAttribute('aria-label', 'Inscrever-se neste curso');
             formViewCourse.style.display = 'none';
+            reviewFormContainer.style.display = 'none'; // Esconde o form de avaliação
         }
     }
 
-    // ──────────────────────────────────────
-    // COMUNICAÇÃO COM OS ENDPOINTS REAIS (FLASK)
-    // ──────────────────────────────────────
     function handleSubscribeToggle() {
         if (isSubscribed()) {
             openModal(
@@ -688,18 +757,10 @@
                     .then(response => {
                         if (response.ok) {
                             setSubscribedState(false);
-                            showToast(
-                                `Você se desinscreveu do curso <strong>"${escapeHTML(contentTitle)}"</strong>.`,
-                                'warning'
-                            );
-                        } else {
-                            showToast('Erro ao processar sua desinscrição no servidor.', 'warning');
-                        }
+                            showToast(`Você se desinscreveu do curso <strong>"${escapeHTML(contentTitle)}"</strong>.`, 'warning');
+                        } else showToast('Erro ao processar sua desinscrição no servidor.', 'warning');
                     })
-                    .catch(err => {
-                        console.error("Erro na requisição:", err);
-                        showToast('Erro de conexão com o servidor.', 'warning');
-                    });
+                    .catch(err => showToast('Erro de conexão com o servidor.', 'warning'));
                 }
             );
         } else {
@@ -713,25 +774,55 @@
                     .then(response => {
                         if (response.ok) {
                             setSubscribedState(true);
-                            showToast(
-                                `Você se inscreveu no curso <strong>"${escapeHTML(contentTitle)}"</strong>! Redirecionando... ✅`,
-                                'success'
-                            );
-                            
-                            setTimeout(() => {
-                                window.location.href = response.url || `../../contents/content/${contentId}`;
-                            }, 1200);
-                        } else {
-                            showToast('Conteúdo não encontrado ou erro na inscrição.', 'warning');
-                        }
+                            showToast(`Você se inscreveu no curso <strong>"${escapeHTML(contentTitle)}"</strong>! Agora você pode visualizar e avaliar. ✅`, 'success');
+                        } else showToast('Conteúdo não encontrado ou erro na inscrição.', 'warning');
                     })
-                    .catch(err => {
-                        console.error("Erro na requisição:", err);
-                        showToast('Erro de conexão com o servidor.', 'warning');
-                    });
+                    .catch(err => showToast('Erro de conexão com o servidor.', 'warning'));
                 }
             );
         }
+    }
+
+    // SUBMISSÃO DA AVALIAÇÃO
+    function submitReview(event) {
+        event.preventDefault();
+        
+        const rating = document.querySelector('input[name="rating"]:checked');
+        const comment = document.getElementById('review-comment').value;
+
+        if (!rating) {
+            showToast('Por favor, selecione uma nota de estrela.', 'warning');
+            return;
+        }
+
+        const payload = {
+            course_id: contentId,
+            rating: parseInt(rating.value),
+            comment: comment
+        };
+
+        // Enviar os dados usando Fetch para o Endpoint do MongoDB
+        fetch(`/contents/set_review/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(response => {
+            if (response.ok) {
+                showToast('Avaliação enviada com sucesso! Ela aparecerá em breve.', 'success');
+                document.getElementById('course-review-form').reset();
+                // Opcional: Aqui você pode recarregar a página para o Jinja carregar a nova review
+                // setTimeout(() => window.location.reload(), 2000); 
+            } else {
+                showToast('Houve um erro ao enviar a avaliação.', 'warning');
+            }
+        })
+        .catch(err => {
+            console.error("Erro:", err);
+            showToast('Erro de conexão com o servidor ao enviar a avaliação.', 'warning');
+        });
     }
 
     function escapeHTML(str) {
@@ -740,39 +831,20 @@
         return div.innerHTML;
     }
 
-    // ──────────────────────────────────────
-    // INICIALIZAÇÃO AO CARREGAR A PÁGINA
-    // ──────────────────────────────────────
-    function initSubscriptionState() {
-        const subscribed = isSubscribed();
-        updateUIForSubscriptionState(subscribed);
-    }
-
-    // ──────────────────────────────────────
-    // DESCRIÇÃO (LER MAIS / LER MENOS)
-    // ──────────────────────────────────────
-    let currentLines = 3;
-    const linesToAdd = 5;
-
+    // INICIALIZAÇÃO
     document.addEventListener('DOMContentLoaded', () => {
         const desc = document.getElementById('content-desc');
         const btn = document.getElementById('btn-read-more');
-
-        desc.style.webkitLineClamp = currentLines;
-
-        setTimeout(() => {
-            if (desc.scrollHeight <= desc.clientHeight) {
-                btn.style.display = 'none';
-            }
-        }, 50);
-
-        initSubscriptionState();
+        desc.style.webkitLineClamp = 3;
+        setTimeout(() => { if (desc.scrollHeight <= desc.clientHeight) btn.style.display = 'none'; }, 50);
+        updateUIForSubscriptionState(isSubscribed());
     });
 
+    let currentLines = 3;
+    const linesToAdd = 5;
     function toggleDescription() {
         const desc = document.getElementById('content-desc');
         const btn = document.getElementById('btn-read-more');
-
         if (btn.innerText.includes('Ler menos')) {
             currentLines = 3;
             desc.style.webkitLineClamp = currentLines;
@@ -780,13 +852,9 @@
         } else {
             currentLines += linesToAdd;
             desc.style.webkitLineClamp = currentLines;
-
             requestAnimationFrame(() => {
-                if (desc.scrollHeight <= desc.clientHeight) {
-                    btn.innerText = 'Ler menos ▲';
-                } else {
-                    btn.innerText = 'Ler mais ▼';
-                }
+                if (desc.scrollHeight <= desc.clientHeight) btn.innerText = 'Ler menos ▲';
+                else btn.innerText = 'Ler mais ▼';
             });
         }
     }

@@ -8,7 +8,7 @@ from src.models.db_execute import insert_info, select_info, delete_info, update_
 from src.models.contents_models.content_models import Contents
 from src.models.users_models.user_models import User
 from src.models.relationships_models.inscriptions import Subs
-from src.models.db_mongo_execute import get_comments, get_rating, new_comment,  new_inscription
+from src.models.db_mongo_execute import get_comments, get_reviews, new_comment,  new_review
 from typing import Union
 import re
 import logging
@@ -368,15 +368,40 @@ class Management_User_Default(Login_Account):
 
 
     @Login_Account.is_loged
-    def get_content_review(self):
-        pass
+    def get_content_review(self, contentId):
+        print(f"[GET_CONTENT_REVIEW]: #{contentId}#")
+        if not contentId:
+            return False
+            
+        if not self.get_content_by_id(contentId):
+            return False
+            
+        try:
+            print("Entro em try?")
+            content_reviews = get_reviews(contentId)
+            return content_reviews  # 🌟 CORRIGIDO: Agora retorna o valor obtido
+            
+        except Exception as e:
+            print(f"Erro no get_reviews: {e}")
+            return False            
 
 
     @Login_Account.is_loged
-    def get_contents_comments(self):
-        pass
-
-
+    def get_content_comment(self, contentId):
+        if not contentId:
+            return False
+            
+        if not self.get_content_by_id(contentId):
+            return False
+            
+        try:
+            contentId_uuid = UUID(contentId)
+            content_comments = get_comments(contentId_uuid)            
+            return content_comments  # 🌟 CORRIGIDO: Agora retorna o valor obtido
+        except Exception as e:
+            print(f"Erro no get_comments: {e}")
+            return False
+                
     @Login_Account.is_loged   
     def get_content_by_id(self, contentId):
         print(f"[get_content_by_id] contentId recebido: '{contentId}', tipo: {type(contentId)}")
@@ -387,13 +412,14 @@ class Management_User_Default(Login_Account):
                 conn,
                 Contents,
                 "id",
-               UUID(contentId),
+                UUID(contentId),
                 ["id", "title", "desc", "banner", "content_type", "author", "creation_date", "publisher_id", "pdf"]
             )
+            print(f"[GET_CONTENT_BY_ID]: RETORNO COM SUCESSO DE #{content['title']}:{content['id']}#")
             return content
             
-        except:
-            conn.rollback()
+        except Exception as e:
+            print(f"Erro em get_content_by_id: {e}")
             return False            
         finally:
             conn.close()
@@ -404,27 +430,25 @@ class Management_User_Default(Login_Account):
         conn = self.dataBase()
         
         try:
-            
             all_contents = conn.query(Contents).all()
-            # converte para dict ANTES de fechar a sessão
             result = []
             for c in all_contents:
-                
                 result.append({
                     "id":            str(c.id),
                     "title":         c.title,
                     "desc":          c.desc,
-                    "banner":        c.banner,   # bytes ou None
+                    "banner":        c.banner,
                     "content_type":  c.content_type,
                     "author":        c.author,
                     "creation_date": c.creation_date,
                     "publisher_id":  str(c.publisher_id),
-                })     
+                })
+            print(f"[GET_ALL_CONTENTS]: RETORNO COM SUCESSO DE #{len(result)} conteúdos#")
             return result
-        except:
-            conn.rollback()
-            return False
             
+        except Exception as e:
+            print(f"Erro em get_all_contents: {e}")
+            return False
         finally:            
             conn.close()
 
@@ -433,34 +457,59 @@ class Management_User_Default(Login_Account):
     def GET_FULL_CONTENT(self, all_contents=False, content_to_select=None, review=False, comments=False):
 
         if not all_contents and content_to_select:
-            contents = self.get_content_by_id()
-
+            contents = [self.get_content_by_id(content_to_select)]
         elif all_contents and content_to_select is None:
             contents = self.get_all_contents()
-
+        else:
+            return False
+            
         full_content = []
+        
         for content in contents:
+            if not content:  # Evita quebrar caso get_content_by_id retorne False
+                continue
+                
             content_id = content["id"]
+            
             if review:
-                content_review = get_rating(content_id)
+                content_review = self.get_content_review(content_id)
                 content["rating"] = content_review
 
             if comments:
-                content_comments = get_comments(content_id)
+                # 🌟 CORRIGIDO: Nome do método alterado para o singular correto (get_content_comment)
+                content_comments = self.get_content_comment(content_id)
                 content["comments"] = content_comments
 
             full_content.append(content)
-
+            
+        print(f"[GET_FULL_CONTENT]: RETORNO COM SUCESSO DE # TODAS AS INFORMAÇÕES DE {len(full_content)} CONTEÚDOS#")
         return full_content
-                   
-
+        
+    @Login_Account.is_loged                   
+    def set_content_review(self, contentId, is_new_inscription=False,rating=0, comment=None):    
+        if not self.get_content_by_id(contentId):
+            return False
+        try:        
+            if is_new_inscription:
+                new_review(course_id=contentId, review=0, new_inscription=is_new_inscription)
+                return True
+                
+            if comment is None or comment.strip() != "":
+                comment = ""
+                
+            new_review(course_id=contentId, review=rating,new_inscription=is_new_inscription)
+                               
+            new_comment(course_id=contentId, user_id=self.userId, user_name=self.userName,rating=rating, texto_comentario=comment)
+            print("consiho?")
+            return True
+        except Exception as E:
+            print("erro", E)                                
     @Login_Account.is_loged
     def check_inscription(self, contentId):
-        conn = self.dataBase()
-        if not self.get_content_by_id(contentId):
-            
+        if not self.get_content_by_id(contentId): 
             return False
-                   
+            
+        conn = self.dataBase()                   
         try:            
             sub = conn.query(Subs).filter_by(
                 student_id=UUID(self.userId),
@@ -469,57 +518,50 @@ class Management_User_Default(Login_Account):
             
             if not sub:
                 return False
-              
-            else:
-                print("está incrito olha", sub.id)      
-                conn.close()
-                return str(sub.id)
+            print(f"[CHECK_INSCRIPTION]: RETORNO COM SUCESSO DE #{sub.id}#")    
+            return str(sub.id)
+            
         except Exception as e:
             traceback.print_exc()
-            conn.rollback()
-            return True
+            return False
         finally:                         
              conn.close()
                        
                               
     @Login_Account.is_loged
     def my_inscriptions(self):
-
         conn = self.dataBase()
-        
         try:
             all_contents = conn.query(Subs).filter_by(student_id=UUID(self.userId)).all()
             
             if not all_contents:               
-                return None
+                return []  # 🌟 OTIMIZADO: Retorna lista vazia em vez de None para não quebrar o for
                 
-            print(all_contents)                
-            result = []
-            
+            result = []            
             for c in all_contents:
                 result.append({
                         "id":            str(c.id),
-                        "student_id":         str(c.student_id),
-                        "content_id":          str(c.content_id),
-                        "creation_date":        c.creation_date,
+                        "student_id":    str(c.student_id),
+                        "content_id":    str(c.content_id),
+                        "creation_date": c.creation_date,
                     })
-                    
-            print(result, "fujo antes ou nem?")                    
+            print(f"[MY_INSCRIPTIONS]: RETORNO COM SUCESSO DE #{len(result)} inscrições#")       
             return result
             
-        except:
-            print("estou fugindo dos meis problemas")
+        except Exception as e:
+            print(f"Erro em my_inscriptions: {e}")
             conn.rollback()
             return False
-            
         finally:
             conn.close()
 
 
     @Login_Account.is_loged            
-    def get_my_couses(self):
-        
+    def get_my_courses(self):  # 🌟 OTIMIZADO: Correção ortográfica do nome do método de couses -> courses
         my_inscriptions = self.my_inscriptions()
+        if not my_inscriptions:  # Se retornar False ou lista vazia, mata a execução antes do loop
+            return []
+            
         my_courses = []
         try:
             for inscription in my_inscriptions:
@@ -528,46 +570,38 @@ class Management_User_Default(Login_Account):
                     continue
                             
                 my_courses.append(course)
+                    
+            print(f"[GET_MY_COURSES]: RETORNO COM SUCESSO DE #{len(my_courses)} conteúdos#")                            
             return my_courses                
-        except:
-            print("é complicado isso ai cara")
+        except Exception as e:
+            print(f"Erro em get_my_courses: {e}")
             return False
 
 
     @Login_Account.is_loged
     def new_inscription(self, contentId):
-        
-        try:
-            if self.check_inscription(contentId):
-                print("já inscrito nezze contudo")
-            print("nao inscrito")                            
-        except:
-            print("Y"*25)
-            traceback.print_exc()
+        if self.check_inscription(contentId):
             return True
             
-        try:
-            
+        try:            
             conn = self.dataBase()
             if not self.get_content_by_id(contentId):
-                print("nao achei no banco")
                 return False
                 
             inscription = {
-            "content_id": UUID(contentId),
-            "student_id": UUID(self.userId)
+                "content_id": UUID(contentId),
+                "student_id": UUID(self.userId)
             }
             if insert_info(conn, Subs, inscription):
-                print("Aqui deu certo")
+                print(f"[NEW_INSCRIPTION]: RETORNO COM SUCESSO DE #DE NOVA INSCRIÇÃO#")
+                self.set_content_review(contentId=contentId, is_new_inscription=True,rating=0, comment=None)
                 return True
                              
-        except:
-             print("Y"*25)
+        except Exception as e:
+             print(f"Erro em new_inscription: {e}")
              traceback.print_exc()
-             print("cai vem aki")
              conn.rollback()
              return False
-             
         finally:
              conn.close()
 
@@ -576,18 +610,17 @@ class Management_User_Default(Login_Account):
     def remove_incription(self, contentId):
         conn = self.dataBase()
         inscriptionId = self.check_inscription(contentId)  
-        if not self.isncriptionId:
+        if not inscriptionId:  # 🌟 CORRIGIDO: erro de digitação de isncriptionId -> inscriptionId
             return False
         
         try:
-            if delete_info(conn, Subs, "id", inscriptionId):
+            if delete_info(conn, Subs, "id", UUID(inscriptionId)):
+                print(f"[REMOVE_INSCRIPTION]: RETORNO COM SUCESSO DE #DESINSCRIÇÃO#")
                 return True
                 
-        except:
+        except Exception as e:
+            print(f"Erro em remove_inscription: {e}")
             conn.rollback()
             return False
-            
         finally:
-            conn.close()            
-        
-        
+            conn.close()

@@ -6,9 +6,9 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from flask import Flask, send_from_directory
 from extensions import load_g_user
-from src.models.create_mongo_db import init_mongo_db
+from src.models.contents_models.rating_models import init_mongodb
 
-init_mongo_db()
+
 # Blueprints
 from blueprints.auth import auth_bp
 from blueprints.user import user_bp
@@ -24,6 +24,10 @@ def create_app() -> Flask:
         static_folder="view/static",
     )
     app.secret_key = os.environ.get("FLASK_SECRET", "dev-secret")
+
+    # 🌟 INICIALIZAÇÃO DO MONGO: Movido para dentro do ciclo de criação do App
+    print("🔌 Conectando ao MongoDB e aplicando validadores...")
+    init_mongodb()
 
     # ── Upload de imagens de perfil ───────────────────────────────────────────
     UPLOAD_FOLDER = os.path.join(app.static_folder, "profile_images")
@@ -59,5 +63,8 @@ if __name__ == "__main__":
         logging.info("create_db não executado ou já existente: %s", exc)
 
     os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
+    
+    # create_app já vai rodar o init_mongodb() internamente agora!
     app = create_app()
+    
     app.run(debug=True, port=8080, host="0.0.0.0")

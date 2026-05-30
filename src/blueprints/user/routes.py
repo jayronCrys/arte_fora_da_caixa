@@ -32,7 +32,7 @@ def user():
     else:
         user_data = session.get("user")
     
-    enrolled_courses = g.user.get_my_couses()
+    enrolled_courses = g.user.get_my_courses()
     
     if enrolled_courses is (None or False):
         total_courses = 0

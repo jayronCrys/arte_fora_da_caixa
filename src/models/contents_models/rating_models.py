@@ -7,17 +7,14 @@ except Exception:
 
 from pymongo import MongoClient, errors
 
-# Declarar as variáveis no topo para o Flask não dar ImportError
-course_stats = None
-course_comments = None
+# Mantidos como fallback, mas o acesso será feito via funções abaixo
+_db_instance = None
 
 def init_mongodb():
-    global course_stats, course_comments
+    global _db_instance
 
     # ── CONFIGURAÇÃO DE AMBIENTE ──
-    # Mude para True se quiser testar no Atlas (Nuvem) quando estiver em casa.
-    # Mude para False se estiver na Facul/Estácio (Local) para não travar o código.
-    USAR_ATLAS_NUVEM = False 
+    USAR_ATLAS_NUVEM =True
 
     if USAR_ATLAS_NUVEM:
         print("☁️ Tentando conectar ao MongoDB Atlas (Nuvem)...")
@@ -26,10 +23,14 @@ def init_mongodb():
         print("💻 Conectando ao MongoDB Local (Ambiente de Aula)...")
         mongo_uri = "mongodb://127.0.0.1:27017"
 
+    import certifi # 🌟 Adicione no topo do arquivo
+
+# ... dentro de init_mongodb() ...
     try:
-        # Definimos timeout curto (5s) para se não achar o banco local/nuvem avisar rápido
-        client = MongoClient(mongo_uri, serverSelectionTimeoutMS=5000)
+        # 🌟 Adicionado o tlsCAFile para o Termux não rejeitar o SSL do Atlas
+        client = MongoClient(mongo_uri, serverSelectionTimeoutMS=5000, tlsCAFile=certifi.where())
         db = client["arte_fora_da_caixa"]
+
         
         # Testa a conexão imediatamente de forma síncrona
         client.admin.command('ping')
@@ -64,13 +65,13 @@ def init_mongodb():
         stats_validator = {
             "$jsonSchema": {
                 "bsonType": "object",
-                "required": ["course_id", "average_rating", "total_reviews", "total_students", "rating_distribution", "last_updated"],
+                # 🌟 CONFIGURAÇÃO OPCIONAL: Apenas course_id e last_updated são estritamente obrigatórios
+                "required": ["course_id", "last_updated"],
                 "properties": {
                     "course_id": { "bsonType": "string", "description": "ID único do curso" },
+                    "total_inscriptions": {"bsonType": "int","description":"Total de alunos matriculados no curso"},
                     "average_rating": { "bsonType": "double", "description": "Média das notas" },
                     "total_reviews": { "bsonType": "int", "description": "Total de avaliações" },
-                    "total_students": { "bsonType": "int", "description": "Total de alunos" },
-                    "rating_distribution": { "bsonType": "object", "required": ["1", "2", "3", "4", "5"], "description": "Distribuição de estrelas" },
                     "last_updated": { "bsonType": "date" }
                 }
             }
@@ -83,23 +84,30 @@ def init_mongodb():
             db.command("collMod", "course_stats", validator=stats_validator)
 
         db.course_stats.create_index([("course_id", 1)], unique=True, name="unique_course_stats")
-
-        # Alimenta as variáveis para uso global do resto do app
-        course_stats = db["course_stats"]
-        course_comments = db["course_comments"]
+        
+        # Armazena a instância conectada globalmente dentro deste arquivo
+        _db_instance = db
 
         print("🚀 Configuração do MongoDB concluída! Banco de dados respondendo perfeitamente.")
         return db
 
     except errors.ServerSelectionTimeoutError:
         print("\n❌ ERRO CRÍTICO: Não foi possível estabelecer conexão com o MongoDB.")
-        if USAR_ATLAS_NUVEM:
-            print("💡 Motivo: A rede da faculdade bloqueou o acesso ao Atlas na nuvem.")
-            print("🛠️ Solução rápida: Vá no código e mude 'USAR_ATLAS_NUVEM = False' para usar o banco local da máquina da aula.")
-        else:
-            print("💡 Motivo: O serviço local do MongoDB não está rodando nesta máquina.")
-            print("🛠️ Solução rápida: Certifique-se de iniciar o serviço 'MongoDB Server' (mongod) no Windows da faculdade.")
         return False
 
-# Executa ao iniciar o app
-init_mongodb()
+
+# ── 🌟 FUNÇÕES DE ACESSO SEGURO (ANTI-NONETYPE) ──
+
+def get_course_stats_col():
+    """Retorna a coleção course_stats de forma segura, garantindo a conexão"""
+    global _db_instance
+    if _db_instance is None:
+        init_mongodb()
+    return _db_instance["course_stats"]
+
+def get_course_comments_col():
+    """Retorna a coleção course_comments de forma segura, garantindo a conexão"""
+    global _db_instance
+    if _db_instance is None:
+        init_mongodb()
+    return _db_instance["course_comments"]

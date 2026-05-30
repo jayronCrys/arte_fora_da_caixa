@@ -655,10 +655,10 @@
           <div class="course" 
                data-title="{{ c.title | lower }}" 
                data-type="{{ c.content_type or 'aula' }}" 
-               data-rating="{{ c['rating']['rating_distribution'] or 5 }}" 
+               data-rating="{{ c.rating.average_rating or 5 }}" 
                data-date="{{ c.creation_date or '01/01/2026' }}"
-               data-enrollments="{{ c.enrollments_count or 0 }}"
-               data-reviews="{{ c.reviews_count or 0 }}">
+               data-enrollments="{{ c.rating.total_students or 0 }}"
+               data-reviews="{{ c.rating.total_reviews or 0 }}">
             
             {% if c["banner"] %}
               <img src="{{ url_for('contents.get_banner', content_id=c['id']) }}" style="width:100%; height:180px; object-fit:cover;">
@@ -671,8 +671,11 @@
               <p>Autor: {{ c.author }} • Publicado: {{ c.creation_date }}</p>
               
               <div class="rating-stars">
-                {% set rating_int = (c.rating or 5) | int %}
-                {% for n in range(rating_int) %}⭐{% endfor %} <span>({{ c.rating or '5.0' }})</span>
+                {% set rating_int = (c.rating.average_rating) | int %}
+                {% for n in range(rating_int) %}⭐{% endfor %} <span>({{ c.rating.average_rating or '0.0' }})</span><span> {{ c.rating.total_students }} alunos inscritos </span>
+                <br>
+                <span>{{c.rating.total_reviews}} avaliações </span>
+                
               </div>
               
               <button onclick="location.href='{{ url_for('contents.content_buss', content_id=c.id) }}'" style="margin-top: 10px;">Ver</button>

@@ -73,7 +73,22 @@ def redirect_get_publications():
 
 
 # ── Rota principal (SPA) ──────────────────────────────────────────────────────
-
+@contents_bp.route("/contents/set_review/", methods=["POST"])
+def set_review():
+    
+    course_request = request.get_json()
+    course_id = course_request.get("course_id")
+    
+    if not course_id:
+        return False
+        
+    rating = course_request.get("rating")
+    comment = course_request.get("comment")
+    print("ADD_REVIEW TEM COMO ENTRADA", rating, comment)
+    add_review = g.user.set_content_review(contentId=course_id, rating=rating, comment=comment)
+    print("RESULTADO DE ADD_REVIEW", add_review)
+    return redirect(url_for("contents.content_buss", content_id=course_id))
+    
 @contents_bp.route("/contents/", defaults={"publications": None})
 @contents_bp.route("/contents/<publications>", methods=["GET", "POST"])
 def contents(publications):
@@ -81,8 +96,8 @@ def contents(publications):
 
         items = g.user.GET_FULL_CONTENT(all_contents=True, content_to_select=None, review=True)
         active_tab = request.args.get("tab", "all-courses")
-        
-        enrolled_contents = g.user.get_my_couses()
+        print("Resultado de GET_FULL_CONYENY", items[0]["rating"]["average_rating"])
+        enrolled_contents = g.user.get_my_courses()
         if not enrolled_contents:
             enrolled_contents = []
             
@@ -250,17 +265,28 @@ def get_banner_default(banner_id):
 def content_buss(content_id):
     try:
         print("\n\n\ntipo meu", content_id)
-        content = g.user.get_content_by_id(content_id)
-        my_courses = g.user.get_my_couses()
+        
+        my_courses = g.user.get_my_courses()
         
     except Exception as exc:
         logging.error("Erro ao buscar conteúdo: %s", exc)
         
         abort(404)
-    if not content:
+    if not content_id:
         abort(404)
+        
     if request.method == "GET":
+        content = g.user.GET_FULL_CONTENT( all_contents=False, content_to_select=content_id, review=True, comments=True)
+        content = content[0] if content[0]["id"] == content_id else False
+        if not content:
+            abort(404)
         return render_template("content_preview.html", content=content, my_courses=my_courses)
+        
+    content = content[0] if content[0]["id"] == content_id else False        
+    if not content:
+        abort(404)        
+    content = g.user.GET_FULL_CONTENT( all_contents=False, content_to_select=content_id, review=True, comments=False)        
+        
     return render_template("edit_content.html", content=content, **tpl_ctx)
 
 

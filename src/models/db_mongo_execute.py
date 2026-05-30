@@ -1,26 +1,71 @@
-from src.models.contents_models.rating_models import course_stats, course_comments
+from src.models.contents_models import rating_models
 from datetime import datetime
 
+def new_review(course_id, review=0, new_inscription=False):
+    # 🌟 CORRIGIDO: Busca a coleção através da função de acesso seguro (Garante que não seja None)
+    course_stats_col = rating_models.get_course_stats_col()
 
+    update_fields = {}
 
-def new_inscription(course_id):
-    # O 'upsert=True' cria o documento do curso caso ele ainda não exista no Mongo
-    course_stats.update_one(
-        {"course_id": str(course_id)},
+    # Incrementa inscrições apenas se for nova inscrição
+    if new_inscription:
+        update_fields["total_inscriptions"] = {
+            "$add": [
+                {"$ifNull": ["$total_inscriptions", 0]},
+                1
+            ]
+        }
+
+    # Incrementa reviews apenas se review > 0
+    if int(review) > 0:
+        update_fields["sums_reviews"] = {
+            "$add": [
+                {"$ifNull": ["$sums_reviews", 0]},
+                review
+            ]
+        }
+
+        update_fields["total_reviews"] = {
+            "$add": [
+                {"$ifNull": ["$total_reviews", 0]},
+                1
+            ]
+        }
+
+    # Adicionado campo obrigatório exigido pelo validador do seu schema do Mongo
+    update_fields["last_updated"] = datetime.utcnow()
+
+    pipeline = [
         {
-            "$inc": {"total_students": 1},
-            "$setOnInsert": {
-                "average_rating": 0.0,
-                "total_reviews": 0,
-                "rating_distribution": {"1": 0, "2": 0, "3": 0, "4": 0, "5": 0}
-            },
-            "$set": {"last_updated": datetime.utcnow()}
-        },
+            "$set": update_fields
+        }
+    ]
+
+    # Só recalcula média se existir review
+    if int(review) > 0:
+        pipeline.append({
+            "$set": {
+                "average_rating": {
+                    "$divide": [
+                        "$sums_reviews",
+                        "$total_reviews"
+                    ]
+                }
+            }
+        })
+        
+    print(f"[NEW_REVIEW]: Executando update_one com segurança...")
+    
+    course_stats_col.update_one(
+        {"course_id": str(course_id)},
+        pipeline,
         upsert=True
     )
-    
 
 def new_comment(course_id, user_id, user_name, rating, texto_comentario):
+    # 🌟 CORRIGIDO: Busca a coleção através da função de acesso seguro
+    course_comments_col = rating_models.get_course_comments_col()
+
     comentario_doc = {
         "course_id": str(course_id),
         "user_id": str(user_id),
@@ -31,46 +76,45 @@ def new_comment(course_id, user_id, user_name, rating, texto_comentario):
         "is_moderated": False
     }
     
-    # Atualiza se existir (mesmo curso + mesmo usuário), senão insere um novo
-    course_comments.update_one(
+    print(f"[NEW_COMMENT]: Salvando comentário com segurança...")
+    course_comments_col.update_one(
         {"course_id": str(course_id), "user_id": str(user_id)},
         {"$set": comentario_doc},
         upsert=True
     )
 
-
-
-def get_rating(course_id):
-    # Busca um único documento que dê Match com o ID do curso
-    stats = course_stats.find_one({"course_id": str(course_id)})
-    
-    if not stats:
-        # Retorno padrão caso o curso nunca tenha tido interações ainda
-        return {
-            "average_rating": 0.0,
-            "total_reviews": 0,
-            "total_students": 0,
-            "rating_distribution": {"1": 0, "2": 0, "3": 0, "4": 0, "5": 0}
-        }
+def get_reviews(course_id):
+    stats = {
+        "average_rating": 0.0,
+        "total_reviews": 0,
+        "total_inscriptions": 0,
+    }
+    try:
+        # 🌟 CORRIGIDO: Busca a coleção através da função de acesso seguro
+        course_stats_col = rating_models.get_course_stats_col()
+        resultado = course_stats_col.find_one({"course_id": str(course_id)})
+        if resultado:
+            print("RESULTADO DE GET_REBIEWZ", resultado)
+            stats = resultado
+    except Exception as e:
+        print(f"🚨 O MOTIVO DO EXCEPT É: {type(e).__name__} - {e}, {type(course_id)}")
+        return stats
         
     return stats
-    
-    
-    
-    
 
 def get_comments(course_id, page=1, number_to_page=5):
-    # Quantos comentários pular com base na página atual
     next_init = (page - 1) * number_to_page
     
-    # Executa a busca filtrando apenas os que não foram ocultados pela moderação
-    cursor = course_comments.find({"course_id": str(course_id), "is_moderated": False}) \
-                         .sort("created_at", -1) \
-                         .skip(next_init) \
-                         .limit(number_to_page)
-    
-    # Transforma o cursor do Mongo em uma lista comum do Python
-    comments = list(cursor)
-    
-    return comments
-    
+    try:
+        # 🌟 CORRIGIDO: Busca a coleção através da função de acesso seguro
+        course_comments_col = rating_models.get_course_comments_col()
+        
+        cursor = course_comments_col.find({"course_id": str(course_id), "is_moderated": False}) \
+                                    .sort("created_at", -1) \
+                                    .skip(next_init) \
+                                    .limit(number_to_page)
+        
+        return list(cursor)
+    except Exception as e:
+        print(f"🚨 Erro ao buscar comentários: {e}")
+        return []
