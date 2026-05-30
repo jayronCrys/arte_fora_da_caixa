@@ -1,13 +1,13 @@
 from src.models.contents_models import rating_models
 from datetime import datetime
+from bson.objectid import ObjectId  # 🌟 Adicionado para manipular os IDs do MongoDB
 
 def new_review(course_id, review=0, new_inscription=False):
-    # 🌟 CORRIGIDO: Busca a coleção através da função de acesso seguro (Garante que não seja None)
+    # Busca a coleção através da função de acesso seguro
     course_stats_col = rating_models.get_course_stats_col()
 
     update_fields = {}
 
-    # Incrementa inscrições apenas se for nova inscrição
     if new_inscription:
         update_fields["total_inscriptions"] = {
             "$add": [
@@ -16,7 +16,6 @@ def new_review(course_id, review=0, new_inscription=False):
             ]
         }
 
-    # Incrementa reviews apenas se review > 0
     if int(review) > 0:
         update_fields["sums_reviews"] = {
             "$add": [
@@ -32,16 +31,10 @@ def new_review(course_id, review=0, new_inscription=False):
             ]
         }
 
-    # Adicionado campo obrigatório exigido pelo validador do seu schema do Mongo
     update_fields["last_updated"] = datetime.utcnow()
 
-    pipeline = [
-        {
-            "$set": update_fields
-        }
-    ]
+    pipeline = [{"$set": update_fields}]
 
-    # Só recalcula média se existir review
     if int(review) > 0:
         pipeline.append({
             "$set": {
@@ -55,7 +48,6 @@ def new_review(course_id, review=0, new_inscription=False):
         })
         
     print(f"[NEW_REVIEW]: Executando update_one com segurança...")
-    
     course_stats_col.update_one(
         {"course_id": str(course_id)},
         pipeline,
@@ -73,21 +65,19 @@ def remove_inscription(course_id):
 
     resultado = course_stats_col.update_one(
         {
-            "course_id": course_id,
-            "total_inscriptions": {"$gt": 0} # Só decrementa se for maior que 0
+            "course_id": str(course_id).strip(),
+            "total_inscriptions": {"$gt": 0}
         },
         {
             "$inc": {"total_inscriptions": -1},
             "$set": {"last_updated": datetime.utcnow()}
         },
-        upsert=False # Não faz sentido criar um documento novo com inscrição negativa
+        upsert=False
     )
 
     print(f"[REMOVE_INSCRIPTION] MATCHED: {resultado.matched_count} | MODIFIED: {resultado.modified_count}")
 
-                        
 def new_comment(course_id, user_id, user_name, rating, texto_comentario):
-    # 🌟 CORRIGIDO: Busca a coleção através da função de acesso seguro
     course_comments_col = rating_models.get_course_comments_col()
 
     comentario_doc = {
@@ -114,7 +104,6 @@ def get_reviews(course_id):
         "total_inscriptions": 0,
     }
     try:
-        # 🌟 CORRIGIDO: Busca a coleção através da função de acesso seguro
         course_stats_col = rating_models.get_course_stats_col()
         resultado = course_stats_col.find_one({"course_id": str(course_id)})
         if resultado:
@@ -130,9 +119,7 @@ def get_comments(course_id, page=1, number_to_page=5):
     next_init = (page - 1) * number_to_page
     
     try:
-        # 🌟 CORRIGIDO: Busca a coleção através da função de acesso seguro
         course_comments_col = rating_models.get_course_comments_col()
-        
         cursor = course_comments_col.find({"course_id": str(course_id), "is_moderated": False}) \
                                     .sort("created_at", -1) \
                                     .skip(next_init) \
@@ -142,3 +129,82 @@ def get_comments(course_id, page=1, number_to_page=5):
     except Exception as e:
         print(f"🚨 Erro ao buscar comentários: {e}")
         return []
+
+# =====================================================================
+# Novos métodos solicitados baseados na estrutura existente
+# =====================================================================
+
+def delete_comment(course_id, comment_id):
+    """
+    Deleta permanentemente um comentário do banco de dados 
+    utilizando o ID do comentário e o ID do conteúdo (garantia extra de segurança).
+    """
+    try:
+        course_comments_col = rating_models.get_course_comments_col()
+        
+        print(f"[DELETE_COMMENT]: Tentando deletar comentário {comment_id} do conteúdo {course_id}...")
+        
+        resultado = course_comments_col.delete_one({
+            "_id": ObjectId(comment_id),
+            "course_id": str(course_id).strip()
+        })
+        
+        print(f"[DELETE_COMMENT]: DELETED_COUNT: {resultado.deleted_count}")
+        return resultado.deleted_count > 0
+    except Exception as e:
+        print(f"🚨 Erro ao deletar comentário: {e}")
+        return False
+
+def suspend_comment(course_id, comment_id):
+    """
+    Suspende um comentário alterando a flag 'is_moderated' para True.
+    Isso faz com que ele suma automaticamente do método 'get_comments'.
+    """
+    try:
+        course_comments_col = rating_models.get_course_comments_col()
+        
+        print(f"[SUSPEND_COMMENT]: Suspendendo comentário {comment_id} do conteúdo {course_id}...")
+        
+        resultado = course_comments_col.update_one(
+            {
+                "_id": ObjectId(comment_id),
+                "course_id": str(course_id).strip()
+            },
+            {
+                "$set": {
+                    "is_moderated": True,
+                    "suspended_at": datetime.utcnow()
+                }
+            }
+        )
+        
+        print(f"[SUSPEND_COMMENT]: MATCHED: {resultado.matched_count} | MODIFIED: {resultado.modified_count}")
+        return resultado.modified_count > 0
+    except Exception as e:
+        print(f"🚨 Erro ao suspender comentário: {e}")
+        return False
+
+def get_comment_by_id(course_id, comment_id):
+    """
+    Busca e retorna um comentário específico através do seu ID e do ID do conteúdo.
+    Retorna o dicionário do comentário se encontrado, ou None se não existir.
+    """
+    try:
+        course_comments_col = rating_models.get_course_comments_col()
+        
+        print(f"[GET_COMMENT_BY_ID]: Buscando comentário {comment_id}...")
+        
+        comentario = course_comments_col.find_one({
+            "_id": ObjectId(comment_id),
+            "course_id": str(course_id).strip()
+        })
+        
+        if comentario:
+            print(f"[GET_COMMENT_BY_ID]: Comentário encontrado com sucesso.")
+            return comentario
+            
+        print(f"[GET_COMMENT_BY_ID]: Nenhum comentário correspondente encontrado.")
+        return None
+    except Exception as e:
+        print(f"🚨 Erro ao buscar comentário específico: {e}")
+        return None

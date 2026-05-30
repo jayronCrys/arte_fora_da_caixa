@@ -4,6 +4,7 @@ from src.models.database import get_session as database
 from src.models.passwords import compare_password as compare
 from src.models.contents_models.content_models import Contents
 from src.models.users_models.user_models import User, UserCred
+from src.models.db_mongo_execute import delete_comment, get_comment_by_id, suspend_comment
 import uuid
 import logging
 from functools import wraps
@@ -228,7 +229,50 @@ class Management_Admins(Management_User_Default):
             return False
         finally:
                 conn.close()
-                       
+                
+    @admin_required
+    def delete_comment_by_admin(self, commentId):
+        
+        if not self.get_content_by_id(contentId):
+            return False
+                        
+        if not get_comment_by_id(contentId, commentId):
+            return False
+            
+        try:   
+            if delete_comment(contentId, commentId):
+                return True
+        except:
+            return False
+        
+        
+    """mudar o banco pra aceitat status ativo"""        
+    @admin_required
+    def suspended_content_by_admin(self, contentId):
+              
+        if not self.get_content_by_id(contentId):
+            return False
+            
+        """try:   
+            if suspend_comment(contentId):
+                return True
+        except:
+            return False"""
+        
+    @admin_required        
+    def suspended_comment_by_admin(seld, contentId, commentId):
+        if not self.get_content_by_id(contentId):
+            return False
+                        
+        if not get_comment_by_id(contentId, commentId):
+            return False
+            
+        try:   
+            if suspend_comment(contentId, commentId):
+                return True
+        except:
+            return False
+        
     @admin_required
     def publish_content_by_admin(self, content, authorName):
         conn = self.dataBase()

@@ -3,7 +3,9 @@ from src.models.db_execute import insert_info, select_info, delete_info, update_
 from src.models.contents_models.content_models import Contents
 from functools import wraps
 from src.models.database import get_session as database
+from src.models.db_mongo_execute import delete_comment, get_comment_by_id, suspend_comment
 import uuid
+
 
 class Management_Professors(Management_User_Default):
     def __init__(self, account, dataBase=database):
@@ -94,8 +96,43 @@ class Management_Professors(Management_User_Default):
                 return False
             finally:
                 conn.close()
-     
-     
+                
+    #adicionar campo de "ativo" no banco de dados pra permitir status suspenso ou não de content
+    
+    @professor_required
+    def suspended_content_by_professor(self, contentId):
+        
+        if not self.get_content_by_id(contentId):
+            return False
+                        
+        if not self.professor_get_content_by_id(contentId):
+            return False
+            
+        #try:   
+            #if suspend_comment(contentId, commentId):
+                #return True
+        #except:
+            #return False
+            
+        
+    @professor_required        
+    def suspended_comment_by_professor(self, commentId, contentId):
+              
+        if not self.get_content_by_id(contentId):
+            return False
+                        
+        if not get_comment_by_id(contentId, commentId):
+            return False
+        
+        if not self.professor_get_content_by_id(contentId):
+            return False
+            
+        try:   
+            if suspend_comment(contentId, commentId):
+                return True
+        except:
+            return False    
+        
     @professor_required
     def publish_content_by_professor(self, content, author):
         

@@ -98,6 +98,7 @@ def contents(publications):
         active_tab = request.args.get("tab", "all-courses")
         print("Resultado de GET_FULL_CONYENY", items[0]["rating"]["average_rating"])
         enrolled_contents = g.user.get_my_courses()
+        
         if not enrolled_contents:
             enrolled_contents = []
             

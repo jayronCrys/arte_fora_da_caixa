@@ -494,9 +494,8 @@ class Management_User_Default(Login_Account):
                 new_review(course_id=contentId, review=0, new_inscription=is_new_inscription)
                 return True
                 
-            if comment is None or comment.strip() != "":
-                comment = ""
-                
+            if rating and (comment.strip() == "" or comment is None) :
+                comment = ""              
             new_review(course_id=contentId, review=rating,new_inscription=is_new_inscription)
                                
             new_comment(course_id=contentId, user_id=self.userId, user_name=self.userName,rating=rating, texto_comentario=comment)
@@ -606,8 +605,10 @@ class Management_User_Default(Login_Account):
              return False
         finally:
              conn.close()
-
-
+    @Login_Account.is_loged
+    def comment_delete(self, contentId):
+        pass
+        #        
     @Login_Account.is_loged
     def remove_incription(self, contentId):
         conn = self.dataBase()
