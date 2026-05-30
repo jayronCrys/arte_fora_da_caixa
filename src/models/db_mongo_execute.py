@@ -96,24 +96,29 @@ def new_comment(course_id, user_id, user_name, rating, texto_comentario):
         {"$set": comentario_doc},
         upsert=True
     )
-
 def get_reviews(course_id):
     stats = {
         "average_rating": 0.0,
         "total_reviews": 0,
         "total_inscriptions": 0,
+        "sums_reviews": 0, # Garante que a chave sempre exista
     }
     try:
         course_stats_col = rating_models.get_course_stats_col()
         resultado = course_stats_col.find_one({"course_id": str(course_id)})
         if resultado:
-            print("RESULTADO DE GET_REBIEWZ", resultado)
-            stats = resultado
+            # Mescla os dados do banco por cima dos padrões de forma segura
+            stats.update(resultado)
+            
+            # Remove o ObjectId para evitar erros caso decida transformar em JSON depois
+            stats.pop("_id", None) 
+            
     except Exception as e:
         print(f"🚨 O MOTIVO DO EXCEPT É: {type(e).__name__} - {e}, {type(course_id)}")
         return stats
         
     return stats
+
 
 def get_comments(course_id, page=1, number_to_page=5):
     next_init = (page - 1) * number_to_page

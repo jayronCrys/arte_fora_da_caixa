@@ -15,7 +15,7 @@ class Management_Professors(Management_User_Default):
     def professor_required(func):
         @wraps(func)
         def wrapper(self, *args, **kwargs):
-            if self.isLoged and self.user and self.userRole == "professor":
+            if self.isLoged and self.user and self.userRole == "professor" and self.userId:
                 return func(self, *args, **kwargs)
             else:
                 logger.info("Acesso negado: usuário não logado ou sem permissão de professor.")
@@ -25,21 +25,41 @@ class Management_Professors(Management_User_Default):
     """tem que modificae a tela de home page, pra expor esses conteudo, apos isso já da pra fazer a primeirs entrega"""
     @professor_required
     def select_contents_by_publisher_id(self):
-        if not self.userId:
-            return False
+            
         userId = [uuid.UUID(self.userId)]
         try:
             conn = self.dataBase()
             all_my_contents = conn.query(Contents).filter(Contents.publisher_id.in_(userId)).all()
             return all_my_contents
         finally:
-            conn.close()        
+            conn.close()
             
     @professor_required
-    def professor_get_content_by_id(self, contentId):
-        if not self.userId:
+    def get_content_analytics(self, contentId):
+        
+        if not self.professor_get_content_by_id(contentId):
             return False
             
+        try:            
+            content _analytics = analytics(contentId)
+            if content _analytics:
+                return content _analytics
+            return False
+                            
+        except:
+            return False
+                                                                
+    @professor_required
+    def get_my_analytics(self):
+        try:
+            my_analytics = general_analytics(self.userId)
+            return my_analytics
+            
+        except:
+            return False
+                              
+    @professor_required
+    def professor_get_content_by_id(self, contentId):
         try:
             conn = self.dataBase()
             contentExist = select_info(conn, Contents, "id", uuid.UUID(contentId))
@@ -138,7 +158,7 @@ class Management_Professors(Management_User_Default):
         
         if author != self.get_user_name():
             return False
-        author = self.userId
+        author = self.get_use_name()
         try:
             if content:               
                 if author:
