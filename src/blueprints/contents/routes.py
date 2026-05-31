@@ -73,22 +73,6 @@ def redirect_get_publications():
 
 
 # ── Rota principal (SPA) ──────────────────────────────────────────────────────
-@contents_bp.route("/contents/set_review/", methods=["POST"])
-def set_review():
-    
-    course_request = request.get_json()
-    course_id = course_request.get("course_id")
-    
-    if not course_id:
-        return False
-        
-    rating = course_request.get("rating")
-    comment = course_request.get("comment")
-    print("ADD_REVIEW TEM COMO ENTRADA", rating, comment)
-    add_review = g.user.set_content_review(contentId=course_id, rating=rating, comment=comment)
-    print("RESULTADO DE ADD_REVIEW", add_review)
-    return redirect(url_for("contents.content_buss", content_id=course_id))
-    
 @contents_bp.route("/contents/", defaults={"publications": None})
 @contents_bp.route("/contents/<publications>", methods=["GET", "POST"])
 def contents(publications):
@@ -98,7 +82,6 @@ def contents(publications):
         active_tab = request.args.get("tab", "all-courses")
         print("Resultado de GET_FULL_CONYENY", items[0]["rating"]["average_rating"])
         enrolled_contents = g.user.get_my_courses()
-        
         if not enrolled_contents:
             enrolled_contents = []
             
@@ -125,7 +108,137 @@ def contents(publications):
         logging.error("Erro na rota principal de conteúdos: %s", exc)
         return f"Erro ao carregar conteúdos: {exc}", 500
 
+@contents_bp.route("/contents/content/<content_id>", methods=["GET", "POST"])
+def content_buss(content_id):
+    
+    if not content_id:
+        abort(404)
+        
+    try:
+        my_courses = g.user.get_my_courses()        
+    except Exception as exc:
+        logging.error("Erro ao buscar conteúdo: %s", exc)        
+        abort(404)
+        
+    if request.method == "GET":
+                
+        content = g.user.GET_FULL_CONTENT( all_contents=False, content_to_select=content_id, review=True, comments=True)
+        
+        content = content[0] if content[0]["id"] == content_id else False
+            
+        if content:
+            return render_template("content_preview.html", content=content, my_courses=my_courses)
+            
+    if request.method == "POST":
+        
+        
+        content = g.user.GET_FULL_CONTENT( all_contents=False, content_to_select=content_id, review=True, comments=False)
+        
+        content = content[0] if content[0]["id"] == content_id else False
+        
+        if content:
+            return render_template("edit_content.html", content=content, **tpl_ctx)
+    
+    if not content:
+            abort(404)
+                
+    
+@contents_bp.route("/contents/publications/selec_content/<content_id>", methods=["POST", "GET"])
+def select_content(content_id):
+    if _cred() not in _PUBLISHER_CREDS:
+        return redirect(url_for("auth.login"))
 
+    content = (
+        g.user.get_content_by_admin(content_id)
+        if _cred() == "admin"
+        else g.user.professor_get_content_by_id(content_id)
+    )
+
+    if not content:
+        return redirect(url_for("contents.get_publications"))
+
+    from pdf_to_html import pdf_bytes_to_html
+    content["html_body"] = pdf_bytes_to_html(content.get("pdf") or b"")
+    return render_template("content_view.html", content=content)
+
+
+#── REVIEWS──────────────────────────────────────────────────────
+
+@contents_bp.route("/contents/set_review/", methods=["POST"])
+def set_review():
+    if not _cred():
+        return redirect(url_for("auth.login"))
+
+    course_request = request.get_json()
+    course_id = course_request.get("course_id")
+    
+    if not course_id:
+        return False
+        
+    rating = course_request.get("rating")
+    comment = course_request.get("comment")
+    
+    add_review = g.user.set_content_review(contentId=course_id, rating=rating, comment=comment)
+    
+    return redirect(url_for("contents.content_buss", content_id=course_id))
+
+
+@contents_bp.route("/contents/delete_my_review/<comment_id>", methods=["POST"])        
+def ocult_user_revirew(comment_id):
+    if _cred() not in ["admin", "professor"]:
+        return redirect(url_for("auth.login"))
+        
+    if not comment_id or not content_id:
+        return False
+        
+    if _cred() == "admin":
+        susp = g.user.uspended_comment_by_admin(content_id, comment_id)
+        
+    if _cred() == "professor":
+        susp = g.user.suspended_comment_by_professor(content_id, comment_id)
+        
+    if susp:
+        return render_template("contents.content_buss", content_id = content_id)
+
+    return render_temlplate("contents.content_buss", content_id = content_id, error = "não foi possível ocultar comentário")
+
+
+
+@contents_bp.route("/contents/delete_my_review/<comment_id>", methods=["POST"])
+def delete_my_review(comment_id, content_id):
+    
+    if not _cred():
+        return redirect(url_for("auth.login"))
+    
+    if not comment_id or not content_id:
+        return False
+        
+    if g.user.delete_my_comment(comment_id, content_id):
+        return redirect(url_for("contents.content_buss", content_id=content_id))
+            
+    return redirect(url_for("contents.content_buss", content_id=content_id))
+
+
+@contents_bp.route("/contents/delete_user_review/<comment_id>", methods=["POST"])
+def delete_user_review(comment_id):    
+    if _cred() not in ["admin", "professor"]:
+        return redirect(url_for("auth.login"))
+        
+    if not comment_id or not content_id:
+        return False
+        
+    if _cred() == "admin":
+        delete = g.user.delete_comment_by_admin(content_id, comment_id)
+        
+    if _cred() == "professor":
+        delete = g.user.delete_comment_by_professor(content_id, comment_id)
+        
+    if delete:
+        return render_template("contents.content_buss", content_id = content_id)
+        
+    return render_temlplate("contents.content_buss", content_id = content_id, error = "não foi possível excluir comentário")        
+
+#── ──────────────────────────────────────────────────────
 # ── Publicar conteúdo ─────────────────────────────────────────────────────────
 
 @contents_bp.route("/publish_content", methods=["POST", "GET"])
@@ -262,41 +375,6 @@ def get_banner_default(banner_id):
 
 # ── Visualização / edição de conteúdo individual ──────────────────────────────
 
-@contents_bp.route("/contents/content/<content_id>", methods=["GET", "POST"])
-def content_buss(content_id):
-    try:
-        print("\n\n\ntipo meu", content_id)
-        
-        my_courses = g.user.get_my_courses()
-        
-    except Exception as exc:
-        logging.error("Erro ao buscar conteúdo: %s", exc)
-        
-        abort(404)
-    if not content_id:
-        abort(404)
-        
-    if request.method == "GET":
-        
-        content = g.user.GET_FULL_CONTENT( all_contents=False, content_to_select=content_id, review=True, comments=True)
-        
-        print(f"[RETORNO DE CONTENT_BUSS de tipo {type(content)}<0>\n", content)
-        
-        content = content[0] if content[0]["id"] == content_id else False
-        
-        if not content:
-            abort(404)
-            
-        print(f"[RETORNO DE CONTENT_BUSS de tipo {type(content)}<1>\n", content)
-        return render_template("content_preview.html", content=content, my_courses=my_courses)
-        
-    content = content[0] if content[0]["id"] == content_id else False
-    print(f"[RETORNO DE CONTENT_BUSS de tipo {type(content)}", content)
-    if not content:
-        abort(404)        
-    content = g.user.GET_FULL_CONTENT( all_contents=False, content_to_select=content_id, review=True, comments=False)        
-        
-    return render_template("edit_content.html", content=content, **tpl_ctx)
 
 
 # ── Minhas publicações / select_content ───────────────────────────────────────
@@ -309,25 +387,6 @@ def get_publications():
     return redirect(url_for("contents.contents", tab="my-publications-view",
                             _anchor="publications-section",
                             publications=publications))
-
-
-@contents_bp.route("/contents/publications/selec_content/<content_id>", methods=["POST", "GET"])
-def select_content(content_id):
-    if _cred() not in _PUBLISHER_CREDS:
-        return redirect(url_for("auth.login"))
-
-    content = (
-        g.user.get_content_by_admin(content_id)
-        if _cred() == "admin"
-        else g.user.professor_get_content_by_id(content_id)
-    )
-
-    if not content:
-        return redirect(url_for("contents.get_publications"))
-
-    from pdf_to_html import pdf_bytes_to_html
-    content["html_body"] = pdf_bytes_to_html(content.get("pdf") or b"")
-    return render_template("content_view.html", content=content)
 
 
 # ── Editar conteúdo ───────────────────────────────────────────────────────────

@@ -134,7 +134,7 @@ class Management_Professors(Management_User_Default):
             
         
     @professor_required        
-    def suspended_comment_by_professor(self, commentId, contentId):
+    def suspended_comment_by_professor(self, contentId, commentId):
               
         if not self.get_content_by_id(contentId):
             return False
@@ -180,3 +180,18 @@ class Management_Professors(Management_User_Default):
             
         finally:
             conn.close()
+            
+    @professor_required           
+    def delete_comment_by_professor(self, contentId, commentId):
+        
+        if not self.professor_get_content_by_id(contentId):
+            return False
+                        
+        if not get_comment_by_id(contentId, commentId):
+            return False
+            
+        try:   
+            return bool(delete_comment(contentId, commentId))
+        except Exception as e:
+            logger.error(f"Erro ao deletar comentário {commentId}: {e}")
+            return False              
