@@ -319,10 +319,7 @@ class Management_Admins(Management_User_Default):
             return False
             
         try:            
-            content _analytics = analytics(contentId)
-            if content _analytics:
-                return content _analytics
-            return False
+            return analytics(contentId)
                             
         except:
             return False

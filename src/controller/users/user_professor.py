@@ -42,7 +42,7 @@ class Management_Professors(Management_User_Default):
             return False
             
         try:            
-            content _analytics = analytics(contentId)
+            content_analytics = analytics(contentId)
             return content_analytics
             
         except:
