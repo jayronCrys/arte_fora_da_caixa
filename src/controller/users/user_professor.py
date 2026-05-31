@@ -4,6 +4,7 @@ from src.models.contents_models.content_models import Contents
 from functools import wraps
 from src.models.database import get_session as database
 from src.models.db_mongo_execute import delete_comment, get_comment_by_id, suspend_comment
+from src.models.analytics import platform_global_analytics, general_analytics
 import uuid
 
 
@@ -42,10 +43,8 @@ class Management_Professors(Management_User_Default):
             
         try:            
             content _analytics = analytics(contentId)
-            if content _analytics:
-                return content _analytics
-            return False
-                            
+            return content_analytics
+            
         except:
             return False
                                                                 
@@ -64,11 +63,12 @@ class Management_Professors(Management_User_Default):
             conn = self.dataBase()
             contentExist = select_info(conn, Contents, "id", uuid.UUID(contentId))
             
-            if contentExist:                               
-                if contentExist.get("publisher_id") == self.userId:
-                    return contentExist
-                                   
-            return False                
+            if not contentExist:
+                return False
+                                         
+            return contentExist if contentExist.get("publisher_id") == self.userId else False                    
+        except:
+            return False                                                               
         finally:
             conn.close()        
             
@@ -76,20 +76,17 @@ class Management_Professors(Management_User_Default):
     def delete_contents_by_id(self, contentId):
         if not contentId:
             return False           
-        
-        contentExist = self.professor_get_content_by_id(contentId)
-        if contentExist:                        
-            
-            try:
-                
-                conn = self.dataBase()      
-                db_task = delete_info(conn, Contents, "id", uuid.UUID(contentId))
-                
-                if db_task : return True
-                    
+        try:
+            if not self.professor_get_content_by_id(contentId):
                 return False
-            finally:
-                conn.close()
+                
+            conn = self.dataBase()                            
+            return delete_info(conn, Contents, "id", uuid.UUID(contentId))
+                 
+        except:
+            return False            
+        finally:
+            conn.close()
         
     @professor_required
     def update_contents_by_id(self, columnUpdate, contentId, newValue):
@@ -103,19 +100,21 @@ class Management_Professors(Management_User_Default):
         if columnUpdate == "pdf":
             if not isinstance(newValue, bytes):
                 return False
+                
         contentExist = self.professor_get_content_by_id(contentId) 
-        if contentExist:                        
-            
-            try:
-                
-                conn = self.dataBase()      
-                db_task = update_info(conn, Contents, columnUpdate, newValue, "id", uuid.UUID(contentId))
-                
-                if db_task : return True
-                    
+        try:
+            if not contentExist:
                 return False
-            finally:
-                conn.close()
+            conn = self.dataBase()                          
+            return update_info(conn, Contents, columnUpdate, newValue, "id", uuid.UUID(contentId))
+                            
+        except:
+            return False
+                                
+        finally:
+            conn.close()
+                                            
+            
                 
     #adicionar campo de "ativo" no banco de dados pra permitir status suspenso ou não de content
     
@@ -147,9 +146,9 @@ class Management_Professors(Management_User_Default):
         if not self.professor_get_content_by_id(contentId):
             return False
             
-        try:   
-            if suspend_comment(contentId, commentId):
-                return True
+        try: 
+            return suspend_comment(contentId, commentId)
+                
         except:
             return False    
         
@@ -160,10 +159,11 @@ class Management_Professors(Management_User_Default):
             return False
         author = self.get_use_name()
         try:
-            if content:               
-                if author:
-                    conn = self.dataBase()
-                    db_task = insert_info(conn, Contents, {
+            if not content or not author:
+                return False
+
+            conn = self.dataBase()           
+            db_task = insert_info(conn, Contents, {
     "title":        content.get("title"),
     "desc":         content.get("desc"),
     "banner":       content.get("banner"),
@@ -173,9 +173,11 @@ class Management_Professors(Management_User_Default):
     "publisher_id": uuid.UUID(self.userId)
 })
                     
-                    if db_task:
-                        content = conn.query(Contents).filter_by(title=content.get("title"), publisher_id=uuid.UUID(self.userId)).first()
-                        return content.id
+            if db_task:
+                content = conn.query(Contents).filter_by(title=content.get("title"), publisher_id=uuid.UUID(self.userId)).first()
+                return content.id
+                
             return False
+            
         finally:
             conn.close()

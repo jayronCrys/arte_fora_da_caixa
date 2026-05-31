@@ -1,6 +1,7 @@
 from src.controller.users.user_default import Management_User_Default, Login_Account, check_user, Create_Account
 from src.models.db_execute import insert_info, select_info, delete_info, update_info
 from src.models.database import get_session as database
+from src.models.analytics import platform_global_analytics, analytics
 from src.models.passwords import compare_password as compare
 from src.models.contents_models.content_models import Contents
 from src.models.users_models.user_models import User, UserCred
@@ -36,7 +37,7 @@ class Management_Admins(Management_User_Default):
     def admin_required(func):
         @wraps(func)
         def wrapper(self, *args, **kwargs):
-            if self.isLoged and self.user and self.userRole == "admin":
+            if self.isLoged and self.user and self.userRole == "admin" and self.userId:
                 return func(self, *args, **kwargs)
             else:
                 logger.info("Acesso negado: usuário não logado ou sem permissão de administrador.")
@@ -46,9 +47,13 @@ class Management_Admins(Management_User_Default):
     @admin_required    
     def all_users(self):
         conn = self.dataBase()
-        all_users = conn.query(User).all()
-        conn.close()
-        return all_users
+        try:
+            return conn.query(User).all()
+        except:
+            return False
+        finally:            
+            conn.close()
+        
     @admin_required
     def create_user_by_admin(self, userName, userPass, userPassConfirm, userCred):
         #--> hole deve ser um campo selecionável e não digitável
@@ -84,8 +89,7 @@ class Management_Admins(Management_User_Default):
             })
             if not ok:
                 return False
-            user = select_info(conn, User, "name", userName, None)
-            return True if user else None
+            return select_info(conn, User, "name", userName, None)
         except Exception as e:
             logger.error(f"Erro ao adicionar usuário, motivo {e}")
             try:
@@ -101,7 +105,10 @@ class Management_Admins(Management_User_Default):
         conn = self.dataBase()
         try:
             db_task = select_info(conn, User, "name", userName)
-            return db_task
+            return db_task if db_task else None
+            
+        except:
+            return None            
         finally:
             conn.close()
             
@@ -111,49 +118,43 @@ class Management_Admins(Management_User_Default):
             return False
             
         try:                              
-            conn = self.dataBase()  
-            contentExist = select_info(conn, Contents, "id", uuid.UUID(contentId))
-            if contentExist:
+            conn = self.dataBase()
+            if select_info(conn, Contents, "id", uuid.UUID(contentId)):
                                       
-                db_task = delete_info(conn, Contents, "id", uuid.UUID(contentId))
-                
-                if db_task : return True
-                    
+                return delete_info(conn, Contents, "id", uuid.UUID(contentId))                                   
+            return False
+
+        except:
             return False
         finally:
-                conn.close()
-                
-        if not contentId:
-            return False           
-        
-        contentExist = self.professor_get_content_by_id(contentId)
-        if contentExist:                        
-            
-            try:
-                
-                conn = self.dataBase()      
-                db_task = delete_info(conn, Contents, "id", uuid.UUID(contentId))
-                
-                if db_task : return True
-                    
-                return False
-            finally:
-                conn.close()
+            conn.close()
                 
     @admin_required
     def delete_user_by_admin(self, userId):
         conn = self.dataBase()
+        if not userId:
+            return False
+            
+        if not self.get_user_by_admin(userId):
+            return False
+            
         try:
-            db_task = delete_info(conn, User, "id", uuid.UUID(userId))
-            return db_task
+            return delete_info(conn, User, "id", uuid.UUID(userId))
+            
+        except:
+            return False            
         finally:
             conn.close()
 
     @admin_required
     def update_user_by_admin(self, field, newValue, confirmValue, userId):
-        if field not in self.validFields:
+        
+        if field not in self.validFields or not userId:
             logger.warning("parâmetro inválido")
             return False
+        if not self.get_user_by_admin(userId):
+            return False
+                        
         checker = Create_Account(self.dataBase)
         save_user = check_user(userId, self.dataBase, "id")
         if field == "name":
@@ -183,26 +184,34 @@ class Management_Admins(Management_User_Default):
             db_task = update_info(conn, User, field, newValue, "id", uuid.UUID(userId))
             logger.info("alteração feita com sucesso")
             return db_task
+            
+        except:
+            conn.rollback()
+            return False            
         finally:
             conn.close()
             
             
     @admin_required
     def get_all_contents_by_admin(self):
-        print("vou tentar fazer conecao")
-        conn = self.dataBase()
-        print("fiz comeccao")
-        all_contents = conn.query(Contents).all()
-        conn.close()
-        return all_contents
+        
+        try:
+            return self.get_all_contents()
+            
+        except:
+            return False
         
     @admin_required
     def get_content_by_admin(self, contentId):
         conn = self.dataBase()
-        print("TENHO I TUPO",contentId)
-        content = select_info(conn, Contents, "id", uuid.UUID(contentId), None)
-        conn.close()
-        return content
+        try:
+            return select_info(conn, Contents, "id", uuid.UUID(contentId), None)
+            
+        except:
+            False
+            
+        finally:
+            conn.close()        
        
     @admin_required
     def update_contents_by_admin(self, columnUpdate, contentId, newValue):
@@ -278,13 +287,11 @@ class Management_Admins(Management_User_Default):
         conn = self.dataBase()
        
         try:
-            if content:
-                author = select_info(conn, User, "name", authorName)
-                print("publicando conteudo", author)
-                if author:
-                    author = author.get("name")
-                    print("meu id", self.userId)
-                    db_task = insert_info(conn, Contents, {
+            author = select_info(conn, User, "name", authorName)
+            if content and author:
+                 
+                author = author.get("name")                
+                db_task = insert_info(conn, Contents, {
                     "title":        content.get("title"),
                     "desc":         content.get("desc"),
                     "banner":       content.get("banner"),
@@ -293,9 +300,41 @@ class Management_Admins(Management_User_Default):
                     "author":       str(author),
                     "publisher_id": uuid.UUID(self.userId)
                 })
-                    if db_task:
-                        content = conn.query(Contents).filter_by(title = content.get("title"), publisher_id = uuid.UUID(self.userId)).first()
-                        return content.id
+                if db_task:
+                    content = conn.query(Contents).filter_by(title = content.get("title"), publisher_id = uuid.UUID(self.userId)).first()
+                    return content.id
+                return False
+                
+        except:
             return False
+
         finally:
             conn.close()
+            
+            
+    @admin_required
+    def get_content_analytics_by_admim(self, contentId):
+        
+        if not self.get_content_by_admin(contentId):
+            return False
+            
+        try:            
+            content _analytics = analytics(contentId)
+            if content _analytics:
+                return content _analytics
+            return False
+                            
+        except:
+            return False
+            
+    @admin_required
+    def get_plataform_analytics(self):
+        
+        try:
+            analytic = platform_global_analytics()
+            if analytic:
+                return analytic                
+            return False
+                            
+        except:
+            return False                                                            
