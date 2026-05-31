@@ -5,7 +5,7 @@ import logging
 from src.controller.users.user_default import Management_User_Default, check_user, Create_Account
 from src.models.db_execute import insert_info, select_info, delete_info, update_info
 from src.models.database import get_session as database
-from src.models.analytics import platform_global_analytics, analytics
+from src.models.analytics import platform_global_analytics, analytics, general_analytics
 from src.models.passwords import compare_password as compare
 from src.models.contents_models.content_models import Contents
 from src.models.users_models.user_models import User, UserCred
@@ -49,10 +49,8 @@ class Management_Admins(Management_User_Default):
             conn.close()
         
     @admin_required
-    def create_user_by_admin(self, userName, userPass, userPassConfirm, userCred):
-        if not userName or not userPass:
-            return False
-            
+    def create_user_by_admin(self, userName, userPass, userCred="aluno"):
+        
         mapped_cred = self.CRED_MAP.get(userCred)
         if not mapped_cred:
             logger.warning("Tipo de credencial inválido")
@@ -61,7 +59,7 @@ class Management_Admins(Management_User_Default):
         conn = self.dataBase()
         checker = Create_Account(self.dataBase)
         
-        if not checker.create_user_name(userName) or not checker.create_user_pass(userPass, userPassConfirm):
+        if not checker.create_user_name(userName) or not checker.create_user_pass(userPass, userPass):
             conn.close()
             return False
             
@@ -77,6 +75,7 @@ class Management_Admins(Management_User_Default):
                 return False
                 
             return select_info(conn, User, "name", userName, None)
+            
         except Exception as e:
             logger.error(f"Erro ao adicionar usuário: {e}")
             try:
@@ -146,7 +145,7 @@ class Management_Admins(Management_User_Default):
             conn.close()
 
     @admin_required
-    def update_user_by_admin(self, field, newValue, confirmValue, userId):
+    def update_user_by_admin(self, field, newValue,userId):
         if field not in self.validFields or not userId:
             logger.warning("Parâmetro de atualização inválido")
             return False
@@ -164,8 +163,7 @@ class Management_Admins(Management_User_Default):
             newValue = checker.userName                                            
         
         elif field == "password":
-            if not checker.create_user_pass(newValue, confirmValue):
-                return False
+            
             if compare(newValue, save_user.get("password")):
                 logger.info("Senhas idênticas, nenhuma alteração feita.")
                 return False
@@ -320,3 +318,16 @@ class Management_Admins(Management_User_Default):
         except Exception as e:
             logger.error(f"Erro ao coletar analytics globais da plataforma: {e}")
             return False
+    
+    @admin_required
+    def get_professor_analytics(self, professor_id):
+        try:
+            if not self.get_user_by_id(professor_id):
+                return False
+                
+            professor_analytic = general_analytics(professor_id)
+            return professor_analytic if professor_analytic else False
+        except Exception as e:
+            logger.error(f"Erro ao coletar analytics globais da plataforma: {e}")
+            return False
+    

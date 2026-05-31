@@ -32,7 +32,10 @@ def admin_create_user():
     cred = request.form.get("cred")
     senha = request.form.get("password")
     confirm = request.form.get("confirm")
-
+    
+    if not senha or not nome:
+        return render_template("admin_page.html", error="todos os campos são obrigatórios"), 400
+        
     if senha != confirm:
         return render_template("admin_page.html", error="senhas não coincidem"), 400
 
@@ -64,7 +67,7 @@ def admin_edit_user(user_id):
             g.user.update_user_by_admin("name", new_name, None, user_id)
 
         if new_pass and confirm_pass and new_pass == confirm_pass:
-            g.user.update_user_by_admin("password", new_pass, confirm_pass, user_id)
+            g.user.update_user_by_admin("password", new_pass, user_id)
 
         if new_cred:
             g.user.update_user_by_admin("cred", new_cred, None, user_id)
@@ -77,8 +80,42 @@ def admin_edit_user(user_id):
 
 @admin_bp.route("/admin/delete/<user_id>", methods=["POST"])
 def admin_delete_user(user_id):
+    
     if not _is_admin():
         return redirect(url_for("auth.login"))
 
-    g.user.delete_user_by_admin(user_id)
+    delete = g.user.delete_user_by_admin(user_id)
+    if not delete:
+        return render_template("admin_edit_user.html", error = "erro ao excluir usuário"), 404
+        
     return redirect(url_for("admin.admin_page"))
+
+
+
+
+#── STATISTICAS PELO ADMIN ───────────────────────────────────────────────
+@admin_bp.route("/admin/analytics", methods=["GET"])
+def app_analytics(user_id):
+    if not _is_admin():
+        return redirect(url_for("auth.login"))
+
+    g.user.get_plataform_analytics()
+    return redirect(url_for("admin.admin_page"))
+    
+    
+@admin_bp.route("/admin/analytics/professor/<professor_id>", methods=["GET"])
+def professor_analytics(professor_id):
+    if not _is_admin():
+        return redirect(url_for("auth.login"))
+        
+    analytic = g.user.get_professor_analytics(professor_id)
+    
+    
+            
+@admin_bp.route("/admin/analytics/content/<content_id>", methods=["GET"])
+def content_analytics(content_id):
+    if not _is_admin():
+        return redirect(url_for("auth.login"))
+        
+    g.user.get_content_analytics_by_admin(content_id)
+          
