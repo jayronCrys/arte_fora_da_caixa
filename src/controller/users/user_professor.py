@@ -4,7 +4,7 @@ from src.models.contents_models.content_models import Contents
 from functools import wraps
 from src.models.database import get_session as database
 from src.models.db_mongo_execute import delete_comment, get_comment_by_id, suspend_comment
-from src.models.analytics import platform_global_analytics, general_analytics
+from src.models.analytics import analytics, general_analytics
 import uuid
 
 
@@ -24,13 +24,13 @@ class Management_Professors(Management_User_Default):
         return wrapper
 
     """tem que modificae a tela de home page, pra expor esses conteudo, apos isso já da pra fazer a primeirs entrega"""
+    
     @professor_required
     def select_contents_by_publisher_id(self):
-            
-        userId = [uuid.UUID(self.userId)]
-        try:
+        try:                    
+            userId = uuid.UUID(self.userId)
             conn = self.dataBase()
-            all_my_contents = conn.query(Contents).filter(Contents.publisher_id.in_(userId)).all()
+            all_my_contents = conn.query(Contents).filter(Contents.publisher_id==userId).all()
             return all_my_contents
         finally:
             conn.close()
@@ -101,10 +101,9 @@ class Management_Professors(Management_User_Default):
             if not isinstance(newValue, bytes):
                 return False
                 
-        contentExist = self.professor_get_content_by_id(contentId) 
+        if not self.professor_get_content_by_id(contentId):
+            return False
         try:
-            if not contentExist:
-                return False
             conn = self.dataBase()                          
             return update_info(conn, Contents, columnUpdate, newValue, "id", uuid.UUID(contentId))
                             
@@ -154,10 +153,10 @@ class Management_Professors(Management_User_Default):
         
     @professor_required
     def publish_content_by_professor(self, content, author):
-        
-        if author != self.get_user_name():
+        user_name = self.get_user_name()
+        if author != user_name:
             return False
-        author = self.get_use_name()
+        
         try:
             if not content or not author:
                 return False
@@ -169,13 +168,13 @@ class Management_Professors(Management_User_Default):
     "banner":       content.get("banner"),
     "content_type": content.get("content_type"),
     "pdf":          content.get("pdf"),
-    "author":       str(author),
+    "author":       str(user_name),
     "publisher_id": uuid.UUID(self.userId)
 })
                     
             if db_task:
                 content = conn.query(Contents).filter_by(title=content.get("title"), publisher_id=uuid.UUID(self.userId)).first()
-                return content.id
+                return content.id if content else False
                 
             return False
             

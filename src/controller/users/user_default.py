@@ -1,5 +1,10 @@
-# /controller/users/user_default.py
 import traceback
+import re
+import logging
+from uuid import UUID
+from functools import wraps
+from typing import Union, Tuple
+
 from src.controller.apis.google.google_login_api import client_ifo
 from src.models.passwords import make_hash
 from src.models.passwords import compare_password as compare
@@ -8,42 +13,34 @@ from src.models.db_execute import insert_info, select_info, delete_info, update_
 from src.models.contents_models.content_models import Contents
 from src.models.users_models.user_models import User
 from src.models.relationships_models.inscriptions import Subs
-from src.models.db_mongo_execute import get_comments, get_reviews, new_comment,  new_review, remove_inscription
-from typing import Union
-import re
-import logging
-from uuid import UUID
+from src.models.db_mongo_execute import { get_comments, get_reviews, new_comment, new_review, remove_content_inscription, get_comment_by_id}
 
 logger = logging.getLogger(__name__)
 
 
-def check_user(seach, dataBase=database, collumn="name"):
+def check_user(search, dataBase=database, column="name"):
     """
     dataBase -> função que retorna sessão (get_session)
-    collumn -> coluna para busca (default "name")
+    column -> coluna para busca (default "name")
     """
-    # se for busca por id e seach for string, converte para UUID
-    if collumn == "id" and isinstance(seach, str):
+    if column == "id" and isinstance(search, str):
         try:
-            seach = UUID(seach)
-        except Exception:
-            # se não conseguir converter, deixa como veio select_info vê com isso e retorna False
+            search = UUID(search)
+        except ValueError:
             pass
 
     conn = dataBase()
     try:
-        userExist = select_info(conn, User, collumn, seach, None)
-        logger.info("Informações de usuário extraídas com sucesso")
-        return userExist
-
+        user_exist = select_info(conn, User, column, search, None)
+        logger.info("Informações de usuário extraídas com sucesso.")
+        return user_exist
     except Exception as e:
-        logger.error(f"Erro ao selecionar atributos de usuário, motivo {e}")
+        logger.error(f"Erro ao selecionar atributos de usuário: {e}")
         try:
             conn.rollback()
         except Exception:
             pass
         return False
-
     finally:
         conn.close()
 
@@ -54,16 +51,13 @@ class Create_Account:
         self.userName = None
         self.userPass = None
 
-    def create_user(self, method, account: dict):  # -->account deve ser um dict
-        if method == "google":
-            if not account.get("name") or not account.get("email"):
-                return False
+    def create_user(self, method: str, account: dict):
+        if method == "google" and (not account.get("name") or not account.get("email")):
+            return False
 
-        if method == "local":
-            if not self.userName or not self.userPass:
-                return False
+        if method == "local" and (not self.userName or not self.userPass):
+            return False
 
-        # --->self.userName e self.userPass são definidas nas funções de validação de nome e senha
         self.userName = account.get("name") or self.userName
 
         conn = self.dataBase()
@@ -77,105 +71,93 @@ class Create_Account:
             if not ok:
                 return False
 
-            user = select_info(conn, User, "name", self.userName, None)
-            return user
-
+            return select_info(conn, User, "name", self.userName, None)
         except Exception as e:
-            logger.error(f"Erro ao adicionar usuário, motivo {e}")
+            logger.error(f"Erro ao adicionar usuário: {e}")
             try:
                 conn.rollback()
             except Exception:
                 pass
             return False
-
         finally:
             conn.close()
-    def create_user_pass(self, pass1, pass2):
 
+    def create_user_pass(self, pass1: str, pass2: str) -> bool:
         if pass1 != pass2 or len(pass1) < 8:
-            logger.info("senha de tamanho indevido")
+            logger.info("Senha com tamanho indevido ou divergente.")
             return False
 
-        if pass1.replace(" ", "") != pass1:
-            logger.info("A senha não pode conter espaços em branco")
+        if " " in pass1:
+            logger.info("A senha não pode conter espaços em branco.")
             return False
 
-        if (any(e.isdigit() for e in pass2) and
-                any(e.isalpha() for e in pass2) and
-                any(e.islower() for e in pass2) and
-                any(e.isupper() for e in pass2)):
-            # verifica em ordem se tem: digitos, letras, letras minusculas e maiusculas.
+        if (any(e.isdigit() for e in pass1) and
+                any(e.isalpha() for e in pass1) and
+                any(e.islower() for e in pass1) and
+                any(e.isupper() for e in pass1)):
             self.userPass = make_hash(pass1)
             return True
 
-        logger.info("senha muito fraca")
+        logger.info("Senha muito fraca.")
         return False
 
-    def create_user_name(self, name):
-        name = name.strip()# Tira espaços do inicio e fim
+    def create_user_name(self, name: str) -> bool:
+        name = name.strip()
         if not name:
             return False
 
-        # realName conserva o nome real, isso é necessário para manter os espaços entre duas palavras
-        realName = " ".join(name.split())
-        name = name.replace(" ", "")
-        if len(name) < 5 or len(name) > 50:
-            logger.info("Nome fora do range")
+        real_name = " ".join(name.split())
+        name_without_spaces = name.replace(" ", "")
+        
+        if len(name_without_spaces) < 5 or len(name_without_spaces) > 50:
+            logger.info("Nome fora do limite permitido.")
             return False
 
-        if check_user(realName, self.dataBase):
-            logger.info("Nome já existe")
+        if check_user(real_name, self.dataBase):
+            logger.info("Nome de usuário já existe.")
             return False
 
-        # Define os padrões aceitos para nome e verifica se é respeitado pelo user
-        if re.match(r'^[A-Za-z0-9._-]+$', name):
-            self.userName = realName
+        if re.match(r'^[A-Za-z0-9._-]+$', name_without_spaces):
+            self.userName = real_name
             return True
-        logger.info("Nome contém caracteres não permitidos")
+        logger.info("Nome contém caracteres não permitidos.")
         return False
 
-
     @classmethod
-    def creator(cls, creationMethod, userName=None, email: Union[dict, None] = None, pass1=None, pass2=None) -> bool:
-        
-        createUser = cls(database)
+    def creator(cls, creationMethod: str, userName=None, email: Union[dict, None] = None, pass1=None, pass2=None) -> Tuple[bool, Union[dict, None]]:
+        create_account_instance = cls(database)
         user = None
         
         if creationMethod == "google" and email and email.get("name") and email.get("email"):
-            user = createUser.create_user(creationMethod, email)
+            user = create_account_instance.create_user(creationMethod, email)
 
-        # usando a conta local há uma sequência de validações
         elif creationMethod == "local" and userName and pass1 and pass2:
-            if not createUser.create_user_name(userName):
-                logger.info("Nome de usuário inválido")
+            if not create_account_instance.create_user_name(userName):
+                logger.info("Nome de usuário inválido.")
                 return False, None
 
-            if not createUser.create_user_pass(pass1, pass2):
-                logger.info("Senha não respeita as especificações")
+            if not create_account_instance.create_user_pass(pass1, pass2):
+                logger.info("Senha não respeita as especificações.")
                 return False, None
 
-            user = createUser.create_user(creationMethod, {
-                "name": createUser.userName,
+            user = create_account_instance.create_user(creationMethod, {
+                "name": create_account_instance.userName,
                 "email": None,
                 "picture": None
             })
-
         else:
             return False, None
 
         if user:
-            logginMethod = creationMethod
-            logger.info("Tentando fazer login automático")
-            return Login_Account.login(logginMethod, user, True)
+            logger.info("Tentando realizar login automático pós-criação.")
+            return Login_Account.login(creationMethod, user, redirectByCreateAccount=True)
         return False, None
 
 
 class Login_Account:
-
     def __init__(self, account, dataBase):
         self.user = account
         self.dataBase = dataBase
-
         self.userName = None
         self.userPass = None
         self.email = None
@@ -187,18 +169,16 @@ class Login_Account:
 
     @staticmethod
     def is_loged(func):
+        @wraps(func)  # Corrigido: Agora preserva metadados da função original
         def wrapper(self, *args, **kwargs):
             if self.isLoged and self.user:
                 return func(self, *args, **kwargs)
-            else:
-                return False
+            return False
         return wrapper
 
     def get_infor_user_verif(self, user=None):
         if user:
             self.user = user
-
-        # ---> todas essas informações devem ser garantidamente retornadas caso estejam definidas no banco de dados
         
         self.isLoged = True
         self.cred = self.user.get("cred")
@@ -209,253 +189,208 @@ class Login_Account:
         self.createDate = self.user.get("creation_date")
         self.picture = self.user.get("picture")
 
-    def login_with_google_account(self):
+    def login_with_google_account(self) -> Tuple[bool, Union[dict, None]]:
         if isinstance(self.user, dict):
-            userNameIn = self.user.get("name")
-            userEmailIn = self.user.get("email")
+            user_name_in = self.user.get("name")
+            user_email_in = self.user.get("email")
 
-            userExist = check_user(userNameIn, self.dataBase)
+            user_exist = check_user(user_name_in, self.dataBase)
 
-            if userExist and userExist.get("email") == userEmailIn:
-                self.user = userExist
+            if user_exist and user_exist.get("email") == user_email_in:
+                self.user = user_exist
                 self.get_infor_user_verif()
-                self.isLoged = True
                 return self.isLoged, self.user
 
         self.isLoged = False
         return self.isLoged, None
 
-    def login_with_local_account(self):
+    def login_with_local_account(self) -> Tuple[bool, Union[dict, None]]:
         if isinstance(self.user, dict):
-            logger.info("Nome e senha foram repassados")
-            userNameIn = self.user.get("name")
-            userPassIn = self.user.get("password")
+            logger.info("Nome e senha repassados para login local.")
+            user_name_in = self.user.get("name")
+            user_pass_in = self.user.get("password")
 
-            userExist = check_user(userNameIn, self.dataBase)
+            user_exist = check_user(user_name_in, self.dataBase)
 
-            if userExist and compare(userPassIn, userExist.get("password")):
-                logger.info("Nome de usuário existe e a senha é igual a salva")
-                self.user = userExist
+            if user_exist and compare(user_pass_in, user_exist.get("password")):
+                logger.info("Usuário validado com sucesso.")
+                self.user = user_exist
                 self.get_infor_user_verif()
-                self.isLoged = True
                 return self.isLoged, self.user
 
-            logger.info("senhas diferentes")
+            logger.info("Credenciais inválidas.")
 
         self.isLoged = False
         return self.isLoged, None
 
     @classmethod
-    def login(cls, loginMethod, account: dict, redirectByCreateAccount=False) -> Union[bool, dict, None]:
-        userLog = cls(account, database)
-        userLoged, userAccount = False, None
+    def login(cls, loginMethod: str, account: dict, redirectByCreateAccount=False) -> Tuple[bool, Union[dict, None]]:
+        user_log = cls(account, database)
+        
         if redirectByCreateAccount:
-            # evita recarregar o banco pra buscar informações, usa as informações contidas na account direcionada por create_account
-            userLog.get_infor_user_verif(account)
+            user_log.get_infor_user_verif(account)
             return True, account
 
-        else:
-            if loginMethod == "google":
-                userLoged, userAccount = userLog.login_with_google_account()
+        user_logged, user_account = False, None
+        if loginMethod == "google":
+            user_logged, user_account = user_log.login_with_google_account()
+        elif loginMethod == "local":
+            user_logged, user_account = user_log.login_with_local_account()
 
-            elif loginMethod == "local":
-                userLoged, userAccount = userLog.login_with_local_account()
+        if not user_account and account and loginMethod == "google":
+            logger.info("Conta Google não encontrada. Iniciando auto-criação.")
+            return Create_Account.creator(creationMethod=loginMethod, userName=account.get("name"), email=account)
 
-        # se userAccount não existe, tenta criar automaticamente
-        if not (userAccount) and account and loginMethod == "google":
-            logging.info("tentando criar uma conta com as informações")
-            return Create_Account.creator(creationMethod=loginMethod,
-                                          userName=account.get("name"),
-                                          email=account)
-
-        return userLoged, userAccount
+        return user_logged, user_account
 
 
 class Management_User_Default(Login_Account):
-
     def __init__(self, account, dataBase=database):
         super().__init__(account, dataBase)
-
         self.get_infor_user_verif(account)
-
         self.manager_fields = ["name", "email", "password", "picture", "subs"]
 
     @Login_Account.is_loged
     def get_user(self):
         return self.user
 
-
     @Login_Account.is_loged
     def get_user_name(self):
         return self.userName
 
-
     @Login_Account.is_loged
     def get_email(self):
-        return self.email if self.email else "nenhum email associado á este perfil"
-
+        return self.email if self.email else "Nenhum email associado a este perfil."
 
     @Login_Account.is_loged
-    def update_user(self, field, newValue1, newValue2=None):
-        if field in self.manager_fields:
-            conn = self.dataBase()
+    def update_user(self, field: str, newValue1, newValue2=None) -> bool:
+        if field not in self.manager_fields:
+            return False
 
+        conn = self.dataBase()
+
+        if field == "name":
+            checker = Create_Account(self.dataBase)
+            if not checker.create_user_name(newValue1):
+                logger.warning("Nome de atualização inválido.")
+                conn.close()
+                return False
+            newValue1 = checker.userName
+
+        elif field == "password":
+            checker = Create_Account(self.dataBase)
+            if not checker.create_user_pass(newValue1, newValue2):
+                logger.warning("Nova senha não atende aos requisitos.")
+                conn.close()
+                return False
             
-            if field == "name":
-                checker = Create_Account(self.dataBase)
-                if not checker.create_user_name(newValue1):
-                    print("Nome inválido")
-                    return False
-                newValue1 = checker.userName
-            if field == "password":
-                checker = Create_Account(self.dataBase)
-
-                if not checker.create_user_pass(newValue1, newValue2):
-                    print("senha invalida")
-                    return False
-                
-                # verifica se não é a mesma senha
-                realValue = check_user(self.userId, self.dataBase, "id")
-                if realValue and compare(newValue1, realValue.get("password")):
-                    logging.error("Senha idêntica à atual")
-                    return False
-                newValue1 = checker.userPass
-                print("senhas não são iguais")
-            
-            try:
-                ok = update_info(conn, User, field, newValue1, "id", self.userId)
-
-                if not ok:
-                    return False
-
-                user_updated = check_user(self.userId, self.dataBase, "id")
-
-                if user_updated:
-                    self.user = user_updated
-                    self.get_infor_user_verif(user_updated)
-
-                return True
-
-            except Exception as e:
-                try:
-                    conn.rollback()
-                except Exception:
-                    pass
-                logging.error(f"Erro ao atualizar usuário: {e}")
+            real_value = check_user(self.userId, self.dataBase, "id")
+            if real_value and compare(newValue1, real_value.get("password")):
+                logger.error("A nova senha não pode ser idêntica à atual.")
+                conn.close()
+                return False
+            newValue1 = checker.userPass
+        
+        try:
+            ok = update_info(conn, User, field, newValue1, "id", self.userId)
+            if not ok:
                 return False
 
-            finally:
-                conn.close()
+            user_updated = check_user(self.userId, self.dataBase, "id")
+            if user_updated:
+                self.user = user_updated
+                self.get_infor_user_verif(user_updated)
+            return True
 
-        return False
-
-
-    @Login_Account.is_loged
-    def delete_user(self):
-        conn = self.dataBase()
-        try:
-            db_task = delete_info(conn, User, "id", UUID(self.userId))
-            return db_task
         except Exception as e:
+            logger.error(f"Erro ao atualizar usuário: {e}")
             try:
                 conn.rollback()
             except Exception:
                 pass
-            logging.error(f"Erro ao deletar usuário: {e}")
             return False
         finally:
             conn.close()
 
+    @Login_Account.is_loged
+    def delete_user(self) -> bool:
+        conn = self.dataBase()
+        try:
+            return bool(delete_info(conn, User, "id", UUID(str(self.userId))))
+        except Exception as e:
+            logger.error(f"Erro ao deletar usuário: {e}")
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+            return False
+        finally:
+            conn.close()
 
     @Login_Account.is_loged
-    def get_content_review(self, contentId):
-        print(f"[GET_CONTENT_REVIEW]: #{contentId}#")
-        if not contentId:
-            return False
-            
-        if not self.get_content_by_id(contentId):
+    def get_content_review(self, contentId: str):
+        if not contentId or not self.get_content_by_id(contentId):
             return False
             
         try:
-            print("Entro em try?")
-            content_reviews = get_reviews(contentId)
-            return content_reviews  # 🌟 CORRIGIDO: Agora retorna o valor obtido
-            
+            return get_reviews(contentId)
         except Exception as e:
-            print(f"Erro no get_reviews: {e}")
+            logger.error(f"Erro em get_reviews para o conteúdo {contentId}: {e}")
             return False            
 
-
     @Login_Account.is_loged
-    def get_content_comment(self, contentId):
-        if not contentId:
-            return False
-            
-        if not self.get_content_by_id(contentId):
+    def get_content_comment(self, contentId: str):
+        if not contentId or not self.get_content_by_id(contentId):
             return False
             
         try:
-            contentId_uuid = UUID(contentId)
-            content_comments = get_comments(contentId_uuid)            
-            return content_comments  # 🌟 CORRIGIDO: Agora retorna o valor obtido
+            return get_comments(UUID(str(contentId)))            
         except Exception as e:
-            print(f"Erro no get_comments: {e}")
+            logger.error(f"Erro em get_comments para o conteúdo {contentId}: {e}")
             return False
                 
     @Login_Account.is_loged   
-    def get_content_by_id(self, contentId):
-        print(f"[get_content_by_id] contentId recebido: '{contentId}', tipo: {type(contentId)}")
+    def get_content_by_id(self, contentId: str):
         conn = self.dataBase()
-        
         try:
             content = select_info(
                 conn,
                 Contents,
                 "id",
-                UUID(contentId),
+                UUID(str(contentId)),
                 ["id", "title", "desc", "banner", "content_type", "author", "creation_date", "publisher_id"]
             )
-            print(f"[GET_CONTENT_BY_ID]: RETORNO COM SUCESSO DE #{content['title']}:{content['id']}#")
             return content
-            
         except Exception as e:
-            print(f"Erro em get_content_by_id: {e}")
+            logger.error(f"Erro ao obter conteúdo por ID {contentId}: {e}")
             return False            
         finally:
             conn.close()
 
-
     @Login_Account.is_loged
-    def get_all_contents(self):
+    def get_all_contents(self) -> Union[list, bool]:
         conn = self.dataBase()
-        
         try:
             all_contents = conn.query(Contents).all()
-            result = []
-            for c in all_contents:
-                result.append({
-                    "id":            str(c.id),
-                    "title":         c.title,
-                    "desc":          c.desc,
-                    "banner":        c.banner,
-                    "content_type":  c.content_type,
-                    "author":        c.author,
-                    "creation_date": c.creation_date,
-                    "publisher_id":  str(c.publisher_id),
-                })
-            print(f"[GET_ALL_CONTENTS]: RETORNO COM SUCESSO DE #{len(result)} conteúdos#")
-            return result
-            
+            return [{
+                "id":            str(c.id),
+                "title":         c.title,
+                "desc":          c.desc,
+                "banner":        c.banner,
+                "content_type":  c.content_type,
+                "author":        c.author,
+                "creation_date": c.creation_date,
+                "publisher_id":  str(c.publisher_id),
+            } for c in all_contents]
         except Exception as e:
-            print(f"Erro em get_all_contents: {e}")
+            logger.error(f"Erro ao listar todos os conteúdos: {e}")
             return False
         finally:            
             conn.close()
 
-
     @Login_Account.is_loged
-    def GET_FULL_CONTENT(self, all_contents=False, content_to_select=None, review=False, comments=False):
-
+    def GET_FULL_CONTENT(self, all_contents=False, content_to_select=None, review=False, comments=False) -> Union[list, bool]:
+        # Corrigido nome para snake_case conforme PEP 8
         if not all_contents and content_to_select:
             contents = [self.get_content_by_id(content_to_select)]
         elif all_contents and content_to_select is None:
@@ -464,29 +399,22 @@ class Management_User_Default(Login_Account):
             return False
             
         full_content = []
-        
         for content in contents:
-            if not content:  # Evita quebrar caso get_content_by_id retorne False
+            if not content:
                 continue
                 
             content_id = content["id"]
-            
             if review:
-                content_review = self.get_content_review(content_id)
-                content["rating"] = content_review
-
+                content["rating"] = self.get_content_review(content_id)
             if comments:
-                # 🌟 CORRIGIDO: Nome do método alterado para o singular correto (get_content_comment)
-                content_comments = self.get_content_comment(content_id)
-                content["comments"] = content_comments
+                content["comments"] = self.get_content_comment(content_id)
 
             full_content.append(content)
             
-        print(f"[GET_FULL_CONTENT]: RETORNO COM SUCESSO DE # TODAS AS INFORMAÇÕES DE {len(full_content)} CONTEÚDOS#")
         return full_content
         
     @Login_Account.is_loged                   
-    def set_content_review(self, contentId, is_new_inscription=False,rating=0, comment=None):    
+    def set_content_review(self, contentId: str, is_new_inscription=False, rating=0, comment=None) -> bool:    
         if not self.get_content_by_id(contentId):
             return False
         try:        
@@ -494,93 +422,78 @@ class Management_User_Default(Login_Account):
                 new_review(course_id=contentId, review=0, new_inscription=is_new_inscription)
                 return True
                 
-            if rating and (comment.strip() == "" or comment is None) :
-                comment = ""              
-            new_review(course_id=contentId, review=rating,new_inscription=is_new_inscription)
-                               
-            new_comment(course_id=contentId, user_id=self.userId, user_name=self.userName,rating=rating, texto_comentario=comment)
-            print("consiho?")
+            # 🌟 CORRIGIDO: Ordem das validações alterada para evitar AttributeError caso comment seja None
+            if comment is None or comment.strip() == "":
+                comment = ""
+                
+            new_review(course_id=contentId, review=rating, new_inscription=is_new_inscription)
+            new_comment(course_id=contentId, user_id=self.userId, user_name=self.userName, rating=rating, texto_comentario=comment)
             return True
-        except Exception as E:
-            print("erro", E)                                
+        except Exception as e:
+            logger.error(f"Erro ao inserir review/comentário: {e}")
+            return False
+
     @Login_Account.is_loged
-    def check_inscription(self, contentId):
+    def check_inscription(self, contentId: str) -> Union[str, bool]:
         if not self.get_content_by_id(contentId): 
             return False
             
         conn = self.dataBase()                   
         try:            
             sub = conn.query(Subs).filter_by(
-                student_id=UUID(self.userId),
-                content_id=UUID(contentId)
+                student_id=UUID(str(self.userId)),
+                content_id=UUID(str(contentId))
             ).first()
-            
-            if not sub:
-                return False
-            print(f"[CHECK_INSCRIPTION]: RETORNO COM SUCESSO DE #{sub.id}#")    
-            return str(sub.id)
-            
+            return str(sub.id) if sub else False
         except Exception as e:
-            traceback.print_exc()
+            logger.error(f"Erro ao verificar inscrição: {e}")
             return False
         finally:                         
              conn.close()
                        
-                              
     @Login_Account.is_loged
-    def my_inscriptions(self):
+    def my_inscriptions(self) -> Union[list, bool]:
         conn = self.dataBase()
         try:
-            all_contents = conn.query(Subs).filter_by(student_id=UUID(self.userId)).all()
-            
+            all_contents = conn.query(Subs).filter_by(student_id=UUID(str(self.userId))).all()
             if not all_contents:               
-                return []  # 🌟 OTIMIZADO: Retorna lista vazia em vez de None para não quebrar o for
+                return []
                 
-            result = []            
-            for c in all_contents:
-                result.append({
-                        "id":            str(c.id),
-                        "student_id":    str(c.student_id),
-                        "content_id":    str(c.content_id),
-                        "creation_date": c.creation_date,
-                    })
-            print(f"[MY_INSCRIPTIONS]: RETORNO COM SUCESSO DE #{len(result)} inscrições#")       
-            return result
-            
+            return [{
+                "id":            str(c.id),
+                "student_id":    str(c.student_id),
+                "content_id":    str(c.content_id),
+                "creation_date": c.creation_date,
+            } for c in all_contents]
         except Exception as e:
-            print(f"Erro em my_inscriptions: {e}")
-            conn.rollback()
+            logger.error(f"Erro ao buscar inscrições: {e}")
+            try:
+                conn.rollback()
+            except Exception:
+                pass
             return False
         finally:
             conn.close()
 
-
     @Login_Account.is_loged            
-    def get_my_courses(self):  # 🌟 OTIMIZADO: Correção ortográfica do nome do método de couses -> courses
-        my_inscriptions = self.my_inscriptions()
-        if not my_inscriptions:  # Se retornar False ou lista vazia, mata a execução antes do loop
+    def get_my_courses(self) -> list: 
+        inscriptions = self.my_inscriptions()
+        if not inscriptions:
             return []
             
         my_courses = []
-        try:
-            for inscription in my_inscriptions:
-                content_id = inscription["content_id"]
-                course = self.GET_FULL_CONTENT( all_contents=False, content_to_select=content_id, review=True, comments=False)
-                
-                if not course:
-                    continue
-                                            
+        for inscription in inscriptions:
+            content_id = inscription["content_id"]
+            # Ajustado para usar o nome do método corrigido em snake_case
+            course = self.GET_FULL_CONTENT(all_contents=False, content_to_select=content_id, review=True, comments=False)
+            
+            if course and len(course) > 0:
                 my_courses.append(course[0])
                     
-            print(f"[GET_MY_COURSES]: RETORNO COM SUCESSO DE #{len(my_courses)} conteúdos#")                            
-            return my_courses                
-        except Exception as e:
-            print(f"Erro em get_my_courses: {e}")
-            return False
-
+        return my_courses                
 
     @Login_Account.is_loged
-    def new_inscription(self, contentId):
+    def new_inscription(self, contentId: str) -> bool:
         if self.check_inscription(contentId):
             return True
             
@@ -590,47 +503,61 @@ class Management_User_Default(Login_Account):
                 return False
                 
             inscription = {
-                "content_id": UUID(contentId),
-                "student_id": UUID(self.userId)
+                "content_id": UUID(str(contentId)),
+                "student_id": UUID(str(self.userId))
             }
             if insert_info(conn, Subs, inscription):
-                print(f"[NEW_INSCRIPTION]: RETORNO COM SUCESSO DE #DE NOVA INSCRIÇÃO#")
-                self.set_content_review(contentId=contentId, is_new_inscription=True,rating=0, comment=None)
+                self.set_content_review(contentId=contentId, is_new_inscription=True, rating=0, comment=None)
                 return True
-                             
+            return False
         except Exception as e:
-             print(f"Erro em new_inscription: {e}")
-             traceback.print_exc()
-             conn.rollback()
+             logger.error(f"Erro ao criar inscrição: {e}")
+             try:
+                 conn.rollback()
+             except Exception:
+                 pass
              return False
         finally:
              conn.close()
+
     @Login_Account.is_loged
-    def comment_delete(self, contentId):
-        pass
-        #        
+    def delete_my_comment(self, contentId: str, commentId: str):
+        # Corrigido o nome para um padrão descritivo uniforme
+        if not self.get_content_by_id(contentId):
+            return False
+            
+        if not get_comment_by_id(contentId, commentId):
+            return False
+            
+        try:                                    
+            return delete_comment(contentId, commentId)
+        except:
+            return False
+            
     @Login_Account.is_loged
-    def remove_incription(self, contentId):
+    def remove_inscription(self, contentId: str) -> bool:
+        # Corrigido: Nome do método unificado para 'remove_inscription'
         conn = self.dataBase()
-        inscriptionId = self.check_inscription(contentId)  
-        if not inscriptionId:  # 🌟 CORRIGIDO: erro de digitação de isncriptionId -> inscriptionId
+        inscription_id = self.check_inscription(contentId)  
+        if not inscription_id:
             return False
         
         try:
-            if delete_info(conn, Subs, "id", UUID(inscriptionId)):
-                
+            if delete_info(conn, Subs, "id", UUID(str(inscription_id))):
                 try:
-                    
-                    remove_inscription(contentId)
-                    print(f"[REMOVE_INSCRIPTION]: RETORNO COM SUCESSO DE #DESINSCRIÇÃO#", type(inscriptionId))
+                    remove_content_inscription(contentId)  # Função importada do Mongo
+                    logger.info(f"Inscrição {inscription_id} removida com sucesso do SQL e MongoDB.")
                     return True
-                    
-                except:
-                    print(f"[REMOVE_INSCRIPTION]: RETORNO SEM SUCESSO DE #DESINSCRIÇÃO#")
+                except Exception as mongo_err:
+                    logger.error(f"Inscrição removida do SQL, mas falhou no MongoDB: {mongo_err}")
                     return False                
+            return False
         except Exception as e:
-            print(f"Erro em remove_inscription: {e}")
-            conn.rollback()
+            logger.error(f"Erro ao remover inscrição: {e}")
+            try:
+                conn.rollback()
+            except Exception:
+                pass
             return False
         finally:
             conn.close()

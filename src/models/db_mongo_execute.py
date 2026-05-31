@@ -54,7 +54,7 @@ def new_review(course_id, review=0, new_inscription=False):
         upsert=True
     )
 
-def remove_inscription(course_id):
+def remove_content_inscription(course_id):
     """
     Abordagem direta usando $inc clássico. 
     Só decrementa se o documento contiver total_inscriptions maior que 0.
