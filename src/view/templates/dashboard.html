@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Analytics</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/viewport/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { background-color: #f8f9fa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .card-analytics { border: none; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); transition: transform 0.2s; }
+        .card-analytics:hover { transform: translateY(-3px); }
+        .metric-value { font-size: 2rem; font-weight: bold; color: #2b2d42; }
+        .metric-label { font-size: 0.85rem; color: #6c757d; text-transform: uppercase; letter-spacing: 0.5px; }
+        .chart-container { position: relative; height: 300px; width: 100%; }
+    </style>
+</head>
+<body>
+
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>📊 Painel de Análise de Dados</h2>
+        <span class="badge bg-primary fs-6">Dados em Tempo Real</span>
+    </div>
+
+    <ul class="nav nav-pills mb-4" id="analyticsTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="prof-tab" data-bs-toggle="pill" data-bs-target="#prof-panel" type="button">Visão Professor</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="admin-tab" data-bs-toggle="pill" data-bs-target="#admin-panel" type="button">Visão Administrador</button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="analyticsTabsContent">
+        
+        <div class="tab-pane fade show active" id="prof-panel" role="tabpanel">
+            <div class="mb-3">
+                <button class="btn btn-outline-primary btn-sm" onclick="carregarDados('/professor/my_analytics', 'prof')">🔄 Carregar Meu Analytics Geral</button>
+                <button class="btn btn-outline-secondary btn-sm" onclick="carregarDados('/professor/content_analytics/DIGITE_UM_ID_AQUI', 'prof')">🎬 Carregar Analytics do Conteúdo</button>
+            </div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-md-3">
+                    <div class="card card-analytics p-3 bg-white">
+                        <div class="metric-label">Conteúdos Publicados</div>
+                        <div class="metric-value" id="prof-total_published_contents">-</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card card-analytics p-3 bg-white">
+                        <div class="metric-label">Inscrições Globais</div>
+                        <div class="metric-value" id="prof-global_inscriptions">-</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card card-analytics p-3 bg-white">
+                        <div class="metric-label">Avaliações Totais</div>
+                        <div class="metric-value" id="prof-global_total_reviews">-</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card card-analytics p-3 bg-white border-start border-warning border-4">
+                        <div class="metric-label">Média de Avaliação</div>
+                        <div class="metric-value" id="prof-global_average_rating">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card card-analytics p-4 bg-white">
+                <h5 class="card-title mb-3">Histórico de Inscrições (Crescimento)</h5>
+                <div class="chart-container">
+                    <canvas id="chartProfessor"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="admin-panel" role="tabpanel">
+            <div class="mb-3">
+                <button class="btn btn-outline-danger btn-sm" onclick="carregarDados('/admin/analytics', 'admin')">🌐 Carregar Global da Plataforma</button>
+            </div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-md-3">
+                    <div class="card card-analytics p-3 bg-white">
+                        <div class="metric-label">Conteúdos Ativos</div>
+                        <div class="metric-value" id="admin-total_active_contents">-</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card card-analytics p-3 bg-white">
+                        <div class="metric-label">Usuários Registrados</div>
+                        <div class="metric-value" id="admin-total_users_registered">-</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card card-analytics p-3 bg-white">
+                        <div class="metric-label">Total Inscrições</div>
+                        <div class="metric-value" id="admin-platform_total_inscriptions">-</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card card-analytics p-3 bg-white border-start border-success border-4">
+                        <div class="metric-label">Média Geral Plataforma</div>
+                        <div class="metric-value" id="admin-platform_average_rating">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card card-analytics p-4 bg-white">
+                <h5 class="card-title mb-3">Linha do Tempo Global de Crescimento</h5>
+                <div class="chart-container">
+                    <canvas id="chartAdmin"></canvas>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+// Instâncias globais dos gráficos para podermos atualizá-los dinamicamente
+let chartProfInstance = null;
+let chartAdminInstance = null;
+
+async function carregarDados(endpoint, tipo) {
+    try {
+        const response = await fetch(endpoint);
+        if (!response.ok) throw new Error("Erro ao buscar dados do servidor");
+        
+        const data = await response.json();
+        
+        // 1. Atualiza as métricas textuais dinamicamente com base nas chaves do JSON
+        Object.keys(data).forEach(key => {
+            const elemento = document.getElementById(`${tipo}-${key}`);
+            if (elemento) {
+                // Se for a nota média, garante formatação decimal
+                if(key.includes('average_rating')) {
+                    elemento.innerText = Number(data[key]).toFixed(2);
+                } else {
+                    elemento.innerText = data[key];
+                }
+            }
+        });
+
+        // 2. Trata as listas de datas (Timeline) para o gráfico correspondente
+        let campoData = data.global_inscriptions_line || data.growth_inscriptions_timeline || data.inscriptions_line;
+        
+        if (campoData && Array.isArray(campoData)) {
+            processarEPlotarGrafico(campoData, tipo);
+        }
+
+    } catch (error) {
+        alert("Erro: " + error.message);
+        console.error(error);
+    }
+}
+
+// Função que trata a lista de datas bruta e gera o gráfico acumulado
+function processarEPlotarGrafico(listaDatas, tipo) {
+    if (listaDatas.length === 0) return;
+
+    // Formata e ordena as datas cronologicamente (YYYY-MM-DD)
+    const datasFormatadas = listaDatas.map(d => d.split('T')[0] || d).sort();
+
+    // Contagem acumulada ou por ponto temporal
+    const contagemDatas = {};
+    let acumulado = 0;
+    
+    datasFormatadas.forEach(data => {
+        acumulado += 1; // Para gráfico de linha acumulativo (crescimento histórico)
+        contagemDatas[data] = acumulado;
+    });
+
+    const labels = Object.keys(contagemDatas);
+    const valores = Object.values(contagemDatas);
+
+    if (tipo === 'prof') {
+        if (chartProfInstance) chartProfInstance.destroy(); // Reseta o gráfico anterior se existir
+        const ctx = document.getElementById('chartProfessor').getContext('2d');
+        chartProfInstance = criarGrafico(ctx, labels, valores, 'Inscritos no Conteúdo', '#4cc9f0');
+    } else {
+        if (chartAdminInstance) chartAdminInstance.destroy();
+        const ctx = document.getElementById('chartAdmin').getContext('2d');
+        chartAdminInstance = criarGrafico(ctx, labels, valores, 'Novos Alunos na Plataforma', '#4361ee');
+    }
+}
+
+function criarGrafico(ctx, labels, data, labelText, corLinha) {
+    return new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: labelText,
+                data: data,
+                borderColor: corLinha,
+                backgroundColor: corLinha + '22', // adiciona opacidade
+                borderWidth: 3,
+                tension: 0.3, // Deixa a linha curvada e elegante
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { beginAtZero: true, grid: { color: '#eef1f6' } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+}
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

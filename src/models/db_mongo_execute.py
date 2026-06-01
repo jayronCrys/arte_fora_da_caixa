@@ -224,7 +224,7 @@ def get_comment_by_id(course_id, comment_id):
         print(f"[GET_COMMENT_BY_ID]: Buscando comentário por get_comment_by_id {type(course_id)}...")
         
         comentario = course_comments_col.find_one({
-            "_id": str(comment_id),
+            "_id": ObjectId(comment_id),  # <--- Aqui usa ObjectId
             "course_id": str(course_id).strip()
         })
         

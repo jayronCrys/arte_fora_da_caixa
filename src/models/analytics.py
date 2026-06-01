@@ -20,7 +20,7 @@ def analytics(content_id):
     if isinstance(content, dict):
         
         publisher_id = content["publisher_id"]
-        publisher = conn.query(Users).filter_by(id=uuid.UUID(publisher_id)).first()
+        publisher = conn.query(User).filter_by(id=uuid.UUID(publisher_id)).first()
         
         analytics_doc["content_title"] = content["title"]
         analytics_doc["publi_by"] = publisher.name
@@ -111,7 +111,7 @@ def platform_global_analytics():
     
     # 1. Consultas ultra rápidas no SQL (traz apenas o número, não os objetos inteiros)
     global_doc["total_active_contents"] = conn.query(func.count(Contents.id)).scalar()
-    global_doc["total_users_registered"] = conn.query(func.count(Users.id)).scalar()
+    global_doc["total_users_registered"] = conn.query(func.count(User.id)).scalar()
     
     # 2. Agregação no MongoDB (Soma tudo direto no motor do banco, sem loops no Python)
     try:
@@ -132,7 +132,7 @@ def platform_global_analytics():
         
         if result:
             datas_mongo = result[0]
-            global_doc["platform_total_inscriptions"] = datas.mongo.get("total_inscriptions", 0)
+            global_doc["platform_total_inscriptions"] = datas_mongo.get("total_inscriptions", 0)
             global_doc["platform_total_reviews"] = datas_mongo.get("total_reviews", 0)
             
             # Calcula a média ponderada global da plataforma

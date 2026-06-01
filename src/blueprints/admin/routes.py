@@ -1,6 +1,6 @@
 import logging
 
-from flask import g, redirect, render_template, request, session, url_for
+from flask import g, redirect, render_template, request, session, url_for, jsonify
 
 from src.controller.users.user_default import Create_Account, check_user
 
@@ -94,12 +94,18 @@ def admin_delete_user(user_id):
 
 
 #── STATISTICAS PELO ADMIN ───────────────────────────────────────────────
+@admin_bp.route("/admin/redirector", methods=["GET"])
+def redirector():
+    return render_template("dashboard.html")
 @admin_bp.route("/admin/analytics", methods=["GET"])
-def app_analytics(user_id):
+def app_analytics():
     if not _is_admin():
         return redirect(url_for("auth.login"))
 
-    g.user.get_plataform_analytics()
+    analytics = g.user.get_plataform_analytics()
+    if analytics:
+        return jsonify(analytics), 200
+        
     return redirect(url_for("admin.admin_page"))
     
     
@@ -109,13 +115,17 @@ def professor_analytics(professor_id):
         return redirect(url_for("auth.login"))
         
     analytic = g.user.get_professor_analytics(professor_id)
-    
-    
+    if analytic:
+        return jsonify(analytic), 200
+    return redirect(url_for("admin.admin_page"))    
             
 @admin_bp.route("/admin/analytics/content/<content_id>", methods=["GET"])
 def content_analytics(content_id):
     if not _is_admin():
         return redirect(url_for("auth.login"))
         
-    g.user.get_content_analytics_by_admin(content_id)
-          
+    content_analytics = g.user.get_content_analytics_by_admin(content_id)
+    if content_analytics:
+          return jsonify(content_analytics), 200
+    return redirect(url_for("admin.admin_page"))              
+              

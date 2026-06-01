@@ -7,7 +7,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from flask import Flask, send_from_directory
 from extensions import load_g_user
 from src.models.contents_models.rating_models import init_mongodb
-
+from flask_cors import CORS
 
 # Blueprints
 from blueprints.auth import auth_bp
@@ -23,6 +23,7 @@ def create_app() -> Flask:
         template_folder="view/templates",
         static_folder="view/static",
     )
+    CORS(app)
     app.secret_key = os.environ.get("FLASK_SECRET", "dev-secret")
 
     # 🌟 INICIALIZAÇÃO DO MONGO: Movido para dentro do ciclo de criação do App
