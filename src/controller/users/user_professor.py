@@ -194,4 +194,16 @@ class Management_Professors(Management_User_Default):
             return bool(delete_comment(contentId, commentId))
         except Exception as e:
             logger.error(f"Erro ao deletar comentário {commentId}: {e}")
-            return False              
+            return False
+            
+    @professor_required
+    def get_comment_by_professor(self, contentId):
+        ocult = []
+        if self.professor_get_content_by_id(contentId):
+            ocult = self.get_content_comment(contentId, False) or []
+            
+        all = self.get_content_comment(contentId, True) or []
+        return all, ocult            
+                    
+            
+                           

@@ -330,4 +330,7 @@ class Management_Admins(Management_User_Default):
         except Exception as e:
             logger.error(f"Erro ao coletar analytics globais da plataforma: {e}")
             return False
-    
+            
+    @admin_required
+    def get_comment_by_admin(self, contentId):
+        return self.get_content_comment(contentId=contentId, moderated=False) or [], self.get_content_comment(contentId=contentId, moderated=True) or []

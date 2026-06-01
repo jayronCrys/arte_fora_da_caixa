@@ -13,7 +13,8 @@ from src.models.db_execute import insert_info, select_info, delete_info, update_
 from src.models.contents_models.content_models import Contents
 from src.models.users_models.user_models import User
 from src.models.relationships_models.inscriptions import Subs
-from src.models.db_mongo_execute import { get_comments, get_reviews, new_comment, new_review, remove_content_inscription, get_comment_by_id}
+from src.models.db_mongo_execute import get_comments, get_reviews, new_comment, new_review, remove_content_inscription, get_comment_by_id, update_comment_and_review, get_comment_by_user_id
+from src.Logs.terminal_logs import sucesfull_log, check_api, check_task, warning_log, error_log
 
 logger = logging.getLogger(__name__)
 
@@ -339,12 +340,15 @@ class Management_User_Default(Login_Account):
             return False            
 
     @Login_Account.is_loged
-    def get_content_comment(self, contentId: str):
+    def get_content_comment(self, contentId: str, moderated=False):
         if not contentId or not self.get_content_by_id(contentId):
             return False
-            
+
         try:
-            return get_comments(UUID(str(contentId)))            
+            comments = get_comments(course_id=contentId, moderated=moderated)
+            print("RETORNO DE GET_CPMM3ENTS", comments)
+            return comments
+                
         except Exception as e:
             logger.error(f"Erro em get_comments para o conteúdo {contentId}: {e}")
             return False
@@ -389,7 +393,7 @@ class Management_User_Default(Login_Account):
             conn.close()
 
     @Login_Account.is_loged
-    def GET_FULL_CONTENT(self, all_contents=False, content_to_select=None, review=False, comments=False) -> Union[list, bool]:
+    def GET_FULL_CONTENT(self, all_contents=False, content_to_select=None, review=False) -> Union[list, bool]:
         # Corrigido nome para snake_case conforme PEP 8
         if not all_contents and content_to_select:
             contents = [self.get_content_by_id(content_to_select)]
@@ -406,11 +410,10 @@ class Management_User_Default(Login_Account):
             content_id = content["id"]
             if review:
                 content["rating"] = self.get_content_review(content_id)
-            if comments:
-                content["comments"] = self.get_content_comment(content_id)
-
-            full_content.append(content)
             
+            full_content.append(content)
+            check_task("RETORNO DE GET FULL CONTENT")
+            check_task(full_content)
         return full_content
         
     @Login_Account.is_loged                   
@@ -485,7 +488,7 @@ class Management_User_Default(Login_Account):
         for inscription in inscriptions:
             content_id = inscription["content_id"]
             # Ajustado para usar o nome do método corrigido em snake_case
-            course = self.GET_FULL_CONTENT(all_contents=False, content_to_select=content_id, review=True, comments=False)
+            course = self.GET_FULL_CONTENT(all_contents=False, content_to_select=content_id, review=True)
             
             if course and len(course) > 0:
                 my_courses.append(course[0])
@@ -561,3 +564,27 @@ class Management_User_Default(Login_Account):
             return False
         finally:
             conn.close()
+            
+    @Login_Account.is_loged
+    def get_my_comment(self, contentId):
+        try:
+            if not self.check_inscription(contentId):
+                return False                
+            return get_comment_by_user_id(contentId, self.userId)
+            
+        except:
+            False
+            
+    @Login_Account.is_loged            
+    def update_my_comment(self, contentId, rating,new_comment):
+        
+        if not self.check_inscription(contentId):
+            return False
+        try:
+            print("EJTRO NO TRH")          
+            if update_comment_and_review(course_id=contentId,user_id=self.userId,user_name=self.userName,new_rating=rating,new_comment_text=new_comment):
+                  return True
+                  
+        except Exception as E:
+            print("MOTIVP DO ERRO", E)
+            return False                  

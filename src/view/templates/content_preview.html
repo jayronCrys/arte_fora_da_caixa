@@ -398,14 +398,14 @@
             margin-bottom: 20px;
         }
 
-        /* Formulário de Avaliação (Escondido por padrão) */
+        /* Formulário de Avaliação */
         .review-form-container {
             background: #f9fafb;
             border-radius: 12px;
             padding: 24px;
             margin-bottom: 30px;
             border: 1px solid #eaeaea;
-            display: none; /* Visível apenas se inscrito */
+            display: none;
         }
         .review-form-container h4 {
             margin-bottom: 15px;
@@ -415,7 +415,7 @@
             display: flex;
             gap: 8px;
             margin-bottom: 15px;
-            direction: rtl; /* Para o hover funcionar da direita para a esquerda */
+            direction: rtl;
             justify-content: flex-end;
             width: fit-content;
         }
@@ -471,7 +471,15 @@
             border-radius: 10px;
             padding: 16px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+            position: relative;
         }
+        
+        /* Destaque do Comentário Fixo/Pessoal */
+        .comment-card.my-pinned-comment {
+            border: 2px solid #00c853;
+            background: #f4fbf7;
+        }
+        
         .comment-header {
             display: flex;
             justify-content: space-between;
@@ -496,7 +504,33 @@
             color: #555;
             font-size: 15px;
             line-height: 1.5;
+            margin-bottom: 10px;
         }
+        
+        /* Ações dos Comentários */
+        .comment-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 10px;
+            border-top: 1px solid #f0f0f0;
+            padding-top: 10px;
+        }
+        .btn-action {
+            background: none;
+            border: none;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+        .btn-action-delete { color: #e63946; }
+        .btn-action-delete:hover { background: #ffebee; }
+        .btn-action-hide { color: #ff7a00; }
+        .btn-action-hide:hover { background: #fff3e0; }
+        .btn-action-edit { color: #00c853; }
+        .btn-action-edit:hover { background: #e8f5e9; }
 
         footer {
             text-align: center;
@@ -505,6 +539,55 @@
             font-size: 14px;
             margin-top: 60px;
             background: #f9fafb;
+        }
+        
+        /* ── FILTRO DE COMENTÁRIOS ── */
+        .comments-filter {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .btn-filter {
+            padding: 8px 18px;
+            border: 1px solid #eaeaea;
+            background: #f9fafb;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.2s ease;
+        }
+        .btn-filter:hover {
+            background: #f0f0f0;
+        }
+        .btn-filter.active {
+            background: #222;
+            color: #fff;
+            border-color: #222;
+        }
+        .badge-moderated {
+            background: #ffebee;
+            color: #e53935;
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: 8px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .badge-pinned {
+            background: #00c853;
+            color: white;
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: 8px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .comment-card.moderated {
+            border-left: 4px solid #e53935;
         }
 
         @media (max-width: 600px) {
@@ -555,7 +638,7 @@
             <h2 class="content-title">{{ content.title or 'Sem Título' }}</h2>
 
             <div class="rating-display">
-                {% set avg_rating = content.rating.average_rating if content.rating.average_rating  else 0 %}
+                {% set avg_rating = content.rating.average_rating if content.rating.average_rating else 0 %}
                 {% set percentage = (avg_rating / 5) * 100 %}
                 <div class="stars-outer">
                     <div class="stars-inner" style="width: {{ percentage }}%;"></div>
@@ -578,7 +661,7 @@
                     Criado por <strong>{{ content.author or 'Autor Desconhecido' }}</strong>
                 </div>
                 <div>•</div>
-                <div>Publicado em: {{ content.creation_date or now }}</div>
+                <div>Publicado em: {{ content.creation_date or now }} </div>
                 {% if content.pdf %}
                 <div>•</div>
                 <div style="color: #00c853; font-weight: 600;">📄 Possui Material PDF</div>
@@ -608,58 +691,136 @@
             <section class="reviews-section" id="reviews-section">
                 <h3>Avaliações e Comentários</h3>
 
-                <div id="review-form-container" class="review-form-container">
-                    <h4>Avalie este curso</h4>
-                    <form id="course-review-form" onsubmit="submitReview(event)">
-                        
-                        <div class="star-selector">
-                            <input type="radio" id="star5" name="rating" value="5" required>
-                            <label for="star5" title="5 estrelas">★</label>
-                            
-                            <input type="radio" id="star4" name="rating" value="4">
-                            <label for="star4" title="4 estrelas">★</label>
-                            
-                            <input type="radio" id="star3" name="rating" value="3">
-                            <label for="star3" title="3 estrelas">★</label>
-                            
-                            <input type="radio" id="star2" name="rating" value="2">
-                            <label for="star2" title="2 estrelas">★</label>
-                            
-                            <input type="radio" id="star1" name="rating" value="1">
-                            <label for="star1" title="1 estrela">★</label>
-                        </div>
+                {% set ns_comment = namespace(my_comment=none) %}
+                {% if g.user and content.comments %}
+                    {% for comment in content.comments %}
+                        {% if comment.user_id|string == g.user.id|string %}
+                            {% set ns_comment.my_comment = comment %}
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
 
-                        <textarea id="review-comment" class="review-textarea" placeholder="Deixe um comentário sobre a sua experiência (opcional)..."></textarea>
-                        <button type="submit" class="btn-submit-review">Enviar Avaliação</button>
+                <div id="review-form-container" class="review-form-container">
+                    <h4 id="form-review-title">{{ '📝 Atualizar sua avaliação' if ns_comment.my_comment else 'Avalie este curso' }}</h4>
+                    <form id="course-review-form" onsubmit="submitReview(event)">
+                        <div class="star-selector">
+                            <input type="radio" id="star5" name="rating" value="5" {{ 'checked' if ns_comment.my_comment and ns_comment.my_comment.rating == 5 else '' }} required><label for="star5">★</label>
+                            <input type="radio" id="star4" name="rating" value="4" {{ 'checked' if ns_comment.my_comment and ns_comment.my_comment.rating == 4 else '' }}><label for="star4">★</label>
+                            <input type="radio" id="star3" name="rating" value="3" {{ 'checked' if ns_comment.my_comment and ns_comment.my_comment.rating == 3 else '' }}><label for="star3">★</label>
+                            <input type="radio" id="star2" name="rating" value="2" {{ 'checked' if ns_comment.my_comment and ns_comment.my_comment.rating == 2 else '' }}><label for="star2">★</label>
+                            <input type="radio" id="star1" name="rating" value="1" {{ 'checked' if ns_comment.my_comment and ns_comment.my_comment.rating == 1 else '' }}><label for="star1">★</label>
+                        </div>
+                        <textarea id="review-comment" class="review-textarea" placeholder="Deixe um comentário...">{{ ns_comment.my_comment.comment if ns_comment.my_comment else '' }}</textarea>
+                        <button type="submit" id="btn-submit-review-el" class="btn-submit-review">
+                            {{ 'Atualizar Avaliação' if ns_comment.my_comment else 'Enviar Avaliação' }}
+                        </button>
                     </form>
                 </div>
 
-                <div class="comments-list">
+                {% if content.moderated_comments and content.moderated_comments|length > 0 %}
+                <div class="comments-filter">
+                    <button class="btn-filter active" onclick="showComments('active')" id="btn-filter-active">Ativos</button>
+                    <button class="btn-filter" onclick="showComments('moderated')" id="btn-filter-moderated">Moderados (Ocultos)</button>
+                </div>
+                {% endif %}
+
+                <div id="active-comments-list" class="comments-list">
+                    
+                    {% if ns_comment.my_comment %}
+                    <div class="comment-card my-pinned-comment" id="my-personal-pinned-review">
+                        <div class="comment-header">
+                            <div>
+                                <span class="comment-author">{{ ns_comment.my_comment.user_name }}</span>
+                                <span class="badge-pinned">Sua Avaliação</span>
+                                <span class="comment-date">{{ ns_comment.my_comment.created_at.strftime('%d/%m/%Y') if ns_comment.my_comment.created_at else '' }}</span>
+                            </div>
+                            <div class="comment-stars">
+                                {% for i in range(ns_comment.my_comment.rating) %}★{% endfor %}{% for i in range(5 - ns_comment.my_comment.rating) %}☆{% endfor %}
+                            </div>
+                        </div>
+                        <p class="comment-text">{{ ns_comment.my_comment.comment }}</p>
+
+                        <div class="comment-actions">
+                            <button type="button" class="btn-action btn-action-edit" onclick="scrollToReviewForm()">✏️ Editar Minha Avaliação</button>
+                            <form action="{{ url_for('contents.delete_my_review', content_id=content.id, comment_id=ns_comment.my_comment._id) }}" method="POST" style="display:inline;">
+                                <button type="submit" class="btn-action btn-action-delete">🗑️ Excluir</button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endif %}
+
                     {% if content.comments and content.comments|length > 0 %}
                         {% for comment in content.comments %}
-                        <div class="comment-card">
-                            <div class="comment-header">
+                            {% if not g.user or comment.user_id|string != g.user.id|string %}
+                            <div class="comment-card">
+                                <div class="comment-header">
+                                    <div>
+                                        <span class="comment-author">{{ comment.user_name }}</span>
+                                        <span class="comment-date">{{ comment.created_at.strftime('%d/%m/%Y') if comment.created_at else '' }}</span>
+                                    </div>
+                                    <div class="comment-stars">
+                                        {% for i in range(comment.rating) %}★{% endfor %}{% for i in range(5 - comment.rating) %}☆{% endfor %}
+                                    </div>
+                                </div>
+                                <p class="comment-text">{{ comment.comment }}</p>
+
+                                {% if g.user and g.user.cred in ['admin', 'professor'] %}
+                                    <div class="comment-actions">
+                                        <form action="{{ url_for('contents.delete_user_review', content_id=content.id, comment_id=comment._id) }}" method="POST" onsubmit="return confirm('Tem certeza que deseja apagar este comentário do sistema?');">
+                                            <button type="submit" class="btn-action btn-action-delete">🚨 Apagar Definitivamente</button>
+                                        </form>
+                                        
+                                        <form action="{{ url_for('contents.ocult_user_revirew', content_id=content.id, comment_id=comment._id) }}" method="POST" onsubmit="return confirm('Deseja ocultar este comentário?');">
+                                            <button type="submit" class="btn-action btn-action-hide">👁️ Ocultar Comentário</button>
+                                        </form>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        {% endfor %}
+                    {% else %}
+                        {% if not ns_comment.my_comment %}
+                            <p id="no-reviews-fallback" style="color: #777;">Nenhuma avaliação ainda. Seja o primeiro a avaliar após se inscrever!</p>
+                        {% endif %}
+                    {% endif %}
+                </div>
+
+                {% if content.moderated_comments and content.moderated_comments|length > 0 %}
+                <div id="moderated-comments-list" class="comments-list" style="display: none;">
+                    {% for comment in content.moderated_comments %}
+                    <div class="comment-card moderated">
+                        <div class="comment-header">
+                            <div>
                                 <span class="comment-author">{{ comment.user_name }}</span>
+                                <span class="badge-moderated">Oculto</span>
                                 <span class="comment-date">{{ comment.created_at.strftime('%d/%m/%Y') if comment.created_at else '' }}</span>
                             </div>
                             <div class="comment-stars">
                                 {% for i in range(comment.rating) %}★{% endfor %}{% for i in range(5 - comment.rating) %}☆{% endfor %}
                             </div>
-                            <p class="comment-text">{{ comment.comment }}</p>
                         </div>
-                        {% endfor %}
-                    {% else %}
-                        <p style="color: #777;">Nenhuma avaliação ainda. Seja o primeiro a avaliar após se inscrever!</p>
-                    {% endif %}
+                        <p class="comment-text">{{ comment.comment }}</p>
+
+                        {% if g.user and g.user.cred in ['admin', 'professor'] %}
+                            <div class="comment-actions">
+                                <form action="{{ url_for('contents.delete_user_review', content_id=content.id, comment_id=comment._id) }}" method="POST" onsubmit="return confirm('Tem certeza que deseja apagar DEFINITIVAMENTE este comentário do sistema?');">
+                                    <button type="submit" class="btn-action btn-action-delete">🚨 Apagar Definitivamente</button>
+                                </form>
+                            </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
                 </div>
+                {% endif %}
+
             </section>
         </div>
     </main>
 
-    <footer>© 2026 Arte Fora da Caixa — Todos os direitos reservados</footer>
+    <footer>© 2026 Arte Fora da Caixa — Todos os direitos reservados </footer>
 
 <script>
-    const contentId = "{{ content['id'] }}";
+    const contentId = "{{ content.id }}";
     const contentTitle = "{{ content.title|e or 'Sem Título' }}";
 
     // VALIDAÇÃO JINJA
@@ -736,12 +897,12 @@
             btnSubscribeToggle.textContent = '🔓 Desinscrever-se';
             btnSubscribeToggle.classList.add('btn-modal-cancel');
             formViewCourse.style.display = 'block';
-            reviewFormContainer.style.display = 'block'; // Mostra o form de avaliação
+            reviewFormContainer.style.display = 'block';
         } else {
             btnSubscribeToggle.textContent = '🚀 Inscrever-se nesse curso';
             btnSubscribeToggle.classList.remove('btn-modal-cancel');
             formViewCourse.style.display = 'none';
-            reviewFormContainer.style.display = 'none'; // Esconde o form de avaliação
+            reviewFormContainer.style.display = 'none';
         }
     }
 
@@ -783,46 +944,41 @@
         }
     }
 
-    // SUBMISSÃO DA AVALIAÇÃO
+    // SUBMISSÃO E UPDATE DA AVALIAÇÃO
     function submitReview(event) {
         event.preventDefault();
-        
         const rating = document.querySelector('input[name="rating"]:checked');
         const comment = document.getElementById('review-comment').value;
 
         if (!rating) {
-            showToast('Por favor, selecione uma nota de estrela.', 'warning');
-            return;
+            showToast('Por favor, selecione uma nota.', 'warning'); return;
         }
 
-        const payload = {
-            course_id: contentId,
-            rating: parseInt(rating.value),
-            comment: comment
-        };
+        const payload = { course_id: contentId, rating: parseInt(rating.value), comment: comment };
 
-        // Enviar os dados usando Fetch para o Endpoint do MongoDB
         fetch(`/contents/set_review/`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         })
         .then(response => {
-            if (response.ok) {
-                showToast('Avaliação enviada com sucesso! Ela aparecerá em breve.', 'success');
-                document.getElementById('course-review-form').reset();
-                // Opcional: Aqui você pode recarregar a página para o Jinja carregar a nova review
-                // setTimeout(() => window.location.reload(), 2000); 
+            if (response.ok || response.redirected) {
+                showToast('Avaliação processada com sucesso! Atualizando feed...', 'success');
+                setTimeout(() => window.location.reload(), 1200); 
             } else {
-                showToast('Houve um erro ao enviar a avaliação.', 'warning');
+                showToast('Houve um erro ao salvar a avaliação.', 'warning');
             }
         })
         .catch(err => {
-            console.error("Erro:", err);
-            showToast('Erro de conexão com o servidor ao enviar a avaliação.', 'warning');
+            showToast('Erro de conexão com o servidor.', 'warning');
         });
+    }
+
+    function scrollToReviewForm() {
+        if(reviewFormContainer) {
+            reviewFormContainer.scrollIntoView({ behavior: 'smooth' });
+            document.getElementById('review-comment').focus();
+        }
     }
 
     function escapeHTML(str) {
@@ -853,9 +1009,29 @@
             currentLines += linesToAdd;
             desc.style.webkitLineClamp = currentLines;
             requestAnimationFrame(() => {
-                if (desc.scrollHeight <= desc.clientHeight) btn.innerText = 'Ler menos ▲';
+                if (desc.scrollHeight <= desc.clientHeight) btn.innerText =  'menos ▲';
                 else btn.innerText = 'Ler mais ▼';
             });
+        }
+    }
+
+    // ALTERNAR ENTRE COMENTÁRIOS ATIVOS E MODERADOS
+    function showComments(type) {
+        const activeList = document.getElementById('active-comments-list');
+        const moderatedList = document.getElementById('moderated-comments-list');
+        const btnActive = document.getElementById('btn-filter-active');
+        const btnModerated = document.getElementById('btn-filter-moderated');
+
+        if (type === 'active') {
+            if (activeList) activeList.style.display = 'flex';
+            if (moderatedList) moderatedList.style.display = 'none';
+            if (btnActive) btnActive.classList.add('active');
+            if (btnModerated) btnModerated.classList.remove('active');
+        } else if (type === 'moderated') {
+            if (activeList) activeList.style.display = 'none';
+            if (moderatedList) moderatedList.style.display = 'flex';
+            if (btnActive) btnActive.classList.remove('active');
+            if (btnModerated) btnModerated.classList.add('active');
         }
     }
 </script>

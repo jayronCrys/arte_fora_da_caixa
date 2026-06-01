@@ -120,16 +120,15 @@ def get_reviews(course_id):
     return stats
 
 
-def get_comments(course_id, page=1, number_to_page=5):
+def get_comments(course_id, page=1, number_to_page=5, moderated=True):
     next_init = (page - 1) * number_to_page
     
     try:
         course_comments_col = rating_models.get_course_comments_col()
-        cursor = course_comments_col.find({"course_id": str(course_id), "is_moderated": False}) \
+        cursor = course_comments_col.find({"course_id": str(course_id), "is_moderated": moderated}) \
                                     .sort("created_at", -1) \
                                     .skip(next_init) \
                                     .limit(number_to_page)
-        
         return list(cursor)
     except Exception as e:
         print(f"🚨 Erro ao buscar comentários: {e}")
@@ -189,7 +188,7 @@ def suspend_comment(course_id, comment_id):
         print(f"🚨 Erro ao suspender comentário: {e}")
         return False
 
-def get_comment_by_id(course_id, comment_id):
+def get_comment_by_user_id(course_id, user_id):
     """
     Busca e retorna um comentário específico através do seu ID e do ID do conteúdo.
     Retorna o dicionário do comentário se encontrado, ou None se não existir.
@@ -197,10 +196,10 @@ def get_comment_by_id(course_id, comment_id):
     try:
         course_comments_col = rating_models.get_course_comments_col()
         
-        print(f"[GET_COMMENT_BY_ID]: Buscando comentário {comment_id}...")
+        print(f"[GET_COMMENT_BY_ID]: Buscando comentário {user_id}...")
         
         comentario = course_comments_col.find_one({
-            "_id": ObjectId(comment_id),
+            "user_id": str(user_id),
             "course_id": str(course_id).strip()
         })
         
@@ -213,3 +212,122 @@ def get_comment_by_id(course_id, comment_id):
     except Exception as e:
         print(f"🚨 Erro ao buscar comentário específico: {e}")
         return None
+        
+def get_comment_by_id(course_id, content_id):
+    """
+    Busca e retorna um comentário específico através do seu ID e do ID do conteúdo.
+    Retorna o dicionário do comentário se encontrado, ou None se não existir.
+    """
+    try:
+        course_comments_col = rating_models.get_course_comments_col()
+        
+        print(f"[GET_COMMENT_BY_ID]: Buscando comentário {comment_id}...")
+        
+        comentario = course_comments_col.find_one({
+            "_id": str(comment_id),
+            "course_id": str(course_id).strip()
+        })
+        
+        if comentario:
+            print(f"[GET_COMMENT_BY_ID]: Comentário encontrado com sucesso.")
+            return comentario
+            
+        print(f"[GET_COMMENT_BY_ID]: Nenhum comentário correspondente encontrado.")
+        return None
+    except Exception as e:
+        print(f"🚨 Erro ao buscar comentário específico: {e}")
+        return None
+        
+
+def update_comment_and_review(course_id, user_id, user_name, new_rating, new_comment_text):
+    """
+    Atualiza obrigatoriamente o comentário e a nota de um usuário.
+    Subtrai as estrelas antigas do total, adiciona as novas e recalcula a média global.
+    """
+    print("ENYRO NA DEF DE ATTS")
+    try:
+        course_comments_col = rating_models.get_course_comments_col()
+        course_stats_col = rating_models.get_course_stats_col()
+
+        course_id_str = str(course_id).strip()
+        user_id_str = str(user_id).strip()
+        new_rating = int(new_rating)
+
+        # 1. Busca o comentário antigo para saber a nota anterior
+        old_comment = course_comments_col.find_one({
+            "course_id": course_id_str,
+            "user_id": user_id_str
+        })
+
+        if old_comment:
+            old_rating = int(old_comment.get("rating", 0))
+            
+            # Se nada mudou, cancela a operação para poupar processamento
+            if old_rating == new_rating and old_comment.get("comment") == new_comment_text:
+                print("[UPDATE_REVIEW]: Nenhuma alteração detectada no comentário ou nota.")
+                return True
+            
+            # Diferença que será aplicada na soma global (Ex: Nota mudou de 3 para 5 -> Delta = +2)
+            # (Ex: Nota mudou de 5 para 2 -> Delta = -3)
+            delta_sums = new_rating - old_rating
+            delta_reviews = 0  # O número total de avaliações não muda, já que é uma atualização
+        else:
+            # Fallback de segurança: se o comentário não existia por algum motivo, trata como novo
+            delta_sums = new_rating
+            delta_reviews = 1
+
+        # 2. Atualiza o documento do comentário do usuário
+        comentario_doc = {
+            "course_id": course_id_str,
+            "user_id": user_id_str,
+            "user_name": user_name,
+            "rating": new_rating,
+            "comment": new_comment_text,
+            "created_at": datetime.utcnow(),
+            "is_moderated": False  # Edições resetam a moderação para aprovação padrão
+        }
+
+        course_comments_col.update_one(
+            {"course_id": course_id_str, "user_id": user_id_str},
+            {"$set": comentario_doc},
+            upsert=True
+        )
+
+        # 3. Executa o pipeline para atualizar a soma de notas e recalcular a média global
+        stats_pipeline = [
+            {
+                "$set": {
+                    "sums_reviews": {
+                        "$add": [{"$ifNull": ["$sums_reviews", 0]}, delta_sums]
+                    },
+                    "total_reviews": {
+                        "$add": [{"$ifNull": ["$total_reviews", 0]}, delta_reviews]
+                    },
+                    "last_updated": datetime.utcnow()
+                }
+            },
+            {
+                "$set": {
+                    "average_rating": {
+                        "$cond": [
+                            {"$gt": ["$total_reviews", 0]},
+                            {"$divide": ["$sums_reviews", "$total_reviews"]},
+                            0.0
+                        ]
+                    }
+                }
+            }
+        ]
+
+        print(f"[UPDATE_REVIEW]: Recalculando estatísticas do curso {course_id_str} (Delta: {delta_sums})...")
+        course_stats_col.update_one(
+            {"course_id": course_id_str},
+            stats_pipeline,
+            upsert=True
+        )
+
+        return True
+
+    except Exception as e:
+        print(f"🚨 Erro ao atualizar comentário e notas: {e}")
+        return False

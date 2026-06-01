@@ -3,7 +3,7 @@ import os
 import uuid
 from io import BytesIO
 from datetime import datetime
-
+from src.Logs.terminal_logs import sucesfull_log, check_api, check_task, warning_log, error_log
 from flask import (
     abort, current_app, g, redirect, render_template,
     request, send_file, session, url_for,
@@ -24,7 +24,6 @@ tpl_ctx = dict(
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
-
 def _cred():
     return session.get("cred")
 
@@ -35,7 +34,24 @@ def _pub_items():
         return g.user.select_contents_by_publisher_id()
     return g.user.get_all_contents()
 
-
+def _return_comment_by_cred(contentId):
+    try:
+        if _cred() == "aluno":
+            return g.user.get_content_comment(contentId), []
+            
+        if _cred() == "professor":
+            return g.user.get_comment_by_professor(contentId)
+            
+        if _cred() == "admin":
+            print("PASSO NO IF")
+            return g.user.get_comment_by_admin(contentId)
+            
+        return []
+                    
+    except Exception as E:
+        print("ERRO", E)
+        return []
+        
 def _render_contents_error(msg, active_tab="publish-content-view"):
     """Re-renderiza a SPA principal com uma mensagem de erro."""
     try:
@@ -80,7 +96,9 @@ def contents(publications):
 
         items = g.user.GET_FULL_CONTENT(all_contents=True, content_to_select=None, review=True)
         active_tab = request.args.get("tab", "all-courses")
-        print("Resultado de GET_FULL_CONYENY", items[0]["rating"]["average_rating"])
+        for i in items:
+            i["comments"], i["moderated_comments"]= _return_comment_by_cred(i["id"])
+            
         enrolled_contents = g.user.get_my_courses()
         if not enrolled_contents:
             enrolled_contents = []
@@ -122,19 +140,20 @@ def content_buss(content_id):
         
     if request.method == "GET":
                 
-        content = g.user.GET_FULL_CONTENT( all_contents=False, content_to_select=content_id, review=True, comments=True)
+        content = g.user.GET_FULL_CONTENT( all_contents=False, content_to_select=content_id, review=True)  
         
         content = content[0] if content[0]["id"] == content_id else False
-            
+        content["comments"], content["moderated_comments"] = _return_comment_by_cred(content_id)     
         if content:
             return render_template("content_preview.html", content=content, my_courses=my_courses)
             
     if request.method == "POST":
         
         
-        content = g.user.GET_FULL_CONTENT( all_contents=False, content_to_select=content_id, review=True, comments=False)
+        content = g.user.GET_FULL_CONTENT( all_contents=False, content_to_select=content_id, review=True)
         
         content = content[0] if content[0]["id"] == content_id else False
+        content["comments"], content["moderated_comments"]= _return_comment_by_cred(content_id)
         
         if content:
             return render_template("edit_content.html", content=content, **tpl_ctx)
@@ -171,20 +190,32 @@ def set_review():
 
     course_request = request.get_json()
     course_id = course_request.get("course_id")
-    
+        
     if not course_id:
         return False
         
     rating = course_request.get("rating")
     comment = course_request.get("comment")
-    
-    add_review = g.user.set_content_review(contentId=course_id, rating=rating, comment=comment)
+     
+    if g.user.get_my_comment(course_id):
+        print("JA TENHO COMENTARIOS")
+        g.user.update_my_comment(course_id, rating, comment)
+        
+    else:
+        print("NAO TENHO COMENTARIOS")
+        g.user.set_content_review(course_id, rating,comment)
     
     return redirect(url_for("contents.content_buss", content_id=course_id))
+    
+    
+@contents_bp.route("/contents/edit_review/<content_id>/", methods=["POST"])
+def edit_review(content_id):
+    if not content_id:
+        abort(404)
+    g.user.update_my_comment(content_id)
 
-
-@contents_bp.route("/contents/delete_my_review/<comment_id>", methods=["POST"])        
-def ocult_user_revirew(comment_id):
+@contents_bp.route("/contents/ocult_user_review/<content_id>/<comment_id>", methods=["POST"])        
+def ocult_user_revirew(content_id, comment_id):
     if _cred() not in ["admin", "professor"]:
         return redirect(url_for("auth.login"))
         
@@ -192,20 +223,19 @@ def ocult_user_revirew(comment_id):
         return False
         
     if _cred() == "admin":
-        susp = g.user.uspended_comment_by_admin(content_id, comment_id)
+        susp = g.user.suspended_comment_by_admin(content_id, comment_id)
         
     if _cred() == "professor":
         susp = g.user.suspended_comment_by_professor(content_id, comment_id)
         
     if susp:
-        return render_template("contents.content_buss", content_id = content_id)
+        return redirect(url_for("contents.content_buss", content_id=content_id))
 
-    return render_temlplate("contents.content_buss", content_id = content_id, error = "não foi possível ocultar comentário")
+    return redirect(url_for("contents.content_buss", content_id=content_id)), 404
 
 
-
-@contents_bp.route("/contents/delete_my_review/<comment_id>", methods=["POST"])
-def delete_my_review(comment_id, content_id):
+@contents_bp.route("/contents/delete_my_review/<content_id>/<comment_id>", methods=["POST"])
+def delete_my_review(content_id, comment_id):
     
     if not _cred():
         return redirect(url_for("auth.login"))
@@ -219,8 +249,8 @@ def delete_my_review(comment_id, content_id):
     return redirect(url_for("contents.content_buss", content_id=content_id))
 
 
-@contents_bp.route("/contents/delete_user_review/<comment_id>", methods=["POST"])
-def delete_user_review(comment_id):    
+@contents_bp.route("/contents/delete_user_review/<content_id>/<comment_id>", methods=["POST"])
+def delete_user_review(content_id, comment_id):    
     if _cred() not in ["admin", "professor"]:
         return redirect(url_for("auth.login"))
         
@@ -234,9 +264,9 @@ def delete_user_review(comment_id):
         delete = g.user.delete_comment_by_professor(content_id, comment_id)
         
     if delete:
-        return render_template("contents.content_buss", content_id = content_id)
+        return redirect(url_for("contents.content_buss", content_id=content_id))
         
-    return render_temlplate("contents.content_buss", content_id = content_id, error = "não foi possível excluir comentário")        
+    return redirect(url_for("contents.content_buss", content_id=content_id)), 404
 
 #── ──────────────────────────────────────────────────────
 # ── Publicar conteúdo ─────────────────────────────────────────────────────────
