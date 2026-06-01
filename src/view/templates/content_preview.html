@@ -770,7 +770,7 @@
                                             <button type="submit" class="btn-action btn-action-delete">🚨 Apagar Definitivamente</button>
                                         </form>
                                         
-                                        <form action="{{ url_for('contents.ocult_user_revirew', content_id=content.id, comment_id=comment._id) }}" method="POST" onsubmit="return confirm('Deseja ocultar este comentário?');">
+                                        <form action="{{ url_for('contents.ocult_user_review', content_id=content.id, comment_id=comment._id|string) }}" method="POST" onsubmit="return confirm('Deseja ocultar este comentário?');">
                                             <button type="submit" class="btn-action btn-action-hide">👁️ Ocultar Comentário</button>
                                         </form>
                                     </div>

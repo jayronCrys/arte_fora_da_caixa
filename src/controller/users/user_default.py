@@ -364,9 +364,11 @@ class Management_User_Default(Login_Account):
                 UUID(str(contentId)),
                 ["id", "title", "desc", "banner", "content_type", "author", "creation_date", "publisher_id"]
             )
+            sucesfull_log(f"[GET_CONTENT_BY_ID]: conteúdo retornado com sucesso {content['id']}")
             return content
+            
         except Exception as e:
-            logger.error(f"Erro ao obter conteúdo por ID {contentId}: {e}")
+            error_log(f"[GET_CONTENT_BY_ID]: Erro ao obter conteúdo por ID {contentId}: {e}")
             return False            
         finally:
             conn.close()
@@ -447,9 +449,16 @@ class Management_User_Default(Login_Account):
                 student_id=UUID(str(self.userId)),
                 content_id=UUID(str(contentId))
             ).first()
-            return str(sub.id) if sub else False
-        except Exception as e:
-            logger.error(f"Erro ao verificar inscrição: {e}")
+            if sub.id:
+                warning_log(f"[CHECK_INSCRIPTION]: inscrito no conteúdo {contentId}")
+                return sub.id
+                
+            warning_log(f"[CHECK_INSCRIPTION]: usuário não inscrito no conteúdo {contentId}")
+            return False
+            
+        except Exception as E:
+            error_log("[CHECK_INSCRIPTION]")
+            error_log(E)
             return False
         finally:                         
              conn.close()
@@ -511,14 +520,20 @@ class Management_User_Default(Login_Account):
             }
             if insert_info(conn, Subs, inscription):
                 self.set_content_review(contentId=contentId, is_new_inscription=True, rating=0, comment=None)
+                sucesfull_log("[NEW_INSCRIPTION]: novo estudante inscrito com sucesso")
+                
                 return True
+            warning_log("[NEW_INSCRIPTION]: não foi possível efetuar cadastro do usuário no curso")
             return False
+            
         except Exception as e:
-             logger.error(f"Erro ao criar inscrição: {e}")
+             error_log("[NEW_INSCRIPTION]")
+             error_log(e)
              try:
                  conn.rollback()
-             except Exception:
-                 pass
+             except Exception as e:
+                 error_log("[NEW_INSCRIPTION]")
+                 error_log(e)
              return False
         finally:
              conn.close()
@@ -533,30 +548,47 @@ class Management_User_Default(Login_Account):
             return False
             
         try:                                    
-            return delete_comment(contentId, commentId)
-        except:
+            if delete_comment(contentId, commentId):
+                sucesfull_log("[DELETE_MY_COMMENY]: comentário deletado com sucesso")
+                return True
+                
+            warning_log("[DELETE_MY_COMMENY]: não foi possível deletar comentário")   
+            return False
+            
+        except Exception as E:
+            error_log("[DELETE_MY_COMMENY]")
+            error_log(E)
             return False
             
     @Login_Account.is_loged
     def remove_inscription(self, contentId: str) -> bool:
         # Corrigido: Nome do método unificado para 'remove_inscription'
+        check_task(f"[REMOVE_INSCRIPTION]: executando com : {contentId}")
         conn = self.dataBase()
         inscription_id = self.check_inscription(contentId)  
         if not inscription_id:
+            warning_log("[REMOVE_INSCRIPTION]: SEM INSCRIPTIOND ID")
             return False
         
         try:
             if delete_info(conn, Subs, "id", UUID(str(inscription_id))):
                 try:
-                    remove_content_inscription(contentId)  # Função importada do Mongo
-                    logger.info(f"Inscrição {inscription_id} removida com sucesso do SQL e MongoDB.")
-                    return True
+                    if remove_content_inscription(contentId):
+                        sucesfull_log(f"[REMOVE_INSCRIPTION]: Inscrição {inscription_id} removida com sucesso do SQL e MongoDB.")
+                        return True
+                    
+                    warning_log("[REMOVE_INSCRIPTION]: Não foi possível remover inscrição em >remove_content_inscription<")                        
+                    return False
+                                            
                 except Exception as mongo_err:
-                    logger.error(f"Inscrição removida do SQL, mas falhou no MongoDB: {mongo_err}")
-                    return False                
+                    error_log(f"[REMOVE_INSCRIPTION]:Inscrição removida do SQL, mas falhou no MongoDB")
+                    error_log(mongo_err)
+                    return False
+                    
+            warning_log("[REMOVE_INSCRIPTION]: Não foi possível remover inscrição em >delete_info<")          
             return False
         except Exception as e:
-            logger.error(f"Erro ao remover inscrição: {e}")
+            logger.error(f"[REMOVE_INSCRIPTION]:Erro ao remover inscrição: {e}")
             try:
                 conn.rollback()
             except Exception:
@@ -569,10 +601,14 @@ class Management_User_Default(Login_Account):
     def get_my_comment(self, contentId):
         try:
             if not self.check_inscription(contentId):
-                return False                
+                return False
+                
+            sucesfull_log("[GET_MY_COMMENTS] RETORNOU COM SUCESSO")                                
             return get_comment_by_user_id(contentId, self.userId)
             
-        except:
+        except Exception as E:
+            error_log("[GET_MY_COMMENT]")
+            error_log(E)
             False
             
     @Login_Account.is_loged            
@@ -580,11 +616,13 @@ class Management_User_Default(Login_Account):
         
         if not self.check_inscription(contentId):
             return False
-        try:
-            print("EJTRO NO TRH")          
+        try:          
             if update_comment_and_review(course_id=contentId,user_id=self.userId,user_name=self.userName,new_rating=rating,new_comment_text=new_comment):
+                  sucesfull_log("[UPDATE COMMENT] RETORNOU COM SUCESSO")
                   return True
                   
         except Exception as E:
-            print("MOTIVP DO ERRO", E)
+            
+            error_log("[UPDATE_MY_COMMENT]")
+            error_log(E)
             return False                  

@@ -200,9 +200,9 @@ class Management_Professors(Management_User_Default):
     def get_comment_by_professor(self, contentId):
         ocult = []
         if self.professor_get_content_by_id(contentId):
-            ocult = self.get_content_comment(contentId, False) or []
+            ocult = self.get_content_comment(contentId, True) or []
             
-        all = self.get_content_comment(contentId, True) or []
+        all = self.get_content_comment(contentId, False) or []
         return all, ocult            
                     
             

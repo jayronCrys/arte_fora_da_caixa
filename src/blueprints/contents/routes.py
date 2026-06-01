@@ -203,7 +203,7 @@ def set_review():
         
     else:
         print("NAO TENHO COMENTARIOS")
-        g.user.set_content_review(course_id, rating,comment)
+        g.user.set_content_review(contentId=course_id, rating=rating,comment=comment)
     
     return redirect(url_for("contents.content_buss", content_id=course_id))
     
@@ -214,14 +214,15 @@ def edit_review(content_id):
         abort(404)
     g.user.update_my_comment(content_id)
 
-@contents_bp.route("/contents/ocult_user_review/<content_id>/<comment_id>", methods=["POST"])        
-def ocult_user_revirew(content_id, comment_id):
+@contents_bp.route("/contents/ocult_user_review/<content_id>/<comment_id>/", methods=["POST"])        
+def ocult_user_review(content_id, comment_id):
     if _cred() not in ["admin", "professor"]:
         return redirect(url_for("auth.login"))
         
     if not comment_id or not content_id:
         return False
-        
+    print("\n\ncomment_id", comment_id)
+    print("content_id", content_id, "\n\n")      
     if _cred() == "admin":
         susp = g.user.suspended_comment_by_admin(content_id, comment_id)
         
@@ -256,7 +257,8 @@ def delete_user_review(content_id, comment_id):
         
     if not comment_id or not content_id:
         return False
-        
+    print("\n\ncomment_id", comment_id)
+    print("content_id", content_id, "\n\n")        
     if _cred() == "admin":
         delete = g.user.delete_comment_by_admin(content_id, comment_id)
         

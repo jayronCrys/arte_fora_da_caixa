@@ -196,7 +196,7 @@ def get_comment_by_user_id(course_id, user_id):
     try:
         course_comments_col = rating_models.get_course_comments_col()
         
-        print(f"[GET_COMMENT_BY_ID]: Buscando comentário {user_id}...")
+        print(f"[GET_COMMENT_BY_ID]: Buscando comentário por get_cpmment_by_user_id {user_id}...")
         
         comentario = course_comments_col.find_one({
             "user_id": str(user_id),
@@ -213,7 +213,7 @@ def get_comment_by_user_id(course_id, user_id):
         print(f"🚨 Erro ao buscar comentário específico: {e}")
         return None
         
-def get_comment_by_id(course_id, content_id):
+def get_comment_by_id(course_id, comment_id):
     """
     Busca e retorna um comentário específico através do seu ID e do ID do conteúdo.
     Retorna o dicionário do comentário se encontrado, ou None se não existir.
@@ -221,7 +221,7 @@ def get_comment_by_id(course_id, content_id):
     try:
         course_comments_col = rating_models.get_course_comments_col()
         
-        print(f"[GET_COMMENT_BY_ID]: Buscando comentário {comment_id}...")
+        print(f"[GET_COMMENT_BY_ID]: Buscando comentário por get_comment_by_id {type(course_id)}...")
         
         comentario = course_comments_col.find_one({
             "_id": str(comment_id),
@@ -230,8 +230,9 @@ def get_comment_by_id(course_id, content_id):
         
         if comentario:
             print(f"[GET_COMMENT_BY_ID]: Comentário encontrado com sucesso.")
+            print(comentario)
             return comentario
-            
+        print(comentario)            
         print(f"[GET_COMMENT_BY_ID]: Nenhum comentário correspondente encontrado.")
         return None
     except Exception as e:

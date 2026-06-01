@@ -24,9 +24,11 @@ def subscribe(content_id):
 
 def unsubscribe(content_id):
     try:
-        if g.user.remove_incription(content_id):
+        print("UNSUBSCRIBE EXECUTADO")
+        if g.user.remove_inscription(content_id):
             return True
-    except:
+    except Exception as E:
+        print("Error em unsubscribe", E)
         return False        
     
 @inscriptions_bp.route('/user/unsubscribe/<content_id>', methods=['DELETE', 'POST'])
@@ -38,17 +40,13 @@ def unsubscribe_by_my_content_pages(content_id):
 @inscriptions_bp.route('/unsubscribe/<content_id>', methods=['DELETE', 'POST'])
 def unsubscribe_preview(content_id):
     
+    if not content_id:
+        jsonify({'error': 'Conteúdo não encontrado'}), 404
     
-    unsubscribe_response = unsubscribe(content_id)
-    
-    
-    if not unsubscribe_response:
+    if not unsubscribe(content_id):
         jsonify({'error': 'Não foi possível se desinscrever do conteúdo'}), 404
-        
-    
-    
-    if not content:
-        jsonify({'error': 'Conteúdo não encontrado'}), 404        
+            
+            
     return redirect(url_for("contents.content_buss", content_id=content_id))
 
 def get_my_courses():
