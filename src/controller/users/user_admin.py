@@ -320,12 +320,14 @@ class Management_Admins(Management_User_Default):
             return False
     
     @admin_required
-    def get_professor_analytics(self, professor_id):
+    def get_professor_analytics(self, professor_name):
         try:
-            if not self.get_user_by_id(professor_id):
+            professor = self.get_user_by_username(professor_name)
+            print(f"[[[[PROFESSOR {professor}\n{professor['id']}]]]]")
+            if not professor["id"]:
                 return False
-                
-            professor_analytic = general_analytics(professor_id)
+            
+            professor_analytic = general_analytics(professor["id"])
             return professor_analytic if professor_analytic else False
         except Exception as e:
             logger.error(f"Erro ao coletar analytics globais da plataforma: {e}")

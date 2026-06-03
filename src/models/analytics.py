@@ -52,7 +52,7 @@ def general_analytics(publisher_id):
     conn = database()
     
     # 1. Busca todos os conteúdos que o usuário publicou
-    my_contents = conn.query(Contents).filter_by(publisher_id=str(publisher_id)).all()
+    my_contents = conn.query(Contents).filter_by(publisher_id=uuid.UUID(publisher_id)).all()
     
     # Inicializa a estrutura do relatório geral
     general_doc = {
@@ -64,6 +64,7 @@ def general_analytics(publisher_id):
     }
     
     if not my_contents:
+        prinr("ANALYTCS", general_doc)
         return general_doc
 
     total_sums_reviews = 0
@@ -90,6 +91,7 @@ def general_analytics(publisher_id):
     # Ordena as datas para o gráfico fazer sentido cronológico
     dates = [ins.creation_date for ins in all_inscriptions if getattr(ins, "creation_date", None)]
     general_doc["global_inscriptions_line"] = sorted(dates)
+    
 
     return general_doc
 

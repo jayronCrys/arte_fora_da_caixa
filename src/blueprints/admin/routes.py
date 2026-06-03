@@ -96,7 +96,8 @@ def admin_delete_user(user_id):
 #── STATISTICAS PELO ADMIN ───────────────────────────────────────────────
 @admin_bp.route("/admin/redirector", methods=["GET"])
 def redirector():
-    return render_template("dashboard.html")
+    return render_template("dashboard.html", user=g.user.userId)
+    
 @admin_bp.route("/admin/analytics", methods=["GET"])
 def app_analytics():
     if not _is_admin():
@@ -109,12 +110,12 @@ def app_analytics():
     return redirect(url_for("admin.admin_page"))
     
     
-@admin_bp.route("/admin/analytics/professor/<professor_id>", methods=["GET"])
-def professor_analytics(professor_id):
+@admin_bp.route("/admin/analytics/professor/<professor_name>", methods=["GET"])
+def professor_analytics(professor_name):
     if not _is_admin():
         return redirect(url_for("auth.login"))
         
-    analytic = g.user.get_professor_analytics(professor_id)
+    analytic = g.user.get_professor_analytics(professor_name)
     if analytic:
         return jsonify(analytic), 200
     return redirect(url_for("admin.admin_page"))    
