@@ -36,7 +36,31 @@ class Management_Admins(Management_User_Default):
             logger.info("Acesso negado: usuário não logado ou sem permissão de administrador.")
             return None
         return wrapper
-    
+    #_________________OTHERS_USERS__________________________
+    @admin_required
+    def get_user_by_username(self, userName):
+        conn = self.dataBase()
+        try:
+            db_task = select_info(conn, User, "name", userName)
+            return db_task if db_task else None
+        except Exception as e:
+            logger.error(f"Erro ao buscar usuário por nome: {e}")
+            return None            
+        finally:
+            conn.close()
+            
+    @admin_required
+    def get_user_by_id(self, userId):
+        conn = self.dataBase()
+        try:
+            db_task = select_info(conn, User, "id", uuid.UUID(userId))
+            return db_task if db_task else None
+        except Exception as e:
+            logger.error(f"Erro ao buscar usuário por ID: {e}")
+            return None            
+        finally:
+            conn.close()
+                        
     @admin_required    
     def all_users(self):
         conn = self.dataBase()
@@ -85,65 +109,6 @@ class Management_Admins(Management_User_Default):
             return False
         finally:
             conn.close()
-
-    @admin_required
-    def get_user_by_username(self, userName):
-        conn = self.dataBase()
-        try:
-            db_task = select_info(conn, User, "name", userName)
-            return db_task if db_task else None
-        except Exception as e:
-            logger.error(f"Erro ao buscar usuário por nome: {e}")
-            return None            
-        finally:
-            conn.close()
-
-    @admin_required
-    def get_user_by_id(self, userId):
-        conn = self.dataBase()
-        try:
-            db_task = select_info(conn, User, "id", uuid.UUID(userId))
-            return db_task if db_task else None
-        except Exception as e:
-            logger.error(f"Erro ao buscar usuário por ID: {e}")
-            return None            
-        finally:
-            conn.close()
-            
-    @admin_required
-    def delete_contents_by_admin(self, contentId):
-        if not contentId:
-            return False
-            
-        try:                              
-            conn = self.dataBase()
-            if select_info(conn, Contents, "id", uuid.UUID(contentId)):
-                return delete_info(conn, Contents, "id", uuid.UUID(contentId))                                   
-            return False
-        except Exception as e:
-            logger.error(f"Erro ao deletar conteúdo {contentId}: {e}")
-            return False
-        finally:
-            conn.close()
-                
-    @admin_required
-    def delete_user_by_admin(self, userId):
-        if not userId:
-            return False
-            
-        # Corrigido: Agora valida por ID, não por nome
-        if not self.get_user_by_id(userId):
-            return False
-            
-        conn = self.dataBase()
-        try:
-            return delete_info(conn, User, "id", uuid.UUID(userId))
-        except Exception as e:
-            logger.error(f"Erro ao deletar usuário {userId}: {e}")
-            return False            
-        finally:
-            conn.close()
-
     @admin_required
     def update_user_by_admin(self, field, newValue,userId):
         if field not in self.validFields or not userId:
@@ -190,70 +155,28 @@ class Management_Admins(Management_User_Default):
             conn.close()
             
     @admin_required
-    def get_all_contents_by_admin(self):
-        try:
-            # Nota: Certifique-se de que 'get_all_contents' existe na classe pai
-            return self.get_all_contents()
-        except Exception as e:
-            logger.error(f"Erro ao obter todos os conteúdos: {e}")
-            return False
-        
-    @admin_required
-    def get_content_by_admin(self, contentId):
-        conn = self.dataBase()
-        try:
-            return select_info(conn, Contents, "id", uuid.UUID(contentId), None)
-        except Exception as e:
-            logger.error(f"Erro ao obter conteúdo {contentId}: {e}")
-            return False
-        finally:
-            conn.close()        
-       
-    @admin_required
-    def update_contents_by_admin(self, columnUpdate, contentId, newValue):
-        if not newValue or not contentId or not columnUpdate:
+    def delete_user_by_admin(self, userId):
+        if not userId:
             return False
             
-        if columnUpdate not in self.contentValidFields:
+        # Corrigido: Agora valida por ID, não por nome
+        if not self.get_user_by_id(userId):
             return False
-        
-        if columnUpdate == "pdf" and not isinstance(newValue, bytes):
-            return False
-        
+            
         conn = self.dataBase()
-        try:                              
-            contentExist = select_info(conn, Contents, "id", uuid.UUID(contentId))
-            if contentExist:
-                return update_info(conn, Contents, columnUpdate, newValue, "id", uuid.UUID(contentId))
-            return False
+        try:
+            return delete_info(conn, User, "id", uuid.UUID(userId))
         except Exception as e:
-            logger.error(f"Erro ao atualizar conteúdo {contentId}: {e}")
-            return False
+            logger.error(f"Erro ao deletar usuário {userId}: {e}")
+            return False            
         finally:
             conn.close()
                 
+    #____________________USERS_REVIEWS_________________________
     @admin_required
-    def delete_comment_by_admin(self, contentId, commentId):
-        # Corrigido: Adicionado 'contentId' nos parâmetros do método
-        if not self.get_content_by_id(contentId):
-            return False
-                        
-        if not get_comment_by_id(contentId, commentId):
-            return False
-            
-        try:   
-            return bool(delete_comment(contentId, commentId))
-        except Exception as e:
-            logger.error(f"Erro ao deletar comentário {commentId}: {e}")
-            return False
-        
-    @admin_required
-    def suspended_content_by_admin(self, contentId):
-        if not self.get_content_by_id(contentId):
-            return False
-        # TODO: Implementar lógica de alteração do status para 'suspenso' no banco de dados.
-        return True
-        
+    def get_comment_by_admin(self, contentId):
+        return self.get_content_comment(contentId=contentId, moderated=False) or [], self.get_content_comment(contentId=contentId, moderated=True) or []
+
     @admin_required        
     def suspended_comment_by_admin(self, contentId, commentId):
         # Corrigido: 'seld' alterado para 'self'
@@ -268,7 +191,46 @@ class Management_Admins(Management_User_Default):
         except Exception as e:
             logger.error(f"Erro ao suspender comentário {commentId}: {e}")
             return False
+            
+    @admin_required
+    def delete_comment_by_admin(self, contentId, commentId):
+        # Corrigido: Adicionado 'contentId' nos parâmetros do método
+        if not self.get_content_by_id(contentId):
+            return False
+                        
+        if not get_comment_by_id(contentId, commentId):
+            return False
+            
+        try:   
+            return bool(delete_comment(contentId, commentId))
+        except Exception as e:
+            logger.error(f"Erro ao deletar comentário {commentId}: {e}")
+            return False
+    #_______________________CONTENTS_____________________
+    
+                  
+    @admin_required
+    def get_content_by_admin(self, contentId):
+        conn = self.dataBase()
+        try:
+            return select_info(conn, Contents, "id", uuid.UUID(contentId), None)
+        except Exception as e:
+            logger.error(f"Erro ao obter conteúdo {contentId}: {e}")
+            return False
+        finally:
+            conn.close()    
+
+            
+    @admin_required
+    def get_all_contents_by_admin(self):
+        try:
+            # Nota: Certifique-se de que 'get_all_contents' existe na classe pai
+            return self.get_all_contents()
+        except Exception as e:
+            logger.error(f"Erro ao obter todos os conteúdos: {e}")
+            return False
         
+            
     @admin_required
     def publish_content_by_admin(self, content, authorName):
         conn = self.dataBase()
@@ -297,7 +259,54 @@ class Management_Admins(Management_User_Default):
             return False
         finally:
             conn.close()
+                   
+    @admin_required
+    def update_contents_by_admin(self, columnUpdate, contentId, newValue):
+        if not newValue or not contentId or not columnUpdate:
+            return False
             
+        if columnUpdate not in self.contentValidFields:
+            return False
+        
+        if columnUpdate == "pdf" and not isinstance(newValue, bytes):
+            return False
+        
+        conn = self.dataBase()
+        try:                              
+            contentExist = select_info(conn, Contents, "id", uuid.UUID(contentId))
+            if contentExist:
+                return update_info(conn, Contents, columnUpdate, newValue, "id", uuid.UUID(contentId))
+            return False
+        except Exception as e:
+            logger.error(f"Erro ao atualizar conteúdo {contentId}: {e}")
+            return False
+        finally:
+            conn.close()
+
+    @admin_required
+    def suspended_content_by_admin(self, contentId):
+        if not self.get_content_by_id(contentId):
+            return False
+        # TODO: Implementar lógica de alteração do status para 'suspenso' no banco de dados.
+        return True
+                    
+    @admin_required
+    def delete_contents_by_admin(self, contentId):
+        if not contentId:
+            return False
+            
+        try:                              
+            conn = self.dataBase()
+            if select_info(conn, Contents, "id", uuid.UUID(contentId)):
+                return delete_info(conn, Contents, "id", uuid.UUID(contentId))                                   
+            return False
+        except Exception as e:
+            logger.error(f"Erro ao deletar conteúdo {contentId}: {e}")
+            return False
+        finally:
+            conn.close()
+                            
+    #___________________ANALYTICS________________________ 
     @admin_required
     def get_content_analytics_by_admin(self, contentId):
         # Corrigido: Nome do método corrigido de 'admim' para 'admin'
@@ -310,15 +319,6 @@ class Management_Admins(Management_User_Default):
             logger.error(f"Erro ao coletar analytics do conteúdo {contentId}: {e}")
             return False
             
-    @admin_required
-    def get_plataform_analytics(self):
-        try:
-            analytic = platform_global_analytics()
-            return analytic if analytic else False
-        except Exception as e:
-            logger.error(f"Erro ao coletar analytics globais da plataforma: {e}")
-            return False
-    
     @admin_required
     def get_professor_analytics(self, professor_name):
         try:
@@ -334,5 +334,10 @@ class Management_Admins(Management_User_Default):
             return False
             
     @admin_required
-    def get_comment_by_admin(self, contentId):
-        return self.get_content_comment(contentId=contentId, moderated=False) or [], self.get_content_comment(contentId=contentId, moderated=True) or []
+    def get_plataform_analytics(self):
+        try:
+            analytic = platform_global_analytics()
+            return analytic if analytic else False
+        except Exception as e:
+            logger.error(f"Erro ao coletar analytics globais da plataforma: {e}")
+            return False
