@@ -250,7 +250,7 @@ class Management_User_Default(Login_Account):
         super().__init__(account, dataBase)
         self.get_infor_user_verif(account)
         self.manager_fields = ["name", "email", "password", "picture", "subs"]
-
+    #______________________USER________________________
     @Login_Account.is_loged
     def get_user(self):
         return self.user
@@ -327,32 +327,24 @@ class Management_User_Default(Login_Account):
             return False
         finally:
             conn.close()
-
-    @Login_Account.is_loged
-    def get_content_review(self, contentId: str):
-        if not contentId or not self.get_content_by_id(contentId):
-            return False
+    #_____________________CONTENT_________________________
+    @Login_Account.is_loged            
+    def get_my_courses(self) -> list: 
+        inscriptions = self.my_inscriptions()
+        if not inscriptions:
+            return []
             
-        try:
-            return get_reviews(contentId)
-        except Exception as e:
-            logger.error(f"Erro em get_reviews para o conteúdo {contentId}: {e}")
-            return False            
-
-    @Login_Account.is_loged
-    def get_content_comment(self, contentId: str, moderated=False):
-        if not contentId or not self.get_content_by_id(contentId):
-            return False
-
-        try:
-            comments = get_comments(course_id=contentId, moderated=moderated)
-            print("RETORNO DE GET_CPMM3ENTS", comments)
-            return comments
-                
-        except Exception as e:
-            logger.error(f"Erro em get_comments para o conteúdo {contentId}: {e}")
-            return False
-                
+        my_courses = []
+        for inscription in inscriptions:
+            content_id = inscription["content_id"]
+            # Ajustado para usar o nome do método corrigido em snake_case
+            course = self.GET_FULL_CONTENT(all_contents=False, content_to_select=content_id, review=True)
+            
+            if course and len(course) > 0:
+                my_courses.append(course[0])
+                    
+        return my_courses
+        
     @Login_Account.is_loged   
     def get_content_by_id(self, contentId: str):
         conn = self.dataBase()
@@ -393,6 +385,23 @@ class Management_User_Default(Login_Account):
             return False
         finally:            
             conn.close()
+            
+    @Login_Account.is_loged            
+    def get_content_by_name(self, content_name):
+        
+        if not content_name:
+            return []
+            
+        
+        # 1ª Tentativa: Busca exata
+        results = conn.query(Contents).filter_by(content_name=content_name).all()
+        
+        # 2ª Tentativa: Se não achou nada na busca exata, busca por aproximação direto no banco
+        if not results:
+            results = conn.query(Contents).filter(Contents.content_name.contains(content_name)).all()
+            
+        return results
+
 
     @Login_Account.is_loged
     def GET_FULL_CONTENT(self, all_contents=False, content_to_select=None, review=False) -> Union[list, bool]:
@@ -417,27 +426,7 @@ class Management_User_Default(Login_Account):
             check_task("RETORNO DE GET FULL CONTENT")
             check_task(full_content)
         return full_content
-        
-    @Login_Account.is_loged                   
-    def set_content_review(self, contentId: str, is_new_inscription=False, rating=0, comment=None) -> bool:    
-        if not self.get_content_by_id(contentId):
-            return False
-        try:        
-            if is_new_inscription:
-                new_review(course_id=contentId, review=0, new_inscription=is_new_inscription)
-                return True
-                
-            # 🌟 CORRIGIDO: Ordem das validações alterada para evitar AttributeError caso comment seja None
-            if comment is None or comment.strip() == "":
-                comment = ""
-                
-            new_review(course_id=contentId, review=rating, new_inscription=is_new_inscription)
-            new_comment(course_id=contentId, user_id=self.userId, user_name=self.userName, rating=rating, texto_comentario=comment)
-            return True
-        except Exception as e:
-            logger.error(f"Erro ao inserir review/comentário: {e}")
-            return False
-
+    #_____________________INSCRIPTIONS_________________________
     @Login_Account.is_loged
     def check_inscription(self, contentId: str) -> Union[str, bool]:
         if not self.get_content_by_id(contentId): 
@@ -462,7 +451,8 @@ class Management_User_Default(Login_Account):
             return False
         finally:                         
              conn.close()
-                       
+
+
     @Login_Account.is_loged
     def my_inscriptions(self) -> Union[list, bool]:
         conn = self.dataBase()
@@ -486,24 +476,7 @@ class Management_User_Default(Login_Account):
             return False
         finally:
             conn.close()
-
-    @Login_Account.is_loged            
-    def get_my_courses(self) -> list: 
-        inscriptions = self.my_inscriptions()
-        if not inscriptions:
-            return []
             
-        my_courses = []
-        for inscription in inscriptions:
-            content_id = inscription["content_id"]
-            # Ajustado para usar o nome do método corrigido em snake_case
-            course = self.GET_FULL_CONTENT(all_contents=False, content_to_select=content_id, review=True)
-            
-            if course and len(course) > 0:
-                my_courses.append(course[0])
-                    
-        return my_courses                
-
     @Login_Account.is_loged
     def new_inscription(self, contentId: str) -> bool:
         if self.check_inscription(contentId):
@@ -537,6 +510,90 @@ class Management_User_Default(Login_Account):
              return False
         finally:
              conn.close()
+             
+    @Login_Account.is_loged
+        def remove_inscription(self, contentId: str) -> bool:
+            # Corrigido: Nome do método unificado para 'remove_inscription'
+            check_task(f"[REMOVE_INSCRIPTION]: executando com : {contentId}")
+            conn = self.dataBase()
+            inscription_id = self.check_inscription(contentId)  
+            if not inscription_id:
+                warning_log("[REMOVE_INSCRIPTION]: SEM INSCRIPTIOND ID")
+                return False
+            
+            try:
+                if delete_info(conn, Subs, "id", UUID(str(inscription_id))):
+                    try:
+                        if remove_content_inscription(contentId):
+                            sucesfull_log(f"[REMOVE_INSCRIPTION]: Inscrição {inscription_id} removida com sucesso do SQL e MongoDB.")
+                            return True
+                        
+                        warning_log("[REMOVE_INSCRIPTION]: Não foi possível remover inscrição em >remove_content_inscription<")                        
+                        return False
+                                                
+                    except Exception as mongo_err:
+                        error_log(f"[REMOVE_INSCRIPTION]:Inscrição removida do SQL, mas falhou no MongoDB")
+                        error_log(mongo_err)
+                        return False
+                        
+                warning_log("[REMOVE_INSCRIPTION]: Não foi possível remover inscrição em >delete_info<")          
+                return False
+            except Exception as e:
+                logger.error(f"[REMOVE_INSCRIPTION]:Erro ao remover inscrição: {e}")
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
+                return False
+            finally:
+                conn.close() #_______________________REVIEWS______________________
+    
+    
+    @Login_Account.is_loged
+    def get_content_review(self, contentId: str):
+        if not contentId or not self.get_content_by_id(contentId):
+            return False
+            
+        try:
+            return get_reviews(contentId)
+        except Exception as e:
+            logger.error(f"Erro em get_reviews para o conteúdo {contentId}: {e}")
+            return False            
+
+    @Login_Account.is_loged
+    def get_content_comment(self, contentId: str, moderated=False):
+        if not contentId or not self.get_content_by_id(contentId):
+            return False
+
+        try:
+            comments = get_comments(course_id=contentId, moderated=moderated)
+            print("RETORNO DE GET_CPMM3ENTS", comments)
+            return comments
+                
+        except Exception as e:
+            logger.error(f"Erro em get_comments para o conteúdo {contentId}: {e}")
+            return False
+        
+    @Login_Account.is_loged                   
+    def set_content_review(self, contentId: str, is_new_inscription=False, rating=0, comment=None) -> bool:    
+        if not self.get_content_by_id(contentId):
+            return False
+        try:        
+            if is_new_inscription:
+                new_review(course_id=contentId, review=0, new_inscription=is_new_inscription)
+                return True
+                
+            # 🌟 CORRIGIDO: Ordem das validações alterada para evitar AttributeError caso comment seja None
+            if comment is None or comment.strip() == "":
+                comment = ""
+                
+            new_review(course_id=contentId, review=rating, new_inscription=is_new_inscription)
+            new_comment(course_id=contentId, user_id=self.userId, user_name=self.userName, rating=rating, texto_comentario=comment)
+            return True
+        except Exception as e:
+            logger.error(f"Erro ao inserir review/comentário: {e}")
+            return False
+
 
     @Login_Account.is_loged
     def delete_my_comment(self, contentId: str, commentId: str):
@@ -560,42 +617,7 @@ class Management_User_Default(Login_Account):
             error_log(E)
             return False
             
-    @Login_Account.is_loged
-    def remove_inscription(self, contentId: str) -> bool:
-        # Corrigido: Nome do método unificado para 'remove_inscription'
-        check_task(f"[REMOVE_INSCRIPTION]: executando com : {contentId}")
-        conn = self.dataBase()
-        inscription_id = self.check_inscription(contentId)  
-        if not inscription_id:
-            warning_log("[REMOVE_INSCRIPTION]: SEM INSCRIPTIOND ID")
-            return False
-        
-        try:
-            if delete_info(conn, Subs, "id", UUID(str(inscription_id))):
-                try:
-                    if remove_content_inscription(contentId):
-                        sucesfull_log(f"[REMOVE_INSCRIPTION]: Inscrição {inscription_id} removida com sucesso do SQL e MongoDB.")
-                        return True
-                    
-                    warning_log("[REMOVE_INSCRIPTION]: Não foi possível remover inscrição em >remove_content_inscription<")                        
-                    return False
-                                            
-                except Exception as mongo_err:
-                    error_log(f"[REMOVE_INSCRIPTION]:Inscrição removida do SQL, mas falhou no MongoDB")
-                    error_log(mongo_err)
-                    return False
-                    
-            warning_log("[REMOVE_INSCRIPTION]: Não foi possível remover inscrição em >delete_info<")          
-            return False
-        except Exception as e:
-            logger.error(f"[REMOVE_INSCRIPTION]:Erro ao remover inscrição: {e}")
-            try:
-                conn.rollback()
-            except Exception:
-                pass
-            return False
-        finally:
-            conn.close()
+    
             
     @Login_Account.is_loged
     def get_my_comment(self, contentId):
@@ -625,4 +647,6 @@ class Management_User_Default(Login_Account):
             
             error_log("[UPDATE_MY_COMMENT]")
             error_log(E)
-            return False                  
+            return False
+            
+                                                    
