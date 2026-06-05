@@ -618,13 +618,13 @@
             item.onclick = () => {
                 document.getElementById('input-prof-name').value = prof.name;
                 listContainer.style.display = 'none';
-                fetchProfessorAnalytics(prof.id);
+                fetchProfessorAnalytics(prof.name);
             };
             listContainer.appendChild(item);
         });
     }
 
-    function fetchProfessorAnalytics(profId) {
+    function fetchProfessorAnalytics(profname) {
         const loader = document.getElementById('prof-search-loading');
         const resultBox = document.getElementById('prof-search-result');
         const placeholder = document.getElementById('prof-search-placeholder');
@@ -633,7 +633,7 @@
         resultBox.style.display = 'none';
         placeholder.style.display = 'none';
 
-        fetch(`/admin/analytics/professor/${profId}`)
+        fetch(`/admin/analytics/professor/${profname}`)
             .then(res => {
                 if(!res.ok) throw new Error("Professor não encontrado");
                 return res.json();

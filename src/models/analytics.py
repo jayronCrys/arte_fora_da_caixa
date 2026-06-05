@@ -64,11 +64,11 @@ def general_analytics(publisher_id):
     }
     
     if not my_contents:
-        prinr("ANALYTCS", general_doc)
+        print("ANALYTCS", general_doc)
         return general_doc
 
     total_sums_reviews = 0
-    content_ids = [uuid.UUID(content.id) for content in my_contents]
+    content_ids = [content.id for content in my_contents]
     
     # 2. Acumula os dados do MongoDB de cada conteúdo
     for c_id in content_ids:

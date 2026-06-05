@@ -54,6 +54,7 @@ class Management_Admins(Management_User_Default):
         conn = self.dataBase()
         try:
             db_task = select_info(conn, User, "id", uuid.UUID(userId))
+            
             return db_task if db_task else None
         except Exception as e:
             logger.error(f"Erro ao buscar usuário por ID: {e}")
@@ -349,7 +350,7 @@ class Management_Admins(Management_User_Default):
     def get_professor_analytics(self, professor_name):
         try:
             professor = self.get_user_by_username(professor_name)
-            print(f"[[[[PROFESSOR {professor}\n{professor['id']}]]]]")
+            print(f"[[[[PROFESSOR {professor}\n{type(professor['id'])}]]]]")
             if not professor["id"]:
                 return False
             

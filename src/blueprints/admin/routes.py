@@ -132,6 +132,7 @@ def get_content_analytics(content_id):
     if content:
         return jsonify(content), 200
     return [], 404        
+    
 @admin_bp.route("/admin/analytics/contents_by_name/<content_name>", methods=["POST", "GET"])
 def redirect_analytics_content_by_name(content_name):
     if not _is_admin():

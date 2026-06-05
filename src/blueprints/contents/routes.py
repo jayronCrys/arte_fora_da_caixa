@@ -79,11 +79,11 @@ def home_page():
 def seach_contents(courses):
     
     contents_title = request.args.get("title", " ").strip()
-    print(">>>>>>>>>>>>>>>>>>>", contents_title)
+    print(">"*10, contents_title)
     if not contents_title:
         return False
     contents_results = g.user.get_content_by_name(contents_title)
-    print(">>>>>>>>>>>>>>>>>>>", contents_results)
+    print(">"*10, contents_results)
             
     return jsonify(contents_results), 200
     
@@ -91,11 +91,11 @@ def seach_contents(courses):
 def seach_professors(professors):
     
     professors = request.args.get("name", " ").strip()
-    print(">>>>>>>>>>>>>>>>>>>", professors)
+    print("seach_professors>"*10, professors)
     if not professors:
         return False
     professors_results = g.user.search_users_by_name(professors)
-    print(">>>>>>>>>>>>>>>>>>>", professors_results)
+    print("professors_results>"*10, professors_results)
             
     return jsonify(professors_results), 200
         
@@ -296,6 +296,8 @@ def delete_user_review(content_id, comment_id):
 
 @contents_bp.route("/publish_content", methods=["POST", "GET"])
 def publish_content():
+    
+    
     if request.method == "GET":
         return redirect(url_for("contents.contents", tab="publish-content-view",
                                 _anchor="publications-section"))
@@ -355,12 +357,13 @@ def publish_content():
     author = False
 
     if _cred() == "admin":
-        author_id  = request.form.get("author")
-        author_obj = g.user.get_user_by_id(author_id)
-        if author_obj and author_obj.get("name"):
+        author  = request.form.get("author")
+        author_obj = g.user.get_user_by_username(author)
+        
+        if author_obj and author_obj.get("name")==author:
             author = author_obj["name"]
             upload = g.user.publish_content_by_admin(content, author)
-            
+            print("/"*10,upload)
     elif _cred() == "professor":
         author = g.user.get_user_name()
         if author == session.get("name"):
@@ -368,12 +371,12 @@ def publish_content():
             
         else:
             author = False
-
+    
     if not author:
         return _render_contents_error("Nome de autor não existe no banco de dados")
     if not upload:
         return _render_contents_error("Não foi possível salvar no banco de dados. Tente novamente.")
-
+    print("\n"*10, upload)
     # ── Sucesso: redireciona para visualização do conteúdo publicado ──────────
     # `upload` deve ser o ID do conteúdo recém-criado (ou o objeto que o contém)
     content_id = upload if isinstance(upload, str) else upload.get("id") if hasattr(upload, "get") else str(upload)
