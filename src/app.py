@@ -56,10 +56,11 @@ def create_app() -> Flask:
 if __name__ == "__main__":
     try:
         from src.models.database.creator_database import create_db
-        from src.maker_admin import make_users
+        from src.maker_admin import make_users, make_contents
 
         create_db()
         make_users()
+        make_contents()
     except Exception as exc:
         logging.info("create_db não executado ou já existente: %s", exc)
 

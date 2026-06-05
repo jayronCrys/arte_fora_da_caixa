@@ -6,7 +6,7 @@ from datetime import datetime
 from src.Logs.terminal_logs import sucesfull_log, check_api, check_task, warning_log, error_log
 from flask import (
     abort, current_app, g, redirect, render_template,
-    request, send_file, session, url_for,
+    request, send_file, session, url_for, jsonify
 )
 
 from src.models.database import get_session
@@ -75,7 +75,30 @@ def _render_contents_error(msg, active_tab="publish-content-view"):
 def home_page():
     return redirect(url_for("contents.contents"))
 
-
+@contents_bp.route("/contents/search/<courses>", methods=["GET"])
+def seach_contents(courses):
+    
+    contents_title = request.args.get("title", " ").strip()
+    print(">>>>>>>>>>>>>>>>>>>", contents_title)
+    if not contents_title:
+        return False
+    contents_results = g.user.get_content_by_name(contents_title)
+    print(">>>>>>>>>>>>>>>>>>>", contents_results)
+            
+    return jsonify(contents_results), 200
+    
+@contents_bp.route("/professors/search/<professors>", methods=["GET"])
+def seach_professors(professors):
+    
+    professors = request.args.get("name", " ").strip()
+    print(">>>>>>>>>>>>>>>>>>>", professors)
+    if not professors:
+        return False
+    professors_results = g.user.search_users_by_name(professors)
+    print(">>>>>>>>>>>>>>>>>>>", professors_results)
+            
+    return jsonify(professors_results), 200
+        
 @contents_bp.route("/redirect_publish_content", methods=["POST", "GET"])
 def redirect_publish_content():
     return redirect(url_for("contents.contents", tab="publish-content-view",
@@ -333,7 +356,7 @@ def publish_content():
 
     if _cred() == "admin":
         author_id  = request.form.get("author")
-        author_obj = g.user.get_user_by_admin(author_id)
+        author_obj = g.user.get_user_by_id(author_id)
         if author_obj and author_obj.get("name"):
             author = author_obj["name"]
             upload = g.user.publish_content_by_admin(content, author)

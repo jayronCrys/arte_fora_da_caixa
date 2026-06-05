@@ -25,14 +25,14 @@ def profille_analytics_professor():
     return jsonify(my_analytics), 200
 
                                   
-@professor_bp.route("/professor/content_analytics/<content_id>")
+@professor_bp.route("/professor/analytics/contents/<content_id>")
 def content_analytics_professor(content_id):
     
     if not _is_professor():
         return redirect(url_for("auth.login"))
         
     if content_id:
-        content_analytics = g.user.get_content_analytics(content_id)
+        content_analytics = g.user.get_content_analytics_by_admin(content_id)
         #pesquisar se a lista de é tratada no front ou nos endpoints        
         return jsonify(content_analytics), 200
         

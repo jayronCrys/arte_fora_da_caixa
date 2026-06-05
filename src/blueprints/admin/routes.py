@@ -97,7 +97,8 @@ def admin_delete_user(user_id):
 @admin_bp.route("/admin/redirector", methods=["GET"])
 def redirector():
     return render_template("dashboard.html", user=g.user.userId)
-    
+
+
 @admin_bp.route("/admin/analytics", methods=["GET"])
 def app_analytics():
     if not _is_admin():
@@ -120,13 +121,25 @@ def professor_analytics(professor_name):
         return jsonify(analytic), 200
     return redirect(url_for("admin.admin_page"))    
             
-@admin_bp.route("/admin/analytics/content/<content_id>", methods=["GET"])
-def content_analytics(content_id):
+
+@admin_bp.route("/admin/analytics/contents_by_id/<content_id>", methods=["GET", "POST"])
+def get_content_analytics(content_id):
+    if not content_id or not _is_admin():
+        return redirect(url_for("auth.login"))
+                
+    content = g.user.get_content_analytics_by_admin(content_id)
+    print("<!>"*10, content_id, type(content_id))
+    if content:
+        return jsonify(content), 200
+    return [], 404        
+@admin_bp.route("/admin/analytics/contents_by_name/<content_name>", methods=["POST", "GET"])
+def redirect_analytics_content_by_name(content_name):
     if not _is_admin():
         return redirect(url_for("auth.login"))
+    print("CONTENT_NAME", {content_name})
+    contents = g.user.get_content_by_name(content_name)
+    
         
-    content_analytics = g.user.get_content_analytics_by_admin(content_id)
-    if content_analytics:
-          return jsonify(content_analytics), 200
-    return redirect(url_for("admin.admin_page"))              
-              
+    if len(contents) == 1 and contents[0]["title"] == content_name:
+        print("*"*10, type(contents[0]))
+        return redirect(url_for("admin.get_content_analytics", content_id=contents[0]["id"]))

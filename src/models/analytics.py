@@ -15,7 +15,7 @@ def analytics(content_id):
     temp_list =[]
     analytics_doc = {}
     
-    content = select_info(conn, Contents, "id", content_id)
+    content = select_info(conn, Contents, "id", uuid.UUID(content_id))
     
     if isinstance(content, dict):
         
@@ -35,7 +35,7 @@ def analytics(content_id):
         analytics_doc["sums_reviews"]=reviews["sums_reviews"]
         analytics_doc["total_reviews"] = reviews["total_reviews"]
         
-    inscriptions = conn.query(Subs).filter_by(content_id=content_id).all()
+    inscriptions = conn.query(Subs).filter_by(content_id=uuid.UUID(content_id)).all()
     
         
     if isinstance(inscriptions, list):
@@ -68,7 +68,7 @@ def general_analytics(publisher_id):
         return general_doc
 
     total_sums_reviews = 0
-    content_ids = [content.id for content in my_contents]
+    content_ids = [uuid.UUID(content.id) for content in my_contents]
     
     # 2. Acumula os dados do MongoDB de cada conteúdo
     for c_id in content_ids:

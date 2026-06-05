@@ -392,15 +392,24 @@ class Management_User_Default(Login_Account):
         if not content_name:
             return []
             
-        
+        conn = self.dataBase()
         # 1ª Tentativa: Busca exata
-        results = conn.query(Contents).filter_by(content_name=content_name).all()
+        results = conn.query(Contents).filter_by(title=content_name).all()
         
         # 2ª Tentativa: Se não achou nada na busca exata, busca por aproximação direto no banco
         if not results:
-            results = conn.query(Contents).filter(Contents.content_name.contains(content_name)).all()
-            
-        return results
+            results = conn.query(Contents).filter(Contents.title.contains(content_name)).all()
+        temp_list = []
+        for result in results:
+            temp_json = {
+            "id": str(result.id),
+            "title": result.title,
+            "desc": result.desc,
+            "author": result.author
+            }
+            temp_list.append(temp_json)
+                        
+        return temp_list
 
 
     @Login_Account.is_loged
@@ -512,7 +521,7 @@ class Management_User_Default(Login_Account):
              conn.close()
              
     @Login_Account.is_loged
-        def remove_inscription(self, contentId: str) -> bool:
+    def remove_inscription(self, contentId: str) -> bool:
             # Corrigido: Nome do método unificado para 'remove_inscription'
             check_task(f"[REMOVE_INSCRIPTION]: executando com : {contentId}")
             conn = self.dataBase()
@@ -546,8 +555,7 @@ class Management_User_Default(Login_Account):
                     pass
                 return False
             finally:
-                conn.close()
-    #_______________________REVIEWS______________________
+                conn.close() #_______________________REVIEWS______________________
     
     
     @Login_Account.is_loged

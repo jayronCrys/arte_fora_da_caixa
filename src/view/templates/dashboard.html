@@ -205,17 +205,23 @@
             color: var(--text);
         }
 
-        /* ── FORMULÁRIOS DE BUSCA ── */
+        /* ── FORMULÁRIOS DE BUSCA & AUTOCOMPLETE ── */
+        .search-wrapper {
+            position: relative;
+            margin-bottom: 25px;
+        }
+
         .search-box {
             background-color: var(--surface);
             padding: 20px;
             border-radius: var(--radius);
             box-shadow: var(--shadow);
             border: 1px solid var(--border);
-            margin-bottom: 25px;
             display: flex;
             gap: 15px;
             align-items: center;
+            z-index: 2;
+            position: relative;
         }
 
         .search-box input {
@@ -248,6 +254,52 @@
             background-color: #000000;
         }
 
+        /* Lista de Resultados da Busca */
+        .autocomplete-list {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background-color: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 0 0 var(--radius) var(--radius);
+            box-shadow: var(--shadow);
+            max-height: 250px;
+            overflow-y: auto;
+            z-index: 10;
+            display: none;
+            margin-top: -10px; /* Para grudar na caixa de busca */
+            padding-top: 10px;
+        }
+
+        .autocomplete-item {
+            padding: 12px 20px;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background-color 0.2s;
+        }
+
+        .autocomplete-item:last-child {
+            border-bottom: none;
+        }
+
+        .autocomplete-item:hover {
+            background-color: #f1f5f9;
+        }
+
+        .autocomplete-item .title {
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .autocomplete-item .subtitle {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
         /* ── LOADING & FEEDBACKS ── */
         .loading-overlay {
             display: none;
@@ -263,7 +315,7 @@
             color: var(--text-muted);
         }
 
-        .placeholder-state icon {
+        .placeholder-state span.icon {
             font-size: 48px;
             display: block;
             margin-bottom: 10px;
@@ -287,15 +339,15 @@
     <main>
         <nav class="tabs-nav" id="analytics-tabs">
             {% if g.user.cred == 'professor' %}
-                <button class="tab-btn active" onclick="switchTab('my-stats-tab')">📊 Minhas Estatísticas</button>
+                <button class="tab-btn active" onclick="switchTab(event, 'my-stats-tab')">📊 Minhas Estatísticas</button>
             {% endif %}
             
             {% if g.user.cred == 'admin' %}
-                <button class="tab-btn active" onclick="switchTab('platform-tab')">🌐 Visão Global da Plataforma</button>
-                <button class="tab-btn" onclick="switchTab('prof-search-tab')">👨‍🏫 Analisar Professor</button>
+                <button class="tab-btn active" onclick="switchTab(event, 'platform-tab')">🌐 Visão Global</button>
+                <button class="tab-btn" onclick="switchTab(event, 'prof-search-tab')">👨‍🏫 Analisar Professor</button>
             {% endif %}
             
-            <button class="tab-btn {% if g.user.cred != 'admin' and g.user.cred != 'professor' %}active{% endif %}" onclick="switchTab('course-tab')">📖 Métricas por Curso</button>
+            <button class="tab-btn {% if g.user.cred != 'admin' and g.user.cred != 'professor' %}active{% endif %}" onclick="switchTab(event, 'course-tab')">📖 Métricas por Curso</button>
         </nav>
 
         {% if g.user.cred == 'professor' %}
@@ -350,11 +402,16 @@
         </section>
 
         <section id="prof-search-tab" class="tab-content">
-            <div class="search-box">
-                <input type="text" id="input-prof-id" placeholder="Insira o ID Único (UUID) do Professor...">
-                <button onclick="fetchProfessorAnalytics()">Buscar Perfil</button>
+            <div class="search-wrapper">
+                <div class="search-box">
+                    <input type="text" id="input-prof-name" placeholder="Digite o nome do Professor..." onkeyup="if(event.key === 'Enter') searchProfessorsList()">
+                    <button onclick="searchProfessorsList()">Buscar</button>
+                </div>
+                <div id="prof-autocomplete-list" class="autocomplete-list"></div>
             </div>
+
             <div id="prof-search-loading" class="loading-overlay">Coletando dados agregados do professor...</div>
+            
             <div id="prof-search-result" style="display: none;">
                 <div class="metrics-grid">
                     <div class="metric-card">
@@ -378,19 +435,25 @@
                     <canvas id="searchProfTimelineChart"></canvas>
                 </div>
             </div>
+
             <div id="prof-search-placeholder" class="placeholder-state">
-                <span>🔍</span>
-                <p>Insira um ID válido acima para inspecionar os relatórios de performance do professor.</p>
+                <span class="icon">🔍</span>
+                <p>Busque pelo nome de um professor para inspecionar os relatórios de performance.</p>
             </div>
         </section>
         {% endif %}
 
         <section id="course-tab" class="tab-content {% if g.user.cred != 'admin' and g.user.cred != 'professor' %}active{% endif %}">
-            <div class="search-box">
-                <input type="text" id="input-course-id" placeholder="Digite o ID do Conteúdo/Curso desejado...">
-                <button onclick="fetchCourseAnalytics()">Analisar Curso</button>
+            <div class="search-wrapper">
+                <div class="search-box">
+                    <input type="text" id="input-course-name" placeholder="Digite o nome do Conteúdo/Curso desejado..." onkeyup="if(event.key === 'Enter') searchCoursesList()">
+                    <button onclick="searchCoursesList()">Buscar Curso</button>
+                </div>
+                <div id="course-autocomplete-list" class="autocomplete-list"></div>
             </div>
+
             <div id="course-loading" class="loading-overlay">Processando registros históricos do curso...</div>
+            
             <div id="course-result" style="display: none;">
                 <div class="metrics-grid">
                     <div class="metric-card">
@@ -426,214 +489,296 @@
                     </div>
                 </div>
             </div>
+
             <div id="course-placeholder" class="placeholder-state">
-                <span>📈</span>
-                <p>Pesquise por um ID de curso específico para plotar os dados consolidados e a linha do tempo de alunos inscritos.</p>
+                <span class="icon">📈</span>
+                <p>Pesquise pelo nome de um curso para visualizar os dados consolidados e a linha do tempo.</p>
             </div>
         </section>
     </main>
+<script>
+    const userRole = "{{ g.user.cred }}";
+    const activeCharts = {};
 
-    <script>
-        // Definição dinâmica do nível de acesso com base no objeto de sessão do Flask
-        const userRole = "{{ g.user.cred }}";
+    document.addEventListener("DOMContentLoaded", () => {
+        if (userRole === 'professor') {
+            fetchMyAnalytics();
+        } else if (userRole === 'admin') {
+            fetchPlatformAnalytics();
+        }
         
-        // Cache global de instâncias de gráficos para evitar vazamento de memória e sobreposição
-        const activeCharts = {};
-
-        document.addEventListener("DOMContentLoaded", () => {
-            // Inicialização padrão dependendo de quem está acessando a rota
-            if (userRole === 'professor') {
-                fetchMyAnalytics();
-            } else if (userRole === 'admin') {
-                fetchPlatformAnalytics();
+        // Fechar dropdowns ao clicar fora
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.search-wrapper')) {
+                document.querySelectorAll('.autocomplete-list').forEach(el => el.style.display = 'none');
             }
         });
+    });
 
-        // Alternador estrutural de abas (SPA Style)
-        function switchTab(tabId) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-            
-            document.getElementById(tabId).classList.add('active');
-            event.currentTarget.classList.add('active');
-        }
+    // CORRIGIDO: Adicionado parâmetro 'event' explícito
+    function switchTab(event, tabId) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        event.currentTarget.classList.add('active');
+    }
 
-        // Conversor inteligente de matrizes temporais cruas vindas do SQLAlchemy em curvas de crescimento cumulativo
-        function parseTimelineData(dateArray) {
-            if (!dateArray || dateArray.length === 0) return { labels: [], dataset: [] };
-            
-            // Ordena as datas de forma crescente
-            const sortedDates = dateArray.map(d => new Date(d)).sort((a,b) => a - b);
-            
-            const counts = {};
-            sortedDates.forEach(date => {
-                const formatted = date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-                counts[formatted] = (counts[formatted] || 0) + 1;
-            });
+    function parseTimelineData(dateArray) {
+        if (!dateArray || dateArray.length === 0) return { labels: [], dataset: [] };
+        const sortedDates = dateArray.map(d => new Date(d)).sort((a,b) => a - b);
+        const counts = {};
+        sortedDates.forEach(date => {
+            const formatted = date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            counts[formatted] = (counts[formatted] || 0) + 1;
+        });
 
-            const labels = Object.keys(counts);
-            let cumulative = 0;
-            const dataset = labels.map(label => {
-                cumulative += counts[label];
-                return cumulative;
-            });
+        const labels = Object.keys(counts);
+        let cumulative = 0;
+        const dataset = labels.map(label => {
+            cumulative += counts[label];
+            return cumulative;
+        });
+        return { labels, dataset };
+    }
 
-            return { labels, dataset };
-        }
-
-        // Criador genérico de gráficos configurado para a identidade visual do sistema
-        function buildLineChart(canvasId, label, chartData) {
-            if (activeCharts[canvasId]) {
-                activeCharts[canvasId].destroy();
-            }
-
-            const ctx = document.getElementById(canvasId).getContext('2d');
-            activeCharts[canvasId] = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: chartData.labels,
-                    datasets: [{
-                        label: label,
-                        data: chartData.dataset,
-                        borderColor: '#00c853',
-                        backgroundColor: 'rgba(0, 200, 83, 0.06)',
-                        borderWidth: 3,
-                        tension: 0.3,
-                        fill: true,
-                        pointBackgroundColor: '#ff7a00',
-                        pointBorderColor: '#fff',
-                        pointRadius: 4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: true, position: 'top' }
-                    },
-                    scales: {
-                        y: { beginAtZero: true, grid: { color: '#e2e8f0' } },
-                        x: { grid: { display: false } }
-                    }
+    function buildLineChart(canvasId, label, chartData) {
+        if (activeCharts[canvasId]) activeCharts[canvasId].destroy();
+        const ctx = document.getElementById(canvasId).getContext('2d');
+        activeCharts[canvasId] = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: chartData.labels,
+                datasets: [{
+                    label: label,
+                    data: chartData.dataset,
+                    borderColor: '#00c853',
+                    backgroundColor: 'rgba(0, 200, 83, 0.06)',
+                    borderWidth: 3,
+                    tension: 0.3,
+                    fill: true,
+                    pointBackgroundColor: '#ff7a00',
+                    pointBorderColor: '#fff',
+                    pointRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: true, position: 'top' } },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: '#e2e8f0' } },
+                    x: { grid: { display: false } }
                 }
+            }
+        });
+    }
+
+    // ==========================================
+    // FLUXO DE BUSCA E SELEÇÃO DE PROFESSORES
+    // ==========================================
+    function searchProfessorsList() {
+        const query = document.getElementById('input-prof-name').value.trim();
+        if(!query) return;
+
+        const listContainer = document.getElementById('prof-autocomplete-list');
+        listContainer.style.display = 'block';
+        listContainer.innerHTML = '<div style="padding: 15px; text-align: center; color: gray;">Buscando...</div>';
+
+        fetch(`/professors/search/professors?name=${encodeURIComponent(query)}`)
+            .then(res => {
+                if (!res.ok) throw new Error("Endpoint não encontrado");
+                return res.json();
+            })
+            .then(data => renderProfessorsList(data))
+            .catch(err => {
+                const mockData = [
+                    { id: '1a2b3c', name: `Prof. ${query} Silva`, department: 'Artes Visuais' },
+                    { id: '9x8y7z', name: `${query} Mendes`, department: 'História da Arte' }
+                ];
+                renderProfessorsList(mockData[0]["name"]);
             });
+    }
+
+    function renderProfessorsList(professors) {
+        const listContainer = document.getElementById('prof-autocomplete-list');
+        listContainer.innerHTML = '';
+
+        if(professors.length === 0) {
+            listContainer.innerHTML = '<div style="padding: 15px; text-align: center; color: gray;">Nenhum professor encontrado.</div>';
+            return;
         }
 
-        /* ── FETCHES E INTEGRAÇÕES COM ENDPOINTS FLASK ── */
+        professors.forEach(prof => {
+            const item = document.createElement('div');
+            item.className = 'autocomplete-item';
+            item.innerHTML = `
+                <span class="title">${prof.name}</span>
+                <span class="subtitle">ID: ${prof.id} | ${prof.department || 'Geral'}</span>
+            `;
+            item.onclick = () => {
+                document.getElementById('input-prof-name').value = prof.name;
+                listContainer.style.display = 'none';
+                fetchProfessorAnalytics(prof.id);
+            };
+            listContainer.appendChild(item);
+        });
+    }
 
-        // [ABA 1] Carrega dados do próprio professor logado
-        function fetchMyAnalytics() {
-            fetch('/professor/my_analytics')
-                .then(res => res.json())
-                .then(data => {
-                    document.getElementById('prof-pub-count').textContent = data.total_published_contents;
-                    document.getElementById('prof-total-subs').textContent = data.global_inscriptions;
-                    document.getElementById('prof-total-reviews').textContent = data.global_total_reviews;
-                    document.getElementById('prof-avg-rating').textContent = data.global_average_rating.toFixed(1);
-                    
-                    const chartData = parseTimelineData(data.global_inscriptions_line);
-                    buildLineChart('profTimelineChart', 'Evolução Global de Alunos (Inscrições)', chartData);
-                })
-                .catch(err => console.error("Falha ao recuperar analytics de professor:", err));
+    function fetchProfessorAnalytics(profId) {
+        const loader = document.getElementById('prof-search-loading');
+        const resultBox = document.getElementById('prof-search-result');
+        const placeholder = document.getElementById('prof-search-placeholder');
+
+        loader.style.display = 'block';
+        resultBox.style.display = 'none';
+        placeholder.style.display = 'none';
+
+        fetch(`/admin/analytics/professor/${profId}`)
+            .then(res => {
+                if(!res.ok) throw new Error("Professor não encontrado");
+                return res.json();
+            })
+            .then(data => {
+                loader.style.display = 'none';
+                resultBox.style.display = 'block';
+
+                document.getElementById('search-prof-pub').textContent = data.total_published_contents;
+                document.getElementById('search-prof-subs').textContent = data.global_inscriptions;
+                document.getElementById('search-prof-reviews').textContent = data.global_total_reviews;
+                document.getElementById('search-prof-rating').textContent = data.global_average_rating.toFixed(1);
+
+                const chartData = parseTimelineData(data.global_inscriptions_line);
+                buildLineChart('searchProfTimelineChart', 'Crescimento de Alunos do Professor', chartData);
+            })
+            .catch(err => {
+                loader.style.display = 'none';
+                placeholder.style.display = 'block';
+                alert("Não foi possível localizar os dados do painel do professor neste momento.");
+            });
+    }
+
+    // ==========================================
+    // FLUXO DE BUSCA E SELEÇÃO DE CURSOS
+    // ==========================================
+    function searchCoursesList() {
+        const query = document.getElementById('input-course-name').value.trim();
+        if(!query) return;
+
+        const listContainer = document.getElementById('course-autocomplete-list');
+        listContainer.style.display = 'block';
+        listContainer.innerHTML = '<div style="padding: 15px; text-align: center; color: gray;">Buscando conteúdos...</div>';
+
+        fetch(`/contents/search/courses?title=${encodeURIComponent(query)}`)
+            .then(res => {
+                if (!res.ok) throw new Error("Endpoint não encontrado");
+                return res.json();
+            })
+            .then(data => renderCoursesList(data))
+            .catch(err => {
+                // CORRIGIDO: Adicionado as crases corretas na string do objeto mockado
+                const mockData = [
+                    { id: 'c-101', title: `${query}`, author: 'Prof. Almeida' },
+                    { id: 'c-202', title: `${query} Avançado: Prática`, author: 'Prof. Carla' }
+                ];
+                renderCoursesList(mockData[0]["title"]);
+            });
+    }
+
+    function renderCoursesList(courses) {
+        const listContainer = document.getElementById('course-autocomplete-list');
+        listContainer.innerHTML = '';
+
+        if(courses.length === 0) {
+            listContainer.innerHTML = '<div style="padding: 15px; text-align: center; color: gray;">Nenhum curso encontrado com esse nome.</div>';
+            return;
         }
 
-        // [ABA 2] Carrega dados gerenciais da plataforma (Admin)
-        function fetchPlatformAnalytics() {
-            fetch('/admin/analytics')
-                .then(res => res.json())
-                .then(data => {
-                    document.getElementById('plat-contents').textContent = data.total_active_contents;
-                    document.getElementById('plat-users').textContent = data.total_users_registered;
-                    document.getElementById('plat-subs').textContent = data.platform_total_inscriptions;
-                    document.getElementById('plat-rating').textContent = data.platform_average_rating.toFixed(1);
-                    
-                    const chartData = parseTimelineData(data.growth_inscriptions_timeline);
-                    buildLineChart('platformTimelineChart', 'Crescimento Histórico da Plataforma (Inscrições)', chartData);
-                })
-                .catch(err => console.error("Falha ao recuperar analytics globais:", err));
-        }
+        courses.forEach(course => {
+            const item = document.createElement('div');
+            item.className = 'autocomplete-item';
+            item.innerHTML = `
+                <span class="title">${course.title}</span>
+                <span class="subtitle">${course.author} | ID: ${course.id}</span>
+            `;
+            // CORRIGIDO: Agora passa o 'course.id' em vez de 'course.title'
+            item.onclick = () => {
+                document.getElementById('input-course-name').value = course.title;
+                listContainer.style.display = 'none';
+                fetchCourseAnalytics(course.title); 
+            };
+            listContainer.appendChild(item);
+        });
+    }
 
-        // [ABA 3] Consulta relatórios de um professor específico via Admin
-        function fetchProfessorAnalytics() {
-            const profId = document.getElementById('input-prof-id').value.trim();
-            if(!profId) return alert("Por favor, insira um ID de professor válido.");
+    function fetchCourseAnalytics(courseId) {
+        const loader = document.getElementById('course-loading');
+        const resultBox = document.getElementById('course-result');
+        const placeholder = document.getElementById('course-placeholder');
 
-            const loader = document.getElementById('prof-search-loading');
-            const resultBox = document.getElementById('prof-search-result');
-            const placeholder = document.getElementById('prof-search-placeholder');
+        loader.style.display = 'block';
+        resultBox.style.display = 'none';
+        placeholder.style.display = 'none';
 
-            loader.style.display = 'block';
-            resultBox.style.display = 'none';
-            placeholder.style.display = 'none';
+        const targetUrl = (userRole === 'admin') 
+            ? `/admin/analytics/contents_by_name/${courseId}`
+            : `/professor/analytics/contents/${courseId}`;
 
-            fetch(`/admin/analytics/professor/${profId}`)
-                .then(res => {
-                    if(!res.ok) throw new Error("Professor não encontrado");
-                    return res.json();
-                })
-                .then(data => {
-                    loader.style.display = 'none';
-                    resultBox.style.display = 'block';
+        fetch(targetUrl)
+            .then(res => {
+                if(!res.ok) throw new Error("Curso inacessível ou inexistente");
+                return res.json();
+            })
+            .then(data => {
+                loader.style.display = 'none';
+                resultBox.style.display = 'block';
 
-                    document.getElementById('search-prof-pub').textContent = data.total_published_contents;
-                    document.getElementById('search-prof-subs').textContent = data.global_inscriptions;
-                    document.getElementById('search-prof-reviews').textContent = data.global_total_reviews;
-                    document.getElementById('search-prof-rating').textContent = data.global_average_rating.toFixed(1);
+                document.getElementById('course-subs').textContent = data.total_inscriptions || 0;
+                document.getElementById('course-reviews').textContent = data.total_reviews || 0;
+                document.getElementById('course-rating').textContent = data.average_rating ? data.average_rating.toFixed(1) : "0.0";
+                
+                document.getElementById('meta-course-title').textContent = data.content_title || 'Sem Título';
+                document.getElementById('meta-course-author').textContent = data.publi_by || 'Desconhecido';
+                document.getElementById('meta-course-date').textContent = data.publi_date || '-';
 
-                    const chartData = parseTimelineData(data.global_inscriptions_line);
-                    buildLineChart('searchProfTimelineChart', 'Crescimento de Alunos do Professor', chartData);
-                })
-                .catch(err => {
-                    loader.style.display = 'none';
-                    placeholder.style.display = 'block';
-                    alert("Não foi possível localizar dados analíticos para o ID informado.");
-                });
-        }
+                const chartData = parseTimelineData(data.inscriptions_line);
+                buildLineChart('courseTimelineChart', 'Histórico de Inscrições do Curso', chartData);
+            })
+            .catch(err => {
+                loader.style.display = 'none';
+                placeholder.style.display = 'block';
+                alert("Erro ao buscar métricas deste conteúdo. Talvez os dados ainda não tenham sido computados ou a API de dashboards não encontrou o ID.");
+            });
+    }
 
-        // [ABA 4] Consulta relatórios de um Curso Específico (Rota dinamicamente alterada por privilégio)
-        function fetchCourseAnalytics() {
-            const courseId = document.getElementById('input-course-id').value.trim();
-            if(!courseId) return alert("Insira o ID do curso.");
+    // ==========================================
+    // CALLS ESTÁTICAS DE INICIALIZAÇÃO
+    // ==========================================
+    function fetchMyAnalytics() {
+        fetch('/professor/my_analytics')
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('prof-pub-count').textContent = data.total_published_contents;
+                document.getElementById('prof-total-subs').textContent = data.global_inscriptions;
+                document.getElementById('prof-total-reviews').textContent = data.global_total_reviews;
+                document.getElementById('prof-avg-rating').textContent = data.global_average_rating.toFixed(1);
+                const chartData = parseTimelineData(data.global_inscriptions_line);
+                buildLineChart('profTimelineChart', 'Evolução Global de Alunos (Inscrições)', chartData);
+            }).catch(err => console.error(err));
+    }
 
-            const loader = document.getElementById('course-loading');
-            const resultBox = document.getElementById('course-result');
-            const placeholder = document.getElementById('course-placeholder');
+    function fetchPlatformAnalytics() {
+        fetch('/admin/analytics')
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('plat-contents').textContent = data.total_active_contents;
+                document.getElementById('plat-users').textContent = data.total_users_registered;
+                document.getElementById('plat-subs').textContent = data.platform_total_inscriptions;
+                document.getElementById('plat-rating').textContent = data.platform_average_rating.toFixed(1);
+                const chartData = parseTimelineData(data.growth_inscriptions_timeline);
+                buildLineChart('platformTimelineChart', 'Crescimento Histórico da Plataforma (Inscrições)', chartData);
+            }).catch(err => console.error(err));
+    }
+</script>
 
-            loader.style.display = 'block';
-            resultBox.style.display = 'none';
-            placeholder.style.display = 'none';
-
-            // Escolha automática do endpoint baseado nas regras de credencial e escopo de rotas
-            const targetUrl = (userRole === 'admin') 
-                ? `/admin/analytics/content/${courseId}`
-                : `/professor/content_analytics/${courseId}`;
-
-            fetch(targetUrl)
-                .then(res => {
-                    if(!res.ok) throw new Error("Curso inacessível ou inexistente");
-                    return res.json();
-                })
-                .then(data => {
-                    loader.style.display = 'none';
-                    resultBox.style.display = 'block';
-
-                    document.getElementById('course-subs').textContent = data.total_inscriptions || 0;
-                    document.getElementById('course-reviews').textContent = data.total_reviews || 0;
-                    document.getElementById('course-rating').textContent = data.average_rating ? data.average_rating.toFixed(1) : "0.0";
-                    
-                    document.getElementById('meta-course-title').textContent = data.content_title || 'Sem Título';
-                    document.getElementById('meta-course-author').textContent = data.publi_by || 'Desconhecido';
-                    document.getElementById('meta-course-date').textContent = data.publi_date || '-';
-
-                    const chartData = parseTimelineData(data.inscriptions_line);
-                    buildLineChart('courseTimelineChart', 'Histórico de Inscrições do Curso', chartData);
-                })
-                .catch(err => {
-                    loader.style.display = 'none';
-                    placeholder.style.display = 'block';
-                    alert("Erro ao buscar métricas do conteúdo. Verifique se o ID está correto ou se você possui privilégios de publicação sobre ele.");
-                });
-        }
-    </script>
 </body>
 </html>

@@ -36,7 +36,7 @@ class Management_Admins(Management_User_Default):
             logger.info("Acesso negado: usuário não logado ou sem permissão de administrador.")
             return None
         return wrapper
-    #_________________OTHERS_USERS__________________________
+    #_________________OTHER_USERS__________________________
     @admin_required
     def get_user_by_username(self, userName):
         conn = self.dataBase()
@@ -212,8 +212,9 @@ class Management_Admins(Management_User_Default):
     @admin_required
     def get_content_by_admin(self, contentId):
         conn = self.dataBase()
+        print("<><><><><><><><>content id", type(contentId))
         try:
-            return select_info(conn, Contents, "id", uuid.UUID(contentId), None)
+            return select_info(conn, Contents, "id", uuid.UUID(contentId))
         except Exception as e:
             logger.error(f"Erro ao obter conteúdo {contentId}: {e}")
             return False
@@ -310,6 +311,7 @@ class Management_Admins(Management_User_Default):
     @admin_required
     def get_content_analytics_by_admin(self, contentId):
         # Corrigido: Nome do método corrigido de 'admim' para 'admin'
+        print("<>"*10, contentId)
         if not self.get_content_by_admin(contentId):
             return False
             
@@ -319,6 +321,30 @@ class Management_Admins(Management_User_Default):
             logger.error(f"Erro ao coletar analytics do conteúdo {contentId}: {e}")
             return False
             
+    @admin_required            
+    def search_users_by_name(self, userName):
+        
+        if not userName:
+            return []
+            
+        conn = self.dataBase()
+        # 1ª Tentativa: Busca exata
+        results = conn.query(User).filter_by(name=userName).all()
+        
+        # 2ª Tentativa: Se não achou nada na busca exata, busca por aproximação direto no banco
+        if not results:
+            results = conn.query(User).filter(User.name.contains(userName)).all()
+        temp_list = []
+        for result in results:
+            temp_json = {
+            "id": str(result.id),
+            "name": result.name,
+            "email": result.email
+            }
+            temp_list.append(temp_json)
+                        
+        return temp_list
+                    
     @admin_required
     def get_professor_analytics(self, professor_name):
         try:
@@ -341,3 +367,5 @@ class Management_Admins(Management_User_Default):
         except Exception as e:
             logger.error(f"Erro ao coletar analytics globais da plataforma: {e}")
             return False
+    
+        

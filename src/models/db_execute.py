@@ -36,6 +36,7 @@ def select_info(
     valueReference: Union[str, int, List[Union[str, int]]],
     items_to_select: List[str] = None
 ) -> Union[bool, dict]:
+    print("<>"*10, valueReference, type(valueReference), columnReference)
     """
     Seleciona um registro da tabela.
 
