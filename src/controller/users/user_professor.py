@@ -51,11 +51,12 @@ class Management_Professors(Management_User_Default):
     @professor_required
     def get_my_analytics(self):
         try:
+            print("MY ANALYTICS]")
             my_analytics = general_analytics(self.userId)
             return my_analytics
             
         except:
-            return False
+            return []
                               
     @professor_required
     def professor_get_content_by_id(self, contentId):

@@ -12,16 +12,16 @@ def _is_professor():
 
 
 # ── Painel ────────────────────────────────────────────────────────────────────
-@professor_bp.route("/professor/my_analytics")
+@professor_bp.route("/professor/my_analytics", methods=["GET"])
 def profille_analytics_professor():
+    print("profille_analytics_professor")
     if not _is_professor():
         return redirect(url_for("auth.login"))
         
     my_analytics = g.user.get_my_analytics()
     
     if not my_analytics:
-        return render_template("user_page.html", error="não foi possível exibir sua análise de perfil"), 400
-    #pesquisar se a lista de é tratada no front ou nos endpoints        
+        return render_template("user_page.html", error="não foi possível exibir sua análise de perfil"), 400   
     return jsonify(my_analytics), 200
 
                                   
@@ -32,7 +32,7 @@ def content_analytics_professor(content_id):
         return redirect(url_for("auth.login"))
         
     if content_id:
-        content_analytics = g.user.get_content_analytics_by_admin(content_id)
+        content_analytics = g.user.get_content_analytics(content_id)
         #pesquisar se a lista de é tratada no front ou nos endpoints        
         return jsonify(content_analytics), 200
         

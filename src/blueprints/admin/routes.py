@@ -13,7 +13,7 @@ def _is_admin():
 
 # ── Painel ────────────────────────────────────────────────────────────────────
 
-@admin_bp.route("/admin")
+@admin_bp.route("/admin/admin_page")
 def admin_page():
     if not _is_admin():
         return render_template("index.html")
@@ -64,17 +64,17 @@ def admin_edit_user(user_id):
             return redirect(url_for("admin.admin_page"))
 
         if new_name:
-            g.user.update_user_by_admin("name", new_name, None, user_id)
+            g.user.update_user_by_admin("name", new_name, user_id)
 
         if new_pass and confirm_pass and new_pass == confirm_pass:
             g.user.update_user_by_admin("password", new_pass, user_id)
 
         if new_cred:
-            g.user.update_user_by_admin("cred", new_cred, None, user_id)
+            g.user.update_user_by_admin("cred", new_cred, user_id)
 
         return redirect(url_for("admin.admin_page"))
 
-    user = g.user.get_user_by_admin(userId=user_id)
+    user = g.user.get_user_by_id(userId=user_id)
     return render_template("admin_edit_user.html", user=user.get("name"))
 
 

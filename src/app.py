@@ -15,7 +15,7 @@ from blueprints.user import user_bp
 from blueprints.user import inscriptions_bp
 from blueprints.contents import contents_bp
 from blueprints.admin import admin_bp
-
+from blueprints.professor import professor_bp
 
 def create_app() -> Flask:
     app = Flask(
@@ -49,7 +49,7 @@ def create_app() -> Flask:
     app.register_blueprint(inscriptions_bp)
     app.register_blueprint(contents_bp)
     app.register_blueprint(admin_bp)
-
+    app.register_blueprint(professor_bp)
     return app
 
 
