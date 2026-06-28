@@ -4,7 +4,7 @@ import google.auth.transport.requests as goo_request
 from flask import redirect, render_template, request, session, url_for
 from google_auth_oauthlib.flow import Flow
 
-from src.controller.apis.google.google_login_api import client_ifo, google_config
+from apis.google.google_login_api import client_ifo, google_config
 from src.controller.users.user_default import Create_Account, Login_Account, check_user
 from extensions import make_session_from_dbuser, save_google_picture
 

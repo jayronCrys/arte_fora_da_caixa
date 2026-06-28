@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Arte Fora da Caixa{% endblock %}</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+
+  <style>
+    /* ══════════════════════════════════════════
+       CONFIGURAÇÕES E ESTRUTURA BASE
+    ══════════════════════════════════════════ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg, #f8fafc);
+      font-family: var(--font-body), 'DM Sans', sans-serif;
+      color: var(--text-primary, #1e293b);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    .site-main-content {
+      flex: 1;
+      width: 100%;
+    }
+
+    /* ══════════════════════════════════════════
+       HEADER (APENAS LOGO E PERFIL)
+    ══════════════════════════════════════════ */
+    .header {
+      background: var(--bg-card, #ffffff);
+      border-bottom: 1px solid var(--border-light, #e2e8f0);
+      padding: 14px 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    .header-logo {
+      font-family: var(--font-display), 'Plus Jakarta Sans', sans-serif;
+      font-weight: 800;
+      font-size: 1.2rem;
+      color: var(--text-primary, #1e293b);
+      text-decoration: none;
+    }
+    .header-user {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      border-radius: 40px;
+      padding: 6px 14px 6px 6px;
+      transition: background 0.2s ease;
+    }
+    .header-user:hover { 
+      background: rgba(0, 0, 0, 0.03); 
+    }
+    .header-avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid var(--border-light, #e2e8f0);
+    }
+    .header-user-info {
+      display: flex;
+      flex-direction: column;
+    }
+    .header-user-name {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-primary, #1e293b);
+      line-height: 1.2;
+    }
+    .header-user-email {
+      font-size: 11px;
+      color: var(--text-secondary, #64748b);
+    }
+
+    /* ══════════════════════════════════════════
+       FOOTER GLOBAL
+    ══════════════════════════════════════════ */
+    .global-footer { 
+      background: var(--gradient-diagonal, linear-gradient(135deg, #ff7a00 0%, #00c853 100%)); 
+      color: white; 
+      padding: 28px 24px 20px; 
+      margin-top: auto; 
+      position: relative; 
+      overflow: hidden; 
+    }
+    .global-footer::after { 
+      content: ""; 
+      position: absolute; 
+      inset: 0; 
+      background: radial-gradient(circle at 70% 30%, rgba(255,255,255,0.06) 0%, transparent 60%); 
+      pointer-events: none; 
+    }
+    .footer-content { 
+      max-width: 1200px; 
+      margin: 0 auto; 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      flex-wrap: wrap; 
+      gap: 20px; 
+      position: relative; 
+      z-index: 1; 
+    }
+    .footer-brand { 
+      font-family: var(--font-display), 'Plus Jakarta Sans', sans-serif; 
+      font-size: 18px; 
+      font-weight: 800; 
+    }
+    .footer-info { 
+      font-size: 13px; 
+      opacity: 0.9; 
+      display: flex; 
+      gap: 24px; 
+      flex-wrap: wrap; 
+      align-items: center; 
+    }
+    .footer-info span { 
+      display: flex; 
+      align-items: center; 
+      gap: 6px; 
+    }
+    .footer-bottom { 
+      text-align: center; 
+      font-size: 12px; 
+      opacity: 0.7; 
+      margin-top: 16px; 
+      position: relative; 
+      z-index: 1; 
+    }
+
+    @media (max-width: 768px) {
+      .header { padding: 12px 16px; }
+      .footer-content { flex-direction: column; text-align: center; }
+      .footer-info { justify-content: center; gap: 12px; }
+    }
+  </style>
+  
+  {% block styles %}{% endblock %}
+</head>
+<body>
+
+  <header class="header">
+    <a href="/contents" class="header-logo">Arte Fora da Caixa</a>
+    <div class="header-user" onclick="location.href='{{ url_for('user.user') }}'">
+      <img class="header-avatar" src="{{ url_for('static', filename=session.get('picture')) if session.get('picture') else url_for('static', filename='default_profile.png') }}" alt="Avatar" />
+      <div class="header-user-info">
+        <span class="header-user-name">{{ session.get("name") or 'Usuário Exemplo' }}</span>
+        {% if session.get("email") %}<span class="header-user-email">{{ session.get("email") }}</span>{% endif %}
+      </div>
+    </div>
+  </header>
+
+  <main class="site-main-content">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="global-footer">
+    <div class="footer-content">
+      <div class="footer-brand">Arte Fora da Caixa</div>
+      <div class="footer-info">
+        <span>📞 (11) 99999-9999</span>
+        <span>✉️ contato@arteforadacaixa.com.br</span>
+        <span>📍 São Paulo, Brasil</span>
+      </div>
+    </div>
+    <div class="footer-bottom">© 2026 Arte Fora da Caixa — Todos os direitos reservados</div>
+  </footer>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -2,356 +2,41 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>Editar Conteúdo</title>
+  <title>Editar Conteúdo — Arte Fora da Caixa</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <!-- Design System -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
   <style>
-    :root {
-      --orange: #ff7a00;
-      --green:  #00c853;
-      --red:    #ff3b30;
-      --bg:     #f5f5f7;
-      --card:   #ffffff;
-      --text:   #111111;
-      --muted:  #666666;
-      --border: #e2e8f0;
-      --input-bg: #f8fafc;
-    }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      font-family: "DM Sans", sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      text-rendering: optimizeLegibility;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-    }
-
-    /* ── Header ── */
-    header {
-      background: #fff;
-      border-bottom: 1px solid var(--border);
-      padding: 16px 20px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-
-    .logo {
-      font-family: "Plus Jakarta Sans", sans-serif;
-      font-size: 18px;
-      font-weight: 800;
-      background: linear-gradient(90deg, var(--orange), var(--green));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      letter-spacing: -0.3px;
-    }
-
-    .back-btn {
-      background: linear-gradient(90deg, var(--orange), var(--green));
-      color: white;
-      padding: 8px 16px;
-      border-radius: 20px;
-      font-size: 13px;
-      font-weight: 600;
-      text-decoration: none;
-      transition: opacity .15s, transform 0.1s;
-    }
-    .back-btn:hover { opacity: .85; }
-    .back-btn:active { transform: scale(0.97); }
-
-    /* ── Hero banner do conteúdo ── */
-    .content-hero {
-      height: 180px;
-      background: linear-gradient(135deg, var(--orange), var(--green));
-      position: relative;
-      overflow: hidden;
-    }
-    .content-hero img {
-      width: 100%; height: 100%;
-      object-fit: cover;
-    }
-    .content-hero::after {
-      content: "";
-      position: absolute; inset: 0;
-      background: linear-gradient(to bottom, transparent 20%, rgba(0,0,0,0.65));
-    }
-    .hero-info {
-      position: absolute;
-      bottom: 18px; left: 20px; right: 20px;
-      z-index: 1;
-      min-width: 0;
-    }
-    .hero-type {
-      display: inline-block;
-      background: rgba(255,255,255,0.22);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      border: 1px solid rgba(255,255,255,0.3);
-      color: #fff;
-      font-size: 10px;
-      font-weight: 700;
-      padding: 3px 10px;
-      border-radius: 20px;
-      text-transform: uppercase;
-      letter-spacing: .5px;
-      margin-bottom: 8px;
-      font-family: "Plus Jakarta Sans", sans-serif;
-    }
-    .hero-title {
-      font-family: "Plus Jakarta Sans", sans-serif;
-      font-size: 24px;
-      font-weight: 800;
-      color: #fff;
-      line-height: 1.2;
-      text-shadow: 0 2px 10px rgba(0,0,0,0.35);
-      overflow-wrap: break-word;
-      word-break: break-word;
-    }
-    .hero-date {
-      font-size: 12px;
-      color: rgba(255,255,255,0.8);
-      margin-top: 5px;
-      font-weight: 500;
-    }
-
-    /* ── Page ── */
-    .page {
-      max-width: 650px;
+    /* Container amplo para ocupar mais de 80% da tela */
+    .edit-content-wrapper {
+      width: 90%;
+      max-width: 1100px;
       margin: 0 auto;
-      padding: 30px 16px 80px;
+      padding: 30px 0 60px;
     }
-
-    /* ── Seção ── */
-    .section {
-      background: var(--card);
-      border-radius: 16px;
-      padding: 24px;
-      margin-bottom: 20px;
-      border: 1px solid var(--border);
-      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
-    }
-
-    .section-title {
-      font-family: "Plus Jakarta Sans", sans-serif;
-      font-size: 13px;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: .5px;
-      color: #94a3b8;
-      margin-bottom: 20px;
-    }
-
-    /* ── Campo ── */
-    .field { margin-bottom: 20px; }
-    .field:last-child { margin-bottom: 0; }
-
-    .field label {
-      display: block;
-      font-size: 12px;
-      font-weight: 700;
-      color: #475569;
-      text-transform: uppercase;
-      letter-spacing: .5px;
-      margin-bottom: 8px;
-    }
-
-    input[type="text"],
-    textarea,
-    select {
-      width: 100%;
-      padding: 12px 16px;
-      border: 1.5px solid var(--border);
-      border-radius: 12px;
-      background: var(--input-bg);
-      font-family: "DM Sans", sans-serif;
-      font-size: 14px;
-      color: var(--text);
-      transition: border-color .18s, background .18s, box-shadow .18s;
-      outline: none;
-      -webkit-appearance: none;
-      -moz-appearance: none;
-      appearance: none;
-    }
-
-    select {
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23475569'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 16px center;
-      background-size: 16px;
-      cursor: pointer;
-    }
-
-    input[type="text"]:focus,
-    textarea:focus,
-    select:focus {
-      border-color: var(--orange);
-      background: #fff;
-      box-shadow: 0 0 0 4px rgba(255, 122, 0, 0.08);
-    }
-
-    textarea { 
-      resize: vertical; 
-      min-height: 120px; 
-      max-height: 220px; 
-      overflow-y: auto; 
-      line-height: 1.5; 
-    }
-
-    /* Áreas de Upload */
-    .upload-area {
-      border: 2px dashed #cbd5e1;
-      border-radius: 12px;
-      padding: 24px 20px;
-      text-align: center;
-      cursor: pointer;
-      transition: border-color .18s, background .18s;
-      background: var(--input-bg);
-    }
-    .upload-area:hover { border-color: var(--orange); background: rgba(255,122,0,0.02); }
-    .upload-area input { display: none; }
-    .upload-icon { font-size: 30px; margin-bottom: 6px; }
-    .upload-text { font-size: 13px; color: #334155; font-weight: 500; }
-    .upload-hint { font-size: 11px; color: #94a3b8; margin-top: 4px; }
-    
-    .file-status {
-      font-size: 12px;
-      color: var(--green);
-      font-weight: 600;
-      margin-top: 8px;
-      display: none;
-    }
-
-    /* ── Abas de Banner ── */
-    .banner-tabs {
-      display: flex; gap: 8px; margin-bottom: 15px;
-    }
-    .tab-btn {
-      flex: 1; padding: 10px; border-radius: 10px;
-      border: 1.5px solid var(--border); background: #f8fafc;
-      font-family: "DM Sans", sans-serif;
-      font-size: 13px; font-weight: 600; cursor: pointer;
-      transition: all .18s; color: #475569;
-    }
-    .tab-btn.active {
-      border-color: var(--orange);
-      background: #fff5ee; color: var(--orange);
-    }
-    .tab-panel { display: none; }
-    .tab-panel.active { display: block; }
-
-    /* ── Galeria de Banners Padrão ── */
-    .banner-gallery {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-      gap: 10px;
-    }
-    .banner-opt { display: none; }
-    .banner-opt-label {
-      display: block; cursor: pointer;
-      border: 2px solid transparent; border-radius: 10px;
-      overflow: hidden; transition: border-color .18s;
-    }
-    .banner-opt:checked + .banner-opt-label {
-      border-color: var(--orange);
-      box-shadow: 0 0 0 3px rgba(255,122,0,.15);
-    }
-    .banner-opt-label img {
-      width: 100%; height: 65px;
-      object-fit: cover; display: block;
-      border-radius: 8px 8px 0 0;
-    }
-    .banner-opt-label span {
-      display: block; text-align: center;
-      font-size: 11px; padding: 6px 4px; color: #475569;
-      background: #f8fafc; font-weight: 500;
-    }
-
-    /* ── Erro ── */
-    .error-box {
-      background: #fef2f2;
-      border: 1px solid #fca5a5;
-      border-radius: 12px;
-      padding: 14px 18px;
-      color: var(--red);
-      font-size: 14px;
-      font-weight: 600;
-      margin-bottom: 20px;
+    /* Botões lado a lado com mesma largura */
+    .action-buttons {
       display: flex;
-      align-items: center;
-      gap: 10px;
+      gap: 16px;
+      margin-top: 12px;
+      flex-wrap: wrap;
     }
-
-    /* ── GERENCIAMENTO PADRÃO DE BOTÕES ── */
-    .btn-save {
-      width: 100%;
-      padding: 15px;
-      border: none;
-      border-radius: 14px;
-      background: linear-gradient(90deg, var(--orange), var(--green));
-      color: white;
-      font-family: "Plus Jakarta Sans", sans-serif;
-      font-size: 15px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: opacity .15s, transform .1s;
-      margin-bottom: 12px;
+    .action-buttons > * {
+      flex: 1;
     }
-    .btn-save:hover  { opacity: .92; }
-    .btn-save:active { transform: scale(.98); }
-
-    /* Novo Botão de Excluir Padronizado */
-    .delete-btn {
-      width: 100%;
-      padding: 15px;
-      border: none;
-      border-radius: 14px;
-      background: linear-gradient(90deg, #e63946, #ff7a00);
-      color: #ffffff;
-      font-family: "Plus Jakarta Sans", sans-serif;
-      font-size: 15px;
-      font-weight: 700;
-      cursor: pointer;
-      box-shadow: 0 4px 12px rgba(230, 57, 70, 0.15);
-      transition: opacity .15s, transform .1s, box-shadow .2s;
-      margin-bottom: 12px;
-    }
-    .delete-btn:hover { 
-      opacity: .92;
-      box-shadow: 0 6px 16px rgba(230, 57, 70, 0.3);
-    }
-    .delete-btn:active { transform: scale(.98); }
-
-    .btn-back {
-      display: block;
-      width: 100%;
-      padding: 15px;
-      border-radius: 14px;
-      background: #e2e8f0;
-      color: #475569;
-      font-family: "DM Sans", sans-serif;
-      font-size: 14px;
-      font-weight: 600;
-      text-align: center;
-      text-decoration: none;
-      transition: background .15s, color .15s, transform .1s;
-    }
-    .btn-back:hover { background: #cbd5e1; color: #1e293b; }
-    .btn-back:active { transform: scale(.98); }
   </style>
 </head>
 <body>
 
-<header>
-  <span class="logo">Arte Fora da Caixa</span>
-  <a href="/contents/redirect_publications" class="back-btn">← Voltar</a>
+<header class="header">
+  <span class="header-logo">Arte Fora da Caixa</span>
+  <a href="/contents/redirect_publications" class="btn btn-outline btn-sm">← Voltar</a>
 </header>
  
 <div class="content-hero">
@@ -360,48 +45,51 @@
   {% else %}
     <img id="hero-img" src="" alt="Banner" style="display: none;">
   {% endif %}
-  <div class="hero-info">
+  <div class="content-hero-overlay"></div>
+  <div class="content-hero-info">
     {% if content.content_type %}
-      <div class="hero-type">{{ content.content_type }}</div>
+      <div class="content-hero-type">{{ content.content_type }}</div>
     {% endif %}
-    <div id="hero-title-preview" class="hero-title">{{ content.title }}</div>
+    <div id="hero-title-preview" class="content-hero-title">{{ content.title }}</div>
     {% if content.creation_date %}
-      <div class="hero-date">
+      <div class="content-hero-date">
         Publicado em {{ content.creation_date.strftime('%d/%m/%Y') if content.creation_date is not string else content.creation_date[:10] }}
       </div>
     {% endif %}
   </div>
 </div>
 
-<div class="page">
+<div class="edit-content-wrapper">
 
   {% if error %}
-    <div class="error-box">⚠️ {{ error }}</div>
+    <div style="background: #fef2f2; border: 1px solid #fca5a5; border-radius: 12px; padding: 14px 18px; color: #e63946; font-size: 14px; font-weight: 600; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+      ⚠️ {{ error }}
+    </div>
   {% endif %}
 
   <form method="POST" enctype="multipart/form-data" id="edit-form"
         action="{{ url_for('contents.edit_content', content_id=content.id) }}">
 
-    <div class="section">
-      <div class="section-title">Informações Básicas</div>
+    <div class="form-section">
+      <div class="form-section-title">Informações Básicas</div>
 
-      <div class="field">
-        <label>Título da Publicação</label>
-        <input type="text" id="input-title" name="new_title" value="{{ content.title }}" placeholder="Digite o título..." oninput="updateHeroTitle(this.value)">
+      <div class="form-field">
+        <label class="form-label" for="input-title">Título da Publicação</label>
+        <input type="text" id="input-title" name="new_title" class="form-input" value="{{ content.title }}" placeholder="Digite o título..." oninput="updateHeroTitle(this.value)">
       </div>
 
-      <div class="field">
-        <label>Descrição</label>
-        <textarea name="new_desc" placeholder="Digite a descrição...">{{ content.desc }}</textarea>
+      <div class="form-field">
+        <label class="form-label" for="desc-textarea">Descrição</label>
+        <textarea id="desc-textarea" name="new_desc" class="form-textarea" placeholder="Digite a descrição...">{{ content.desc }}</textarea>
       </div>
     </div>
 
-    <div class="section">
-      <div class="section-title">Parâmetros e Mídia</div>
+    <div class="form-section">
+      <div class="form-section-title">Parâmetros e Mídia</div>
 
-      <div class="field">
-        <label>Tipo de Conteúdo</label>
-        <select name="content_type">
+      <div class="form-field">
+        <label class="form-label" for="content-type-select">Tipo de Conteúdo</label>
+        <select id="content-type-select" name="content_type" class="form-select">
           <option value="" disabled selected>Selecione um tipo...</option>
           {% for v, label, _ in content_types %}
             <option value="{{ v }}" {% if content.content_type == v %}selected{% endif %}>{{ label }}</option>
@@ -409,52 +97,52 @@
         </select>
       </div>
 
-      <div class="field">
-        <label>Documento PDF</label>
+      <div class="form-field">
+        <label class="form-label">Documento PDF</label>
         <div class="upload-area" onclick="document.getElementById('pdf-input').click()">
-          <div class="upload-icon">📄</div>
-          <div class="upload-text">Clique para substituir o PDF atual</div>
-          <div class="upload-hint">Somente arquivos .pdf</div>
-          <div id="pdf-name" class="file-status"></div>
+          <div class="upload-area-icon">📄</div>
+          <div class="upload-area-text">Clique para substituir o PDF atual</div>
+          <div class="upload-area-hint">Somente arquivos .pdf</div>
+          <div id="pdf-name" class="upload-status"></div>
           <input type="file" id="pdf-input" name="file" accept="application/pdf" onchange="onPdfChosen(this)">
         </div>
       </div>
 
-      <div class="field">
-        <label>Alterar Capa (Banner)</label>
+      <div class="form-field">
+        <label class="form-label">Alterar Capa (Banner)</label>
         
-        <div class="banner-tabs">
-          <button type="button" class="tab-btn active" id="btn-tab-default" onclick="switchTab('default')">
+        <div class="sub-filter-bar" style="margin-bottom: 14px;">
+          <button type="button" class="sub-filter-btn active" id="btn-tab-default" onclick="switchBannerTab('default')">
             🎨 Banners do site
           </button>
-          <button type="button" class="tab-btn" id="btn-tab-own" onclick="switchTab('own')">
+          <button type="button" class="sub-filter-btn" id="btn-tab-own" onclick="switchBannerTab('own')">
             📁 Enviar meu banner
           </button>
         </div>
 
-        <div class="tab-panel active" id="tab-default">
-          <div class="banner-gallery">
+        <div id="tab-default" style="display: block;">
+          <div class="type-grid" style="grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));">
             {% for b in default_banners %}
             <div>
-              <input class="banner-opt" type="radio" name="new_banner_id"
+              <input class="type-radio" type="radio" name="new_banner_id"
                      id="banner-{{ b.id }}" value="{{ b.id }}"
                      {% if content.banner == b.id %}checked{% endif %}
                      onchange="onDefaultBannerChange('{{ b.id }}')">
-              <label class="banner-opt-label" for="banner-{{ b.id }}">
-                <img src="{{ url_for('contents.get_banner_default', banner_id=b.id) }}" alt="{{ b.label }}">
-                <span>{{ b.label }}</span>
+              <label class="type-label" for="banner-{{ b.id }}" style="padding: 0; overflow: hidden; gap: 0;">
+                <img src="{{ url_for('contents.get_banner_default', banner_id=b.id) }}" alt="{{ b.label }}" style="width:100%; height:55px; object-fit:cover; border-radius:8px 8px 0 0;">
+                <span style="display:block; text-align:center; font-size:10px; padding:5px; color:#475569; background:#f8fafc;">{{ b.label }}</span>
               </label>
             </div>
             {% endfor %}
           </div>
         </div>
 
-        <div class="tab-panel" id="tab-own">
+        <div id="tab-own" style="display: none;">
           <div class="upload-area" onclick="document.getElementById('banner-input').click()">
-            <div class="upload-icon">🖼️</div>
-            <div class="upload-text">Clique para carregar uma imagem do seu dispositivo</div>
-            <div class="upload-hint">Formatos: JPG, PNG, WEBP (Máx. 2 MB)</div>
-            <div id="banner-name" class="file-status"></div>
+            <div class="upload-area-icon">🖼️</div>
+            <div class="upload-area-text">Clique para carregar uma imagem do seu dispositivo</div>
+            <div class="upload-area-hint">Formatos: JPG, PNG, WEBP (Máx. 2 MB)</div>
+            <div id="banner-name" class="upload-status"></div>
             <input type="file" id="banner-input" name="new_banner_file" accept="image/jpeg,image/png,image/webp" onchange="onBannerChosen(this)">
           </div>
         </div>
@@ -464,16 +152,20 @@
 
     </div>
 
-    <button class="btn-save" type="submit">Salvar alterações</button>
-
+    <button class="btn btn-primary btn-block btn-lg" type="submit">Salvar alterações</button>
   </form>
 
-  <form method="POST" action="/delete_content/{{ content.id }}" style="margin: 0;" onsubmit="return confirm('Tem certeza que deseja excluir esta publicação?');">
-    <button type="submit" class="delete-btn">Excluir Publicação</button>
-  </form>
-
-  <a href="/contents/redirect_publications" class="btn-back">Cancelar</a>
+  <div class="action-buttons">
+    <form method="POST" action="/delete_content/{{ content.id }}" onsubmit="return confirm('Tem certeza que deseja excluir esta publicação?');">
+      <button type="submit" class="btn btn-danger btn-block">Excluir Publicação</button>
+    </form>
+    <a href="/contents/redirect_publications" class="btn btn-muted btn-block">Cancelar</a>
+  </div>
 </div>
+
+<footer class="footer">
+  © 2025 Arte Fora da Caixa — Todos os direitos reservados
+</footer>
 
 <script>
   const BANNER_URLS = {
@@ -491,15 +183,15 @@
     }
   }
 
-  function switchTab(tab) {
+  function switchBannerTab(tab) {
     bannerMode = tab;
     document.getElementById("banner-mode-input").value = tab;
 
     document.getElementById("btn-tab-default").classList.toggle("active", tab === "default");
     document.getElementById("btn-tab-own").classList.toggle("active", tab === "own");
     
-    document.getElementById("tab-default").classList.toggle("active", tab === "default");
-    document.getElementById("tab-own").classList.toggle("active", tab === "own");
+    document.getElementById("tab-default").style.display = tab === "default" ? "block" : "none";
+    document.getElementById("tab-own").style.display = tab === "own" ? "block" : "none";
 
     if (tab === "default") {
       const checked = document.querySelector('input[name="new_banner_id"]:checked');

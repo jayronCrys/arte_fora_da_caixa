@@ -6,16 +6,19 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from flask import Flask, send_from_directory
 from extensions import load_g_user
-from src.models.contents_models.rating_models import init_mongodb
+from src.models.mongo_models.rating_models import init_mongodb
 from flask_cors import CORS
-
+from flask_mail import Mail
 # Blueprints
 from blueprints.auth import auth_bp
+from blueprints.auth import forg_pass_bp
 from blueprints.user import user_bp
 from blueprints.user import inscriptions_bp
 from blueprints.contents import contents_bp
 from blueprints.admin import admin_bp
 from blueprints.professor import professor_bp
+
+mail = Mail()
 
 def create_app() -> Flask:
     app = Flask(
@@ -24,6 +27,7 @@ def create_app() -> Flask:
         static_folder="view/static",
     )
     CORS(app)
+    
     app.secret_key = os.environ.get("FLASK_SECRET", "dev-secret")
 
     # 🌟 INICIALIZAÇÃO DO MONGO: Movido para dentro do ciclo de criação do App
@@ -45,6 +49,7 @@ def create_app() -> Flask:
 
     # ── Registro dos blueprints ───────────────────────────────────────────────
     app.register_blueprint(auth_bp)
+    app.register_blueprint(forg_pass_bp)
     app.register_blueprint(user_bp)
     app.register_blueprint(inscriptions_bp)
     app.register_blueprint(contents_bp)
@@ -68,5 +73,5 @@ if __name__ == "__main__":
     
     # create_app já vai rodar o init_mongodb() internamente agora!
     app = create_app()
-    
+    mail.init_app(app)
     app.run(debug=True, port=8080, host="0.0.0.0")

@@ -10,6 +10,12 @@ from src.models.passwords import compare_password as compare
 from src.models.contents_models.content_models import Contents
 from src.models.users_models.user_models import User, UserCred
 from src.models.db_mongo_execute import delete_comment, get_comment_by_id, suspend_comment
+from src.controller.storage.s3_content_storage import (
+    create_content_storage,
+    replace_content_pdf,
+    upload_content_banner,
+    delete_content_storage,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +23,9 @@ class Management_Admins(Management_User_Default):
     def __init__(self, Account, database=database):
         super().__init__(Account, database)
         self.validFields = ["name", "email", "password", "cred"]
-        self.contentValidFields = ["desc", "title", "banner", "pdf", "content_type"]
+        # Removido "pdf" (a Contents não guarda mais binário) e adicionados
+        # os campos da nova arquitetura de storage no S3.
+        self.contentValidFields = ["desc", "title", "banner", "content_type", "s3_uuid", "total_paginas"]
         self.userRole = self.user.get("cred") if isinstance(self.user, dict) else None
 
     # Mapeamento para evitar repetição de if/else de credenciais
@@ -212,8 +220,10 @@ class Management_Admins(Management_User_Default):
                   
     @admin_required
     def get_content_by_admin(self, contentId):
+        # Como nenhuma lista de colunas é passada, select_info retorna todas
+        # as colunas da tabela — já inclui s3_uuid e total_paginas
+        # automaticamente, sem precisar listar campo a campo aqui.
         conn = self.dataBase()
-        print("<><><><><><><><>content id", type(contentId))
         try:
             return select_info(conn, Contents, "id", uuid.UUID(contentId))
         except Exception as e:
@@ -235,19 +245,26 @@ class Management_Admins(Management_User_Default):
             
     @admin_required
     def publish_content_by_admin(self, content, authorName):
+        """
+        Espera um dicionário 'content' já com os metadados de storage
+        calculados (s3_uuid/total_paginas/banner), por exemplo o retorno de
+        upload_content_pdf_by_admin(). Apenas persiste a referência no banco
+        relacional — nenhum binário é guardado aqui.
+        """
         conn = self.dataBase()
         try:
             author = select_info(conn, User, "name", authorName)
             if content and author:
                 author_name = author.get("name")                
                 db_task = insert_info(conn, Contents, {
-                    "title":        content.get("title"),
-                    "desc":         content.get("desc"),
-                    "banner":       content.get("banner"),
-                    "content_type": content.get("content_type"),
-                    "pdf":          content.get("pdf"),
-                    "author":       str(author_name),
-                    "publisher_id": uuid.UUID(self.userId)
+                    "title":         content.get("title"),
+                    "desc":          content.get("desc"),
+                    "banner":        content.get("banner"),
+                    "content_type":  content.get("content_type"),
+                    "s3_uuid":       content.get("s3_uuid"),
+                    "total_paginas": content.get("total_paginas"),
+                    "author":        str(author_name),
+                    "publisher_id":  uuid.UUID(self.userId)
                 })
                 if db_task:
                     content_obj = conn.query(Contents).filter_by(
@@ -261,16 +278,75 @@ class Management_Admins(Management_User_Default):
             return False
         finally:
             conn.close()
-                   
+
+    @admin_required
+    def upload_content_pdf_by_admin(self, pdf_bytes):
+        """
+        Sobe um PDF novo para o S3 (upload + fatiamento). Não toca no banco
+        relacional — retorna os metadados (s3_uuid/total_paginas/url_base_s3)
+        para quem chamar decidir entre publicar (insert) ou atualizar (update).
+        """
+        try:
+            return create_content_storage(pdf_bytes)
+        except Exception as e:
+            logger.error(f"Erro ao subir PDF para o S3: {e}")
+            return False
+
+    @admin_required
+    def replace_content_pdf_by_admin(self, contentId, pdf_bytes):
+        """
+        Substitui o PDF de um conteúdo já publicado: sobe o novo material em
+        um diretório novo, remove o antigo do S3 e atualiza s3_uuid/
+        total_paginas no banco relacional.
+        """
+        content = self.get_content_by_admin(contentId)
+        if not content:
+            return False
+
+        old_s3_uuid = content.get("s3_uuid")
+
+        try:
+            new_data = replace_content_pdf(old_s3_uuid, pdf_bytes)
+        except Exception as e:
+            logger.error(f"Erro ao substituir PDF do conteúdo {contentId}: {e}")
+            return False
+
+        ok_uuid = self.update_contents_by_admin("s3_uuid", contentId, new_data["s3_uuid"])
+        ok_paginas = self.update_contents_by_admin("total_paginas", contentId, new_data["total_paginas"])
+        return bool(ok_uuid and ok_paginas)
+
+    @admin_required
+    def upload_content_banner_by_admin(self, contentId, banner_filename, banner_bytes):
+        """
+        Sobe/atualiza o banner customizado de um conteúdo e já salva a nova
+        URL no banco relacional.
+        """
+        content = self.get_content_by_admin(contentId)
+        if not content:
+            return False
+
+        s3_uuid = content.get("s3_uuid")
+        if not s3_uuid:
+            logger.warning(f"Conteúdo {contentId} ainda não possui s3_uuid; não é possível anexar banner.")
+            return False
+
+        try:
+            banner_url = upload_content_banner(s3_uuid, banner_filename, banner_bytes)
+        except Exception as e:
+            logger.error(f"Erro ao subir banner do conteúdo {contentId}: {e}")
+            return False
+
+        return self.update_contents_by_admin("banner", contentId, banner_url)
+
     @admin_required
     def update_contents_by_admin(self, columnUpdate, contentId, newValue):
-        if not newValue or not contentId or not columnUpdate:
+        if newValue is None or not contentId or not columnUpdate:
             return False
             
         if columnUpdate not in self.contentValidFields:
             return False
-        
-        if columnUpdate == "pdf" and not isinstance(newValue, bytes):
+
+        if columnUpdate == "total_paginas" and not isinstance(newValue, int):
             return False
         
         conn = self.dataBase()
@@ -294,14 +370,32 @@ class Management_Admins(Management_User_Default):
                     
     @admin_required
     def delete_contents_by_admin(self, contentId):
+        """
+        Remove o conteúdo do banco relacional e, em seguida, limpa o
+        diretório correspondente no S3 (PDF original, páginas e banner).
+        A ordem importa: só tentamos limpar o S3 depois que a remoção do
+        banco for confirmada, para nunca deixar um registro "fantasma"
+        apontando para arquivos já apagados.
+        """
         if not contentId:
             return False
             
-        try:                              
-            conn = self.dataBase()
-            if select_info(conn, Contents, "id", uuid.UUID(contentId)):
-                return delete_info(conn, Contents, "id", uuid.UUID(contentId))                                   
-            return False
+        conn = self.dataBase()
+        try:
+            content = select_info(conn, Contents, "id", uuid.UUID(contentId))
+            if not content:
+                return False
+
+            s3_uuid = content.get("s3_uuid")
+
+            deleted = delete_info(conn, Contents, "id", uuid.UUID(contentId))
+            if deleted and s3_uuid:
+                if not delete_content_storage(s3_uuid):
+                    logger.warning(
+                        f"Conteúdo {contentId} removido do banco, mas falhou a limpeza "
+                        f"do diretório S3 ({s3_uuid})."
+                    )
+            return deleted
         except Exception as e:
             logger.error(f"Erro ao deletar conteúdo {contentId}: {e}")
             return False
@@ -368,5 +462,3 @@ class Management_Admins(Management_User_Default):
         except Exception as e:
             logger.error(f"Erro ao coletar analytics globais da plataforma: {e}")
             return False
-    
-        

@@ -8,7 +8,7 @@ Base = declarative_base()
 
 # Engine e fábrica de sessões
 # -> alterar a URI pra a que vcs forem usar
-engine = create_engine("sqlite:///__arte_.db", echo=False)
+engine = create_engine("sqlite:///__arte__A.db", echo=False)
 
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 

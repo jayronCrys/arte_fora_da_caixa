@@ -4,20 +4,81 @@ import logging
 from uuid import UUID
 from functools import wraps
 from typing import Union, Tuple
+from datetime import datetime
 
-from src.controller.apis.google.google_login_api import client_ifo
-from src.models.passwords import make_hash
-from src.models.passwords import compare_password as compare
+from apis.google.google_login_api import client_ifo
+
+from src.models.passwords import make_hash, compare_password as compare
+
 from src.models.database import get_session as database
+
 from src.models.db_execute import insert_info, select_info, delete_info, update_info
+
 from src.models.contents_models.content_models import Contents
+
 from src.models.users_models.user_models import User
+
 from src.models.relationships_models.inscriptions import Subs
-from src.models.db_mongo_execute import get_comments, get_reviews, new_comment, new_review, remove_content_inscription, get_comment_by_id, update_comment_and_review, get_comment_by_user_id
-from src.Logs.terminal_logs import sucesfull_log, check_api, check_task, warning_log, error_log
+
+from src.models.db_mongo_execute import (
+    get_comments,
+    get_reviews,
+    new_comment,
+    new_review, 
+    remove_content_inscription,
+    get_comment_by_id, 
+    update_comment_and_review,
+    delete_comment,
+    get_comment_by_user_id
+)
+
+from src.Logs.terminal_logs import(
+    sucesfull_log,
+    check_api,
+    check_task,
+    warning_log,
+    error_log
+)  
+
+from src.controller.storage.s3_content_storage import generate_pdf_download_url, generate_pdf_view_url, build_pages_base_url
 
 logger = logging.getLogger(__name__)
+# src/controller/users/user_default.py (adicione ao final, fora das classes)
 
+def reset_user_password(user_id, new_password):
+    """
+    Altera a senha de um usuário sem exigir login.
+    Retorna True se bem-sucedido, False em caso de erro.
+    """
+    conn = database()
+    try:
+        # Verifica existência
+        user = check_user(user_id, dataBase=database, column="id")
+        if not user:
+            logger.warning(f"Tentativa de redefinir senha de usuário inexistente: {user_id}")
+            return False
+
+        # Hash da nova senha (reaproveita lógica do Create_Account)
+        hashed = make_hash(new_password)
+
+        # Atualiza no banco
+        ok = update_info(conn, User, "password", hashed, "id", user_id)
+        if ok:
+            logger.info(f"Senha do usuário {user_id} redefinida com sucesso.")
+            return True
+        else:
+            logger.error(f"Falha ao atualizar senha do usuário {user_id}")
+            return False
+    except Exception as e:
+        logger.error(f"Erro ao redefinir senha: {e}")
+        try:
+            conn.rollback()
+        except:
+            pass
+        return False
+    finally:
+        conn.close()
+        
 
 def check_user(search, dataBase=database, column="name"):
     """
@@ -170,7 +231,7 @@ class Login_Account:
 
     @staticmethod
     def is_loged(func):
-        @wraps(func)  # Corrigido: Agora preserva metadados da função original
+        @wraps(func)
         def wrapper(self, *args, **kwargs):
             if self.isLoged and self.user:
                 return func(self, *args, **kwargs)
@@ -250,7 +311,22 @@ class Management_User_Default(Login_Account):
         super().__init__(account, dataBase)
         self.get_infor_user_verif(account)
         self.manager_fields = ["name", "email", "password", "picture", "subs"]
-    #______________________USER________________________
+    
+    _cache = {}          # { chave: (valor, timestamp) }
+
+    @classmethod
+    def _cache_get(cls, key, ttl_seconds=300):
+        if key in cls._cache:
+            value, timestamp = cls._cache[key]
+            if (datetime.now() - timestamp).total_seconds() < ttl_seconds:
+                return value
+            del cls._cache[key]
+        return None
+
+    @classmethod
+    def _cache_set(cls, key, value):
+        cls._cache[key] = (value, datetime.now())
+        
     @Login_Account.is_loged
     def get_user(self):
         return self.user
@@ -279,15 +355,15 @@ class Management_User_Default(Login_Account):
             newValue1 = checker.userName
 
         elif field == "password":
-            checker = Create_Account(self.dataBase)
-            if not checker.create_user_pass(newValue1, newValue2):
-                logger.warning("Nova senha não atende aos requisitos.")
-                conn.close()
-                return False
-            
             real_value = check_user(self.userId, self.dataBase, "id")
             if real_value and compare(newValue1, real_value.get("password")):
                 logger.error("A nova senha não pode ser idêntica à atual.")
+                conn.close()
+                return False
+
+            checker = Create_Account(self.dataBase)
+            if not checker.create_user_pass(newValue1, newValue2):
+                logger.warning("Nova senha não atende aos requisitos.")
                 conn.close()
                 return False
             newValue1 = checker.userPass
@@ -327,7 +403,7 @@ class Management_User_Default(Login_Account):
             return False
         finally:
             conn.close()
-    #_____________________CONTENT_________________________
+
     @Login_Account.is_loged            
     def get_my_courses(self) -> list: 
         inscriptions = self.my_inscriptions()
@@ -337,9 +413,7 @@ class Management_User_Default(Login_Account):
         my_courses = []
         for inscription in inscriptions:
             content_id = inscription["content_id"]
-            # Ajustado para usar o nome do método corrigido em snake_case
             course = self.GET_FULL_CONTENT(all_contents=False, content_to_select=content_id, review=True)
-            
             if course and len(course) > 0:
                 my_courses.append(course[0])
                     
@@ -354,8 +428,13 @@ class Management_User_Default(Login_Account):
                 Contents,
                 "id",
                 UUID(str(contentId)),
-                ["id", "title", "desc", "banner", "content_type", "author", "creation_date", "publisher_id"]
+                ["id", "title", "desc", "banner", "content_type", "author", "creation_date",
+                 "publisher_id", "s3_uuid", "total_paginas"]
             )
+            if not content:
+                warning_log(f"[GET_CONTENT_BY_ID]: conteúdo {contentId} não encontrado")
+                return False
+
             sucesfull_log(f"[GET_CONTENT_BY_ID]: conteúdo retornado com sucesso {content['id']}")
             return content
             
@@ -366,101 +445,165 @@ class Management_User_Default(Login_Account):
             conn.close()
 
     @Login_Account.is_loged
-    def get_all_contents(self) -> Union[list, bool]:
+    def get_all_contents(self, limit=None, offset=None) -> Union[list, dict, bool]:
         conn = self.dataBase()
         try:
-            all_contents = conn.query(Contents).all()
-            return [{
-                "id":            str(c.id),
-                "title":         c.title,
-                "desc":          c.desc,
-                "banner":        c.banner,
-                "content_type":  c.content_type,
-                "author":        c.author,
-                "creation_date": c.creation_date,
-                "publisher_id":  str(c.publisher_id),
-            } for c in all_contents]
+            query = conn.query(Contents)
+            total = query.count()
+    
+            if limit is not None:
+                query = query.limit(limit)
+                if offset is not None:
+                    query = query.offset(offset)
+                all_contents = query.all()
+                items = [{
+                    "id":            str(c.id),
+                    "title":         c.title,
+                    "desc":          c.desc,
+                    "banner":        c.banner,
+                    "content_type":  c.content_type,
+                    "author":        c.author,
+                    "creation_date": c.creation_date,
+                    "publisher_id":  str(c.publisher_id),
+                    "s3_uuid":       c.s3_uuid,
+                    "total_paginas": c.total_paginas,
+                } for c in all_contents]
+                result_payload = {"items": items, "total": total}
+            else:
+                all_contents = query.all()
+                result_payload = [{
+                    "id":            str(c.id),
+                    "title":         c.title,
+                    "desc":          c.desc,
+                    "banner":        c.banner,
+                    "content_type":  c.content_type,
+                    "author":        c.author,
+                    "creation_date": c.creation_date,
+                    "publisher_id":  str(c.publisher_id),
+                    "s3_uuid":       c.s3_uuid,
+                    "total_paginas": c.total_paginas,
+                } for c in all_contents]
+            
+            return result_payload
         except Exception as e:
             logger.error(f"Erro ao listar todos os conteúdos: {e}")
             return False
-        finally:            
+        finally:
             conn.close()
-            
+                
     @Login_Account.is_loged            
     def get_content_by_name(self, content_name):
-        
         if not content_name:
             return []
             
         conn = self.dataBase()
-        # 1ª Tentativa: Busca exata
-        results = conn.query(Contents).filter_by(title=content_name).all()
-        
-        # 2ª Tentativa: Se não achou nada na busca exata, busca por aproximação direto no banco
-        if not results:
-            results = conn.query(Contents).filter(Contents.title.contains(content_name)).all()
-        temp_list = []
-        for result in results:
-            temp_json = {
-            "id": str(result.id),
-            "title": result.title,
-            "desc": result.desc,
-            "author": result.author
-            }
-            temp_list.append(temp_json)
-                        
-        return temp_list
-
+        try:
+            results = conn.query(Contents).filter_by(title=content_name).all()
+            if not results:
+                results = conn.query(Contents).filter(Contents.title.contains(content_name)).all()
+            
+            temp_list = []
+            for result in results:
+                temp_json = {
+                    "id": str(result.id),
+                    "title": result.title,
+                    "desc": result.desc,
+                    "author": result.author
+                }
+                temp_list.append(temp_json)
+            return temp_list
+        finally:
+            conn.close()
 
     @Login_Account.is_loged
-    def GET_FULL_CONTENT(self, all_contents=False, content_to_select=None, review=False) -> Union[list, bool]:
-        # Corrigido nome para snake_case conforme PEP 8
+    def GET_FULL_CONTENT(self, all_contents=False, content_to_select=None, review=False,
+                         limit=None, offset=None) -> Union[list, dict, bool]:
         if not all_contents and content_to_select:
             contents = [self.get_content_by_id(content_to_select)]
         elif all_contents and content_to_select is None:
-            contents = self.get_all_contents()
+            result = self.get_all_contents(limit=limit, offset=offset)
+            if not result:
+                return False
+            contents = result["items"]
+            total = result["total"]
         else:
             return False
-            
+
         full_content = []
         for content in contents:
             if not content:
                 continue
-                
             content_id = content["id"]
             if review:
                 content["rating"] = self.get_content_review(content_id)
-            
+            if content.get("s3_uuid") and not content.get("url_base_s3"):
+                content["url_base_s3"] = build_pages_base_url(content["s3_uuid"])
             full_content.append(content)
-            check_task("RETORNO DE GET FULL CONTENT")
-            check_task(full_content)
+
+        if all_contents and content_to_select is None:
+            return {"items": full_content, "total": total}
         return full_content
-    #_____________________INSCRIPTIONS_________________________
+        
+    @Login_Account.is_loged
+    def get_my_courses_cached(self, ttl=600):
+        cache_key = f"my_courses_{self.userId}"
+        cached = self._cache_get(cache_key, ttl)
+        if cached is not None:
+            return cached
+        courses = self.get_my_courses()
+        self._cache_set(cache_key, courses)
+        return courses
+        
+    @Login_Account.is_loged
+    def get_content_download_url(self, contentId: str):
+        content = self.get_content_by_id(contentId)
+        if not content:
+            return False
+
+        s3_uuid = content.get("s3_uuid") or contentId
+        try:
+            return generate_pdf_download_url(s3_uuid, content.get("title", "material"))
+        except Exception as e:
+            error_log(f"[GET_CONTENT_DOWNLOAD_URL]: falha ao gerar link de download de {contentId}: {e}")
+            return False
+
+    @Login_Account.is_loged
+    def get_content_view_url(self, contentId: str):
+        content = self.get_content_by_id(contentId)
+        if not content or not content.get("s3_uuid"):
+            return False
+
+        try:
+            return generate_pdf_view_url(content["s3_uuid"])
+        except Exception as e:
+            error_log(f"[GET_CONTENT_VIEW_URL]: falha ao gerar link de visualização de {contentId}: {e}")
+            return False
+
     @Login_Account.is_loged
     def check_inscription(self, contentId: str) -> Union[str, bool]:
-        if not self.get_content_by_id(contentId): 
-            return False
-            
+        """
+        Verifica a inscrição diretamente sem chamar get_content_by_id antes.
+        Retorna id da inscrição ou False.
+        """
         conn = self.dataBase()                   
         try:            
             sub = conn.query(Subs).filter_by(
                 student_id=UUID(str(self.userId)),
                 content_id=UUID(str(contentId))
             ).first()
-            if sub.id:
+            
+            if sub and sub.id:
                 warning_log(f"[CHECK_INSCRIPTION]: inscrito no conteúdo {contentId}")
-                return sub.id
+                return str(sub.id)
                 
             warning_log(f"[CHECK_INSCRIPTION]: usuário não inscrito no conteúdo {contentId}")
             return False
             
         except Exception as E:
-            error_log("[CHECK_INSCRIPTION]")
-            error_log(E)
+            error_log(f"[CHECK_INSCRIPTION]: Erro ao checar inscrição: {E}")
             return False
         finally:                         
              conn.close()
-
 
     @Login_Account.is_loged
     def my_inscriptions(self) -> Union[list, bool]:
@@ -491,8 +634,9 @@ class Management_User_Default(Login_Account):
         if self.check_inscription(contentId):
             return True
             
+        conn = self.dataBase()
         try:            
-            conn = self.dataBase()
+            # Validação se o conteúdo existe de fato no sistema
             if not self.get_content_by_id(contentId):
                 return False
                 
@@ -502,32 +646,34 @@ class Management_User_Default(Login_Account):
             }
             if insert_info(conn, Subs, inscription):
                 self.set_content_review(contentId=contentId, is_new_inscription=True, rating=0, comment=None)
-                sucesfull_log("[NEW_INSCRIPTION]: novo estudante inscrito com sucesso")
                 
+                # Invalidação do Cache: Remove a chave em cache para forçar recarregamento na próxima chamada
+                self._cache.pop(f"my_courses_{self.userId}", None)
+                
+                sucesfull_log("[NEW_INSCRIPTION]: novo estudante inscrito com sucesso")
                 return True
+                
             warning_log("[NEW_INSCRIPTION]: não foi possível efetuar cadastro do usuário no curso")
             return False
             
         except Exception as e:
-             error_log("[NEW_INSCRIPTION]")
-             error_log(e)
+             error_log(f"[NEW_INSCRIPTION]: Erro inesperado: {e}")
              try:
                  conn.rollback()
-             except Exception as e:
-                 error_log("[NEW_INSCRIPTION]")
-                 error_log(e)
+             except Exception:
+                 pass
              return False
         finally:
              conn.close()
              
     @Login_Account.is_loged
     def remove_inscription(self, contentId: str) -> bool:
-            # Corrigido: Nome do método unificado para 'remove_inscription'
             check_task(f"[REMOVE_INSCRIPTION]: executando com : {contentId}")
             conn = self.dataBase()
             inscription_id = self.check_inscription(contentId)  
             if not inscription_id:
-                warning_log("[REMOVE_INSCRIPTION]: SEM INSCRIPTIOND ID")
+                conn.close()
+                warning_log("[REMOVE_INSCRIPTION]: SEM INSCRIPTION ID")
                 return False
             
             try:
@@ -535,28 +681,28 @@ class Management_User_Default(Login_Account):
                     try:
                         if remove_content_inscription(contentId):
                             sucesfull_log(f"[REMOVE_INSCRIPTION]: Inscrição {inscription_id} removida com sucesso do SQL e MongoDB.")
+                            self._cache.pop(f"my_courses_{self.userId}", None)
                             return True
                         
                         warning_log("[REMOVE_INSCRIPTION]: Não foi possível remover inscrição em >remove_content_inscription<")                        
                         return False
                                                 
                     except Exception as mongo_err:
-                        error_log(f"[REMOVE_INSCRIPTION]:Inscrição removida do SQL, mas falhou no MongoDB")
+                        error_log("[REMOVE_INSCRIPTION]: Inscrição removida do SQL, mas falhou no MongoDB")
                         error_log(mongo_err)
                         return False
                         
                 warning_log("[REMOVE_INSCRIPTION]: Não foi possível remover inscrição em >delete_info<")          
                 return False
             except Exception as e:
-                logger.error(f"[REMOVE_INSCRIPTION]:Erro ao remover inscrição: {e}")
+                logger.error(f"[REMOVE_INSCRIPTION]: Erro ao remover inscrição: {e}")
                 try:
                     conn.rollback()
                 except Exception:
                     pass
                 return False
             finally:
-                conn.close() #_______________________REVIEWS______________________
-    
+                conn.close()
     
     @Login_Account.is_loged
     def get_content_review(self, contentId: str):
@@ -576,7 +722,7 @@ class Management_User_Default(Login_Account):
 
         try:
             comments = get_comments(course_id=contentId, moderated=moderated)
-            print("RETORNO DE GET_CPMM3ENTS", comments)
+            logger.info(f"Comentários obtidos para {contentId}")
             return comments
                 
         except Exception as e:
@@ -592,7 +738,6 @@ class Management_User_Default(Login_Account):
                 new_review(course_id=contentId, review=0, new_inscription=is_new_inscription)
                 return True
                 
-            # 🌟 CORRIGIDO: Ordem das validações alterada para evitar AttributeError caso comment seja None
             if comment is None or comment.strip() == "":
                 comment = ""
                 
@@ -603,30 +748,33 @@ class Management_User_Default(Login_Account):
             logger.error(f"Erro ao inserir review/comentário: {e}")
             return False
 
-
     @Login_Account.is_loged
     def delete_my_comment(self, contentId: str, commentId: str):
-        # Corrigido o nome para um padrão descritivo uniforme
         if not self.get_content_by_id(contentId):
             return False
             
-        if not get_comment_by_id(contentId, commentId):
+        # Pega os dados do comentário no MongoDB para validar se o comentador é o dono
+        comment_data = get_comment_by_id(contentId, commentId)
+        if not comment_data:
+            return False
+            
+        # Validação de Segurança: Garante que o usuário logado é o autor do comentário
+        # (Nota: ajuste a chave 'user_id' conforme o seu modelo do MongoDB, geralmente é string ou ObjectId)
+        if str(comment_data.get("user_id")) != str(self.userId):
+            warning_log("[DELETE_MY_COMMENT]: Tentativa de exclusão de comentário pertencente a outro usuário")
             return False
             
         try:                                    
             if delete_comment(contentId, commentId):
-                sucesfull_log("[DELETE_MY_COMMENY]: comentário deletado com sucesso")
+                sucesfull_log("[DELETE_MY_COMMENT]: comentário deletado com sucesso")
                 return True
                 
-            warning_log("[DELETE_MY_COMMENY]: não foi possível deletar comentário")   
+            warning_log("[DELETE_MY_COMMENT]: não foi possível deletar comentário")   
             return False
             
         except Exception as E:
-            error_log("[DELETE_MY_COMMENY]")
-            error_log(E)
+            error_log(f"[DELETE_MY_COMMENT]: {E}")
             return False
-            
-    
             
     @Login_Account.is_loged
     def get_my_comment(self, contentId):
@@ -638,24 +786,18 @@ class Management_User_Default(Login_Account):
             return get_comment_by_user_id(contentId, self.userId)
             
         except Exception as E:
-            error_log("[GET_MY_COMMENT]")
-            error_log(E)
-            False
+            error_log(f"[GET_MY_COMMENT]: {E}")
+            return False
             
     @Login_Account.is_loged            
-    def update_my_comment(self, contentId, rating,new_comment):
-        
+    def update_my_comment(self, contentId, rating, new_comment):
         if not self.check_inscription(contentId):
             return False
         try:          
-            if update_comment_and_review(course_id=contentId,user_id=self.userId,user_name=self.userName,new_rating=rating,new_comment_text=new_comment):
-                  sucesfull_log("[UPDATE COMMENT] RETORNOU COM SUCESSO")
-                  return True
-                  
-        except Exception as E:
-            
-            error_log("[UPDATE_MY_COMMENT]")
-            error_log(E)
+            if update_comment_and_review(course_id=contentId, user_id=self.userId, user_name=self.userName, new_rating=rating, new_comment_text=new_comment):
+                sucesfull_log("[UPDATE COMMENT] RETORNOU COM SUCESSO")
+                return True
             return False
-            
-                                                    
+        except Exception as E:
+            error_log(f"[UPDATE_MY_COMMENT]: {E}")
+            return False

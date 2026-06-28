@@ -17,12 +17,92 @@ def _is_admin():
 def admin_page():
     if not _is_admin():
         return render_template("index.html")
-    users = g.user.all_users()
-    return render_template("admin_page.html", users=users)
-
-
+    
+    # Paginação
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 20, type=int)
+    
+    # Filtros
+    name = request.args.get('name', None, type=str)
+    permission = request.args.get('permission', None, type=str)
+    has_email = request.args.get('has_email', None, type=str)
+    sort_by = request.args.get('sort_by', 'name_asc', type=str)
+    
+    # Converte 'with'/'without' para boolean
+    if has_email == 'with':
+        has_email = True
+    elif has_email == 'without':
+        has_email = False
+    else:
+        has_email = None  # não filtra
+    
+    result = g.user.all_users(
+        page=page,
+        per_page=per_page,
+        name=name if name else None,
+        permission=permission if permission != 'all' else None,
+        has_email=has_email,
+        sort_by=sort_by
+    )
+    
+    if not result:
+        flash("Erro ao carregar usuários.", "error")
+        return redirect(url_for('admin.admin_page'))
+    
+    role_counts = g.user.count_users_by_role()
+    
+    return render_template(
+        "admin_page.html",
+        users=result['users'],
+        pagination=result,
+        role_counts=role_counts,
+        current_filters={
+            'name': name or '',
+            'permission': permission or 'all',
+            'has_email': has_email if has_email is not None else 'all',
+            'sort_by': sort_by
+        }
+    )
+    
+    
 # ── CRUD de usuários pelo admin ───────────────────────────────────────────────
+@admin_bp.route("/admin/admin_page/search")
+def admin_search_users():
+    if not _is_admin():
+        return "Acesso negado", 403
 
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 20, type=int)
+    name = request.args.get('name', None, type=str)
+    permission = request.args.get('permission', None, type=str)
+    has_email = request.args.get('has_email', None, type=str)
+    sort_by = request.args.get('sort_by', 'name_asc', type=str)
+
+    # Converte has_email
+    if has_email == 'with':
+        has_email = True
+    elif has_email == 'without':
+        has_email = False
+    else:
+        has_email = None
+    print("PERMISSION>>>>>>>>>>>" , permission)
+    result = g.user.all_users(
+        page=page, per_page=per_page,
+        name=name if name else None,
+        permission=permission if permission != 'all' else None,
+        has_email=has_email,
+        sort_by=sort_by
+    )
+    if not result:
+        return "Erro ao buscar usuários", 500
+
+    # Retorna apenas o HTML parcial da tabela
+    return render_template(
+        "admin_users_table.html",
+        users=result['users'],
+        pagination=result
+    )
+    
 @admin_bp.route("/admin/create", methods=["POST"])
 def admin_create_user():
     if not _is_admin():
@@ -42,7 +122,7 @@ def admin_create_user():
     if check_user(nome):
         return render_template("admin_page.html", error="O nome de usuário já está sendo utilizado"), 400
 
-    if g.user.create_user_by_admin(nome, senha, confirm, cred):
+    if g.user.create_user_by_admin(nome, senha,cred):
         logging.info("Usuário %s criado pelo admin", nome)
 
     return redirect(url_for("admin.admin_page"))
@@ -75,7 +155,8 @@ def admin_edit_user(user_id):
         return redirect(url_for("admin.admin_page"))
 
     user = g.user.get_user_by_id(userId=user_id)
-    return render_template("admin_edit_user.html", user=user.get("name"))
+    inscrip = g.user.get_user_inscription_by_admin(userId=user_id)
+    return render_template("admin_edit_user.html", user=user, inscrip=inscrip)
 
 
 @admin_bp.route("/admin/delete/<user_id>", methods=["POST"])

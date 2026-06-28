@@ -6,7 +6,7 @@ from src.models.contents_models.content_models import Contents
 from src.models.users_models.user_models import User
 from src.models.relationships_models.inscriptions import Subs
 from sqlalchemy import func
-from src.models.contents_models import rating_models
+from src.models.mongo_models import rating_models
 
 import uuid
 

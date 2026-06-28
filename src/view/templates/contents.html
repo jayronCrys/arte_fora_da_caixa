@@ -5,843 +5,1051 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Arte Fora da Caixa — Painel</title>
 
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+
   <style>
-    :root {
-      --accent-start: #ff7a00;
-      --accent-end:   #00c853;
-      --radius:       12px;
-      --font:         "Segoe UI", Roboto, Arial, sans-serif;
-      --shadow:       0 4px 18px rgba(0,0,0,0.09);
-    }
-
-    * {
-      margin: 0;
+    /* ══════════════════════════════════════════
+       NAVEGAÇÃO GLOBAL
+    ══════════════════════════════════════════ */
+    .nav-tabs-global {
+      background: var(--bg-card);
+      display: flex;
+      justify-content: stretch;
+      gap: 0;
       padding: 0;
-      box-sizing: border-box;
-      font-family: var(--font);
+      border-bottom: 1px solid var(--border-light);
+      flex-wrap: nowrap;
+      width: 100%;
+      overflow-x: auto;
     }
-
-    body {
-      background: #f3f4f6;
-      color: #333;
-      display: flex;
-      flex-direction: column;
-      min-height: 100vh;
-    }
-
-    /* ─── HEADER UNIFICADO ─── */
-    header {
-      background: #ffffff;
-      padding: 18px 34px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-
-    header h1 {
-      font-size: 22px;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-      color: #222;
-    }
-
-    .user-info {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      cursor: pointer;
-    }
-
-    .user-info img {
-      width: 46px;
-      height: 46px;
-      border-radius: 50%;
-      object-fit: cover;
-      border: 2px solid #e0e0e0;
-    }
-
-    .user-details {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      font-size: 14px;
-    }
-
-    .user-details strong {
-      font-size: 15px;
-      color: #222;
-    }
-
-    /* ─── BARRA DE NAVEGAÇÃO DE ABAS ─── */
-    .nav-tabs {
-      background: #ffffff;
-      display: flex;
-      justify-content: center;
-      gap: 10px;
-      padding: 12px 34px;
-      border-bottom: 1px solid #e5e7eb;
-      flex-wrap: wrap;
-    }
-
-    .tab-btn {
-      background: #f3f4f6;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 20px;
-      font-size: 14px;
+    .nav-tab-item {
+      flex: 1;
+      min-width: 0;
+      text-align: center;
+      padding: 14px 8px;
+      font-family: var(--font-display);
+      font-size: 13px;
       font-weight: 600;
-      color: #555;
+      color: var(--text-secondary);
       cursor: pointer;
-      transition: all 0.2s ease;
+      border: none;
+      background: transparent;
+      border-bottom: 3px solid transparent;
+      transition: all var(--ease-out);
+      white-space: nowrap;
+      position: relative;
     }
+    .nav-tab-item:hover { color: var(--orange); background: rgba(255,122,0,0.04); }
+    .nav-tab-item.active { color: var(--orange); border-bottom-color: var(--orange); background: rgba(255,122,0,0.06); font-weight: 700; }
+    .nav-tab-item.admin-tab { color: #1e293b; }
+    .nav-tab-item.admin-tab.active { color: #0f172a; border-bottom-color: #1e293b; background: rgba(15,23,42,0.06); }
 
-    .tab-btn.active, .tab-btn:hover {
-      background: linear-gradient(90deg, #ff7a00, #00c853);
-      color: #ffffff;
-    }
-
-    /* ─── SPA VIEW SECTIONS ─── */
-    .view-section {
-      display: none; 
-      animation: fadeIn 0.3s ease;
-    }
-
-    .view-section.active {
-      display: block; 
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(4px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    /* ─── ESTILOS: TODOS OS CURSOS ─── */
-    .banner {
-      background: linear-gradient(90deg, #ff7a00, #00c853);
-      padding: 60px 30px;
+    /* ══════════════════════════════════════════
+       BANNER GLOBAL
+    ══════════════════════════════════════════ */
+    .global-banner {
+      background: var(--gradient-diagonal);
+      padding: 45px 30px;
       color: white;
       text-align: center;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+      position: relative;
+      overflow: hidden;
     }
+    .global-banner::after { content: ""; position: absolute; inset: 0; background: radial-gradient(circle at 30% 60%, rgba(255,255,255,0.08) 0%, transparent 60%); pointer-events: none; }
+    .global-banner-title { font-family: var(--font-display); font-size: 32px; font-weight: 800; margin-bottom: 6px; letter-spacing: -0.5px; position: relative; z-index: 1; }
+    .global-banner-sub { font-size: 16px; opacity: 0.92; position: relative; z-index: 1; }
 
-    .banner h2 { font-size: 32px; margin-bottom: 10px; font-weight: 700; }
-    .banner p { font-size: 18px; opacity: 0.95; }
+    /* ══════════════════════════════════════════
+       FOOTER GLOBAL
+    ══════════════════════════════════════════ */
+    .global-footer { background: var(--gradient-diagonal); color: white; padding: 28px 24px 20px; margin-top: auto; position: relative; overflow: hidden; }
+    .global-footer::after { content: ""; position: absolute; inset: 0; background: radial-gradient(circle at 70% 30%, rgba(255,255,255,0.06) 0%, transparent 60%); pointer-events: none; }
+    .footer-content { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; position: relative; z-index: 1; }
+    .footer-brand { font-family: var(--font-display); font-size: 18px; font-weight: 800; }
+    .footer-info { font-size: 13px; opacity: 0.9; display: flex; gap: 24px; flex-wrap: wrap; align-items: center; }
+    .footer-info span { display: flex; align-items: center; gap: 6px; }
+    .footer-bottom { text-align: center; font-size: 12px; opacity: 0.7; margin-top: 16px; position: relative; z-index: 1; }
 
-    .filters {
-      background: #ffffff;
+    /* ══════════════════════════════════════════
+       BARRA DE FILTROS — TODOS OS CURSOS
+    ══════════════════════════════════════════ */
+    .compact-filters-bar {
       display: flex;
-      justify-content: space-between;
+      gap: 10px;
       align-items: center;
-      padding: 20px 32px;
-      border-bottom: 1px solid #eee;
+      flex-wrap: wrap;
+      padding: 14px 28px;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border-light);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .compact-search { flex: 2; min-width: 200px; }
+    .compact-search input {
+      width: 100%;
+      padding: 10px 16px;
+      border-radius: var(--radius-pill);
+      border: 1.5px solid var(--border);
+      font-family: var(--font-body);
+      font-size: 13px;
+      background: var(--bg-input);
+      outline: none;
+      transition: border-color var(--ease-out);
+    }
+    .compact-search input:focus { border-color: var(--green); }
+    .compact-filter-group { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); font-weight: 500; }
+    .compact-filter-group select {
+      padding: 9px 32px 9px 12px;
+      border-radius: var(--radius-pill);
+      border: 1.5px solid var(--border);
+      background: var(--bg-input);
+      font-family: var(--font-body);
+      font-size: 12px;
+      cursor: pointer;
+      outline: none;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23475569'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      background-size: 12px;
+      transition: border-color var(--ease-out);
+    }
+    .compact-filter-group select:focus { border-color: var(--orange); }
+
+    /* ══════════════════════════════════════════
+       TODOS OS CURSOS — LAYOUT POR LINHAS (padrão)
+    ══════════════════════════════════════════ */
+    .courses-rows-container { padding: 28px 28px 40px; }
+    .course-row-section { margin-bottom: 40px; }
+    .course-row-title {
+      font-family: var(--font-display);
+      font-size: 19px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .course-row-title::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: var(--border-light);
+      margin-left: 4px;
     }
 
-    .filters select {
-      padding: 10px 14px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      background: #fafafa;
+    /* Trilha horizontal (padrão, sem filtro ativo) */
+    .course-scroll-track {
+      display: flex;
+      gap: 20px;
+      overflow-x: auto;
+      padding-bottom: 12px;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: thin;
+    }
+    .course-scroll-track::-webkit-scrollbar { height: 5px; }
+    .course-scroll-track::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+
+    /* Grid vertical (quando filtro está ativo) */
+    .course-grid-vertical {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 20px;
+    }
+
+    /* ══════════════════════════════════════════
+       CARD DE CURSO — COMPARTILHADO
+    ══════════════════════════════════════════ */
+    .course-card-item {
+      flex: 0 0 280px;          /* horizontal scroll */
+      background: var(--bg-card);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      border: 1px solid var(--border-light);
+      box-shadow: var(--shadow-xs);
+      transition: transform 0.18s ease, box-shadow 0.18s ease;
+      scroll-snap-align: start;
+    }
+    .course-grid-vertical .course-card-item { flex: unset; }
+    .course-card-item:hover { transform: translateY(-5px); box-shadow: var(--shadow-md); }
+
+    .course-card-banner { width: 100%; height: 165px; background: var(--gradient); overflow: hidden; }
+    .course-card-banner img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease; }
+    .course-card-item:hover .course-card-banner img { transform: scale(1.04); }
+    .course-card-placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 40px; color: rgba(255,255,255,0.7); }
+    .course-card-body { padding: 16px 18px 18px; }
+    .course-card-title { font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 5px; line-height: 1.35; }
+    .course-card-meta { font-size: 12px; color: var(--text-muted); margin-bottom: 7px; }
+    .course-card-rating { font-size: 13px; color: #f59e0b; margin-bottom: 10px; }
+    .course-card-stats { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+
+    /* ══════════════════════════════════════════
+       MEUS CURSOS
+    ══════════════════════════════════════════ */
+    .my-courses-wrapper {
+      padding: 28px 28px 40px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    .my-courses-filters {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+    }
+    .my-filter-btn {
+      padding: 8px 16px;
+      border-radius: var(--radius-pill);
+      border: 1.5px solid var(--border);
+      background: var(--bg-input);
+      font-family: var(--font-body);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .my-filter-btn:hover { border-color: var(--orange); color: var(--orange); }
+    .my-filter-btn.active { background: var(--orange); border-color: var(--orange); color: white; }
+    .my-courses-type-select {
+      display: none;
+      padding: 8px 30px 8px 12px;
+      border-radius: var(--radius-pill);
+      border: 1.5px solid var(--border);
+      background: var(--bg-input);
+      font-family: var(--font-body);
+      font-size: 12px;
+      cursor: pointer;
+      outline: none;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23475569'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 8px center;
+      background-size: 12px;
+    }
+    .my-courses-type-select.visible { display: block; }
+
+    .my-courses-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 20px;
+    }
+
+    /* ══════════════════════════════════════════
+       PUBLICAÇÕES
+    ══════════════════════════════════════════ */
+    .pubs-sub-nav {
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid var(--border-light);
+      background: var(--bg-card);
+      padding: 0 28px;
+    }
+    .pubs-sub-btn {
+      padding: 14px 22px;
+      font-family: var(--font-display);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      background: transparent;
+      border: none;
+      border-bottom: 3px solid transparent;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .pubs-sub-btn:hover { color: var(--orange); }
+    .pubs-sub-btn.active { color: var(--orange); border-bottom-color: var(--orange); }
+
+    .pubs-list-container { padding: 28px 28px 40px; max-width: 1200px; margin: 0 auto; }
+    .pubs-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 20px;
+    }
+    .pub-card-v2 {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      border: 1px solid var(--border-light);
+      box-shadow: var(--shadow-xs);
+      transition: transform 0.18s ease, box-shadow 0.18s ease;
+      display: flex;
+      flex-direction: column;
+    }
+    .pub-card-v2:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
+    .pub-card-v2-banner {
+      width: 100%;
+      height: 180px;
+      background: var(--gradient);
+      overflow: hidden;
+      position: relative;
+      flex-shrink: 0;
+    }
+    .pub-card-v2-banner img { width: 100%; height: 100%; object-fit: cover; }
+    .pub-card-v2-banner-empty {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      color: rgba(255,255,255,0.6);
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+    .pub-type-badge {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      background: rgba(0,0,0,0.55);
+      backdrop-filter: blur(4px);
+      color: white;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: var(--radius-pill);
+    }
+    .pub-card-v2-body {
+      padding: 18px 20px 20px;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+    .pub-card-v2-title {
+      font-family: var(--font-display);
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 6px;
+      line-height: 1.3;
+    }
+    .pub-card-v2-meta {
+      display: flex;
+      gap: 14px;
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    .pub-card-v2-meta span { display: flex; align-items: center; gap: 4px; }
+    .pub-card-v2-desc {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.55;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      flex: 1;
+      margin-bottom: 16px;
+    }
+    .pub-card-v2-footer {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      padding-top: 14px;
+      border-top: 1px solid var(--border-light);
+    }
+
+    /* ══════════════════════════════════════════
+       PUBLICAR CONTEÚDO
+    ══════════════════════════════════════════ */
+    .publish-form-outer { padding: 28px 28px 48px; }
+    .publish-form-inner { max-width: 92%; margin: 0 auto; }
+    .publish-sections-layout {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 24px;
+      align-items: start;
+    }
+    .publish-left { display: flex; flex-direction: column; gap: 20px; }
+    .publish-right { display: flex; flex-direction: column; gap: 20px; }
+    .publish-card {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-light);
+      box-shadow: var(--shadow-xs);
+      overflow: hidden;
+    }
+    .publish-card-header {
+      padding: 16px 22px;
+      border-bottom: 1px solid var(--border-light);
+      font-family: var(--font-display);
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .publish-card-body { padding: 20px 22px 24px; }
+
+    .banner-grid-large {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 12px;
+    }
+    .banner-opt {
+      position: relative;
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      border: 2.5px solid transparent;
+      transition: border-color 0.15s ease, transform 0.15s ease;
       cursor: pointer;
     }
+    .banner-opt:hover { transform: scale(1.03); border-color: var(--orange); }
+    .banner-opt input[type="radio"] { display: none; }
+    .banner-opt.selected { border-color: var(--orange); box-shadow: 0 0 0 3px rgba(255,122,0,0.25); }
+    .banner-opt label { display: flex; flex-direction: column; cursor: pointer; width: 100%; }
+    .banner-opt label img { width: 100%; height: 88px; object-fit: cover; display: block; }
+    .banner-opt-label { text-align: center; font-size: 10px; padding: 5px 4px; color: #475569; background: var(--bg-input); font-weight: 600; }
+    .banner-check-mark {
+      display: none;
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      background: var(--orange);
+      color: white;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      font-size: 11px;
+      align-items: center;
+      justify-content: center;
+    }
+    .banner-opt.selected .banner-check-mark { display: flex; }
 
-    .courses {
-      padding: 34px;
+    .type-grid-v2 {
       display: grid;
-      gap: 28px;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 10px;
     }
+    .type-opt-v2 input { display: none; }
+    .type-opt-v2 label {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      padding: 14px 10px;
+      border-radius: var(--radius-md);
+      border: 2px solid var(--border);
+      background: var(--bg-input);
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      transition: all 0.15s ease;
+      text-align: center;
+    }
+    .type-opt-v2 label .emoji { font-size: 22px; }
+    .type-opt-v2 label:hover { border-color: var(--orange); color: var(--orange); background: rgba(255,122,0,0.05); }
+    .type-opt-v2 input:checked + label { border-color: var(--orange); color: var(--orange); background: rgba(255,122,0,0.08); }
 
-    .course {
-      background: #ffffff;
-      border-radius: 14px;
+    .preview-card-wrap {
+      border-radius: var(--radius-lg);
       overflow: hidden;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
-      transition: transform 0.25s ease, box-shadow 0.25s ease;
+      border: 1px solid var(--border-light);
+      box-shadow: var(--shadow-sm);
+    }
+    .preview-card-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-muted);
+      text-align: center;
+      padding: 10px 0 6px;
+      font-weight: 700;
     }
 
-    .course:hover { transform: translateY(-6px); box-shadow: 0 10px 20px rgba(0, 0, 0, 0.12); }
-    .course-content { padding: 18px; }
-    .course h3 { font-size: 20px; margin-bottom: 10px; color: #222; font-weight: 600; }
-    .course p { font-size: 15px; color: #555; margin-bottom: 14px; line-height: 1.4; }
-    .course button {
-      width: 100%; padding: 12px; border-radius: 10px; border: none;
-      background: linear-gradient(90deg, #ff7a00, #00c853); color: white;
-      font-size: 15px; font-weight: bold; cursor: pointer;
+    /* ══════════════════════════════════════════
+       PAINEL ADMIN / PROFESSOR / PERFIL
+    ══════════════════════════════════════════ */
+    .section-content-wrapper { max-width: 1400px; margin: 0 auto; padding: 0 20px; }
+
+    @media (max-width: 900px) {
+      .publish-sections-layout { grid-template-columns: 1fr; }
+      .publish-right { order: -1; }
     }
-
-    /* ─── ESTILOS: MEUS CURSOS ─── */
-    .my-courses-container { max-width: 900px; margin: 0 auto; padding: 34px 20px; }
-    .section-title { font-size: 18px; font-weight: 700; color: #222; margin-bottom: 16px; }
-    .rec-card {
-      background: #ffffff; border-radius: 16px; padding: 16px;
-      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05); display: flex; gap: 16px;
-      align-items: center; border-left: 5px solid #ff7a00; margin-bottom: 34px;
+    @media (max-width: 768px) {
+      .global-banner { padding: 30px 16px; }
+      .global-banner-title { font-size: 24px; }
+      .nav-tab-item { font-size: 11px; padding: 10px 4px; }
+      .compact-filters-bar { flex-direction: column; padding: 10px 16px; }
+      .footer-content { flex-direction: column; text-align: center; }
+      .courses-rows-container { padding: 20px 16px 30px; }
+      .my-courses-wrapper { padding: 20px 16px 30px; }
+      .pubs-list-container { padding: 20px 16px 30px; }
+      .publish-form-outer { padding: 16px 12px 40px; }
+      .publish-form-inner { max-width: 100%; }
+      .pubs-sub-nav { padding: 0 16px; }
+      .banner-grid-large { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
     }
-    .rec-img-wrapper { width: 30%; aspect-ratio: 16 / 9; border-radius: 8px; overflow: hidden; background: #e2e8f0; flex-shrink: 0; }
-    .rec-img-wrapper img, .rec-img-wrapper .default-img { width: 100%; height: 100%; object-fit: cover; }
-    .rec-info { flex: 1; display: flex; flex-direction: column; gap: 6px; }
-    .rec-badge { align-self: flex-start; font-size: 11px; font-weight: bold; text-transform: uppercase; color: #ff7a00; }
-    .rec-title { font-size: 16px; font-weight: 700; color: #222; }
-
-    .sub-filter-bar { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 12px; margin-bottom: 10px; }
-    .sub-filter-btn {
-      background: #ffffff; color: #555; border: 1px solid #e5e7eb;
-      padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap;
-    }
-    .sub-filter-btn.active { background: #00c853; color: #ffffff; border-color: #00c853; }
-    .inner-options-panel { background: #e5e7eb; padding: 10px; border-radius: 8px; margin-bottom: 16px; display: none; gap: 10px; align-items: center; font-size: 13px; }
-
-    .my-courses-grid { display: flex; flex-wrap: wrap; gap: 16px; }
-    .my-course-card {
-      background: #ffffff; border-radius: 14px; box-shadow: 0 4px 10px rgba(0,0,0,0.04);
-      width: 46%; display: flex; flex-direction: column; overflow: hidden; border: 1px solid #eaeaea;
-    }
-    .my-course-banner { width: 100%; aspect-ratio: 16 / 9; background: #cbd5e1; }
-    .my-course-banner img { width: 100%; height: 100%; object-fit: cover; }
-    .my-course-body { padding: 12px; display: flex; flex-direction: column; flex: 1; gap: 6px; }
-    .my-course-title { font-size: 13px; font-weight: 700; color: #222; height: 34px; overflow: hidden; }
-    .btn-continue {
-      display: block; text-align: center; background: linear-gradient(90deg, #ff7a00, #00c853);
-      color: white; text-decoration: none; font-size: 12px; font-weight: bold; padding: 8px 0; border-radius: 6px; margin-top: auto;
-    }
-    .empty-state { width: 100%; text-align: center; padding: 30px; color: #777; font-size: 14px; }
-
-    /* ─── ESTILOS: CONTEÚDOS E PUBLICAÇÕES ─── */
-    .publications-container { max-width: 850px; margin: 20px auto; background: white; padding: 30px; border-radius: 18px; box-shadow: 0 4px 14px rgba(0,0,0,0.06); }
-    .publications-container h2 { text-align: center; margin-bottom: 30px; color: #1a1a1a; font-size: 28px; }
-    
-    .content-card { background: #ffffff; padding: 20px; margin-bottom: 20px; border: 1px solid #e5e7eb; border-radius: 14px; display: flex; gap: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); transition: transform 0.2s, box-shadow 0.2s; }
-    .content-card:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,0.06); }
-    .card-banner-side { width: 140px; height: 140px; object-fit: cover; border-radius: 10px; background-color: #e5e7eb; flex-shrink: 0; }
-    .card-body-side { flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; min-width: 0; }
-    .title-side { font-size: 20px; font-weight: 700; color: #111827; margin-bottom: 6px; }
-    .desc-side { font-size: 14px; color: #4b5563; line-height: 1.5; margin: 0 0 12px 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: break-word; word-break: break-word; }
-    .meta-info { font-size: 12px; color: #9ca3af; margin-bottom: 15px; display: flex; gap: 15px; flex-wrap: wrap; }
-    .meta-info span { background: #f3f4f6; padding: 2px 8px; border-radius: 6px; color: #6b7280; }
-    .actions-container { display: flex; gap: 10px; align-items: center; }
-    
-    /* Formulário de Publicar Conteúdo */
-    .form-card { max-width: 700px; margin: 0 auto 20px; background: #fff; border-radius: var(--radius); padding: 28px; box-shadow: var(--shadow); }
-    .form-card-title { font-size: 17px; font-weight: 700; margin-bottom: 20px; color: #111; display: flex; align-items: center; gap: 8px; }
-    .field { margin-bottom: 18px; }
-    .field label { display: block; font-size: 13px; color: #555; margin-bottom: 5px; }
-    .form-card input[type="text"], .form-card textarea, .form-card select { width: 100%; padding: 11px 14px; border: 1.5px solid #ddd; border-radius: 8px; font-size: 15px; background: #fafafa; transition: border-color .2s; }
-    .form-card input[type="text"]:focus, .form-card textarea:focus, .form-card select:focus { border-color: #ff7a00; outline: none; background: #fff; }
-    .form-card textarea { min-height: 110px; resize: vertical; }
-    .hint { font-size: 11px; color: #999; margin-top: 4px; }
-    
-    .type-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
-    .type-option { display: none; }
-    .type-label { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 8px; border: 2px solid #e0e0e0; border-radius: 10px; cursor: pointer; transition: all .18s; font-size: 13px; color: #444; text-align: center; background: #fafafa; }
-    .type-label span.emoji { font-size: 22px; }
-    .type-option:checked + .type-label { border-color: #ff7a00; background: #fff5ee; color: #ff7a00; font-weight: 600; }
-    
-    .banner-tabs { display: flex; gap: 8px; margin-bottom: 18px; }
-    .tab-btn-sub { flex: 1; padding: 9px; border-radius: 8px; border: 1.5px solid #ddd; background: #f7f7f7; font-size: 13px; font-weight: 600; cursor: pointer; transition: all .18s; color: #555; }
-    .tab-btn-sub.active { border-color: #ff7a00; background: #fff5ee; color: #ff7a00; }
-    .tab-panel { display: none; }
-    .tab-panel.active { display: block; }
-    
-    .upload-area { border: 2px dashed #ddd; border-radius: 10px; padding: 28px; text-align: center; cursor: pointer; transition: border-color .2s; background: #fafafa; }
-    .upload-area:hover { border-color: #ff7a00; }
-    .upload-area input { display: none; }
-    .upload-area p { font-size: 14px; color: #888; margin-top: 8px; }
-    #banner-preview-own { display: none; width: 100%; height: 160px; object-fit: cover; border-radius: 8px; margin-top: 12px; }
-    
-    .banner-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
-    .banner-opt { display: none; }
-    .banner-opt-label { display: block; cursor: pointer; border: 2px solid transparent; border-radius: 10px; overflow: hidden; transition: border-color .18s; }
-    .banner-opt:checked + .banner-opt-label { border-color: #ff7a00; box-shadow: 0 0 0 3px rgba(255,122,0,.15); }
-    .banner-opt-label img { width: 100%; height: 70px; object-fit: cover; display: block; border-radius: 8px 8px 0 0; }
-    .banner-opt-label span { display: block; text-align: center; font-size: 12px; padding: 5px 4px; color: #555; background: #fafafa; }
-    
-    .preview-wrapper { display: none; margin-top: 20px; }
-    .preview-wrapper.visible { display: block; }
-    .preview-label { font-size: 13px; color: #888; margin-bottom: 10px; text-align: center; text-transform: uppercase; letter-spacing: .5px; }
-    
-    .pub-card { max-width: 320px; margin: 0 auto; background: #fff; border-radius: 14px; box-shadow: 0 3px 14px rgba(0,0,0,0.12); overflow: hidden; }
-    .pub-card-banner { height: 160px; background: linear-gradient(135deg, #ff7a00, #00c853); overflow: hidden; }
-    .pub-card-banner img { width: 100%; height: 100%; object-fit: cover; display: none; }
-    .pub-card-body { padding: 14px 16px 16px; }
-    .pub-card-title { font-size: 15px; font-weight: 700; color: #111; margin-bottom: 6px; line-height: 1.3; }
-    .pub-card-meta { font-size: 12px; color: #888; line-height: 1.6; }
-    .pub-card-meta .badge { display: inline-block; background: #f0f0f0; color: #555; border-radius: 6px; padding: 2px 7px; font-size: 11px; font-weight: 600; margin-right: 4px; }
-    .pub-card-btn { display: block; width: 100%; margin-top: 12px; padding: 10px; background: linear-gradient(90deg, #ff7a00, #00c853); color: white; text-align: center; border-radius: 8px; font-weight: 600; font-size: 14px; border: none; }
-    
-    .row-btns { display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; margin-top: 28px; }
-    .btn { padding: 10px 20px; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; text-decoration: none; color: white; background: linear-gradient(90deg, #ff7a00, #00c853); box-shadow: 0 2px 6px rgba(0,0,0,0.12); transition: all 0.2s ease; display: inline-flex; align-items: center; justify-content: center; font-size: 14px; }
-    .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 14px rgba(0,0,0,0.18); filter: brightness(1.05); }
-    .btn-muted { background: #6c757d; }
-    .btn-danger { background: linear-gradient(90deg, #ff2d2d, #cc0000); }
-    .btn-fixed { width: 230px; text-align: center; padding: 12px 0; display: inline-block; }
-    .btn-password { background: linear-gradient(90deg, #1565c0, #0288d1); }
-
-    /* ─── ESTILOS: MEU PERFIL UPGRADED ─── */
-    .profile-container { max-width: 950px; margin: 40px auto; background: white; padding: 40px 50px; border-radius: 18px; box-shadow: 0 4px 14px rgba(0,0,0,0.08); }
-    .profile-header { display: flex; align-items: center; gap: 25px; padding-bottom: 30px; border-bottom: 1px solid #eee; margin-bottom: 30px; }
-    .avatar-wrapper { position: relative; flex-shrink: 0; width: 130px; height: 130px; }
-    .avatar-wrapper img { width: 130px; height: 130px; border-radius: 50%; object-fit: cover; border: 3px solid #e5e5e5; background: #fafafa; display: block; }
-    
-    .avatar-edit-btn { position: absolute; bottom: 4px; right: 4px; width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg, #ff7a00, #00c853); border: 2px solid white; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.2); transition: transform .2s, box-shadow .2s; }
-    .avatar-edit-btn:hover { transform: scale(1.12); box-shadow: 0 4px 10px rgba(0,0,0,0.25); }
-    .avatar-edit-btn svg { width: 16px; height: 16px; fill: white; pointer-events: none; }
-    
-    .avatar-delete-btn { position: absolute; bottom: 4px; left: 4px; width: 34px; height: 34px; border-radius: 50%; background: #e53935; border: 2px solid white; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.2); transition: transform .2s, box-shadow .2s; }
-    .avatar-delete-btn:hover { transform: scale(1.12); box-shadow: 0 4px 10px rgba(0,0,0,0.25); }
-    .avatar-delete-btn svg { width: 16px; height: 16px; fill: white; pointer-events: none; }
-    
-    .profile-info { flex: 1; }
-    .name-row { display: flex; align-items: center; gap: 10px; margin-bottom: 5px; }
-    .name-row h2 { font-size: 26px; color: #222; }
-    .icon-btn { width: 30px; height: 30px; border-radius: 50%; border: 1.5px solid #ddd; background: #f9f9f9; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background .2s, border-color .2s, transform .15s; flex-shrink: 0; }
-    .icon-btn:hover { background: #fff0e5; border-color: #ff7a00; transform: scale(1.1); }
-    .icon-btn svg { width: 14px; height: 14px; stroke: #ff7a00; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-    .profile-info p { margin: 6px 0; font-size: 15px; color: #555; }
-    
-    .inline-name-form { display: none; align-items: center; gap: 8px; margin-bottom: 5px; }
-    .inline-name-form.active { display: flex; }
-    .inline-name-form input { font-size: 18px; font-weight: 600; color: #222; border: 1.5px solid #ff7a00; border-radius: 8px; padding: 6px 10px; outline: none; background: #fff8f3; flex: 1; }
-    .btn-confirm { padding: 6px 14px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; font-size: 13px; background: linear-gradient(90deg,#ff7a00,#00c853); color: white; }
-    .btn-cancel-sm { padding: 6px 14px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; font-size: 13px; background: #eee; color: #555; }
-    
-    .avatar-form-row { display: none; margin-top: 8px; align-items: center; gap: 8px; flex-wrap: wrap; }
-    .avatar-form-row.active { display: flex; }
-    .avatar-form-row span { font-size: 13px; color: #555; }
-    
-    /* FILTROS LATERAIS E RESPONSIVIDADE */
-    .courses-layout { display: flex; gap: 24px; margin-top: 20px; }
-    .filter-sidebar { width: 260px; flex-shrink: 0; background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; gap: 16px; height: fit-content; }
-    .filter-group { display: flex; flex-direction: column; gap: 6px; }
-    .filter-group label { font-weight: 600; font-size: 13px; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; }
-    .filter-control { width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid #cbd5e1; background-color: #fff; font-size: 14px; color: #1e293b; box-sizing: border-box; }
-    .filter-control:focus { outline: none; border-color: #ff7a00; }
-    .courses-grid-container { flex-grow: 1; }
-    .search-container { margin-bottom: 20px; }
-    .search-input-wrapper { position: relative; width: 100%; }
-    .search-input-wrapper input { width: 100%; padding: 12px 16px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 15px; box-sizing: border-box; }
-    .search-input-wrapper input:focus { outline: none; border-color: #00c853; }
-    .rating-stars { color: #f59e0b; font-size: 13px; margin-top: 4px; }
-
-    /* ROLAGEM PERFIL */
-    .courses-section-profile { width: 100%; border-top: 1px solid #eee; padding-top: 20px; margin-top: 15px; }
-    .courses-section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; padding: 0 4px; }
-    .courses-section-header h3 { font-size: 16px; font-weight: 600; color: #374151; margin: 0; }
-    .courses-section-header span { font-size: 13px; color: #6b7280; }
-    .courses-scroll-wrapper { width: 100%; overflow-x: auto; padding-bottom: 12px; margin-top: 10px; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
-    .courses-scroll-track { display: flex; gap: 16px; width: max-content; }
-    .course-card-new { flex: 0 0 220px; box-sizing: border-box; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; }
-    .card-banner-new { width: 100%; height: 100px; object-fit: cover; }
-    .card-banner-placeholder { width: 100%; height: 100px; background: linear-gradient(135deg, #e0e7ff 0%, #f0fdf4 100%); display: flex; align-items: center; justify-content: center; font-size: 28px; color: #a5b4fc; }
-    .card-body-new { padding: 12px; display: flex; flex-direction: column; gap: 4px; flex: 1; }
-    .card-tipo { font-size: 10px; font-weight: 600; text-transform: uppercase; color: #ff7a00; background: #fff4ec; border-radius: 4px; padding: 2px 6px; width: fit-content; }
-    .card-title-new { font-size: 13px; font-weight: 600; color: #111827; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-    .card-autor { font-size: 11px; color: #6b7280; }
-    .card-date { font-size: 11px; color: #9ca3af; }
-    .card-btn-new { display: block; margin: 8px 12px 12px; padding: 8px 0; text-align: center; font-size: 12px; font-weight: 700; color: white; background: linear-gradient(90deg, #ff7a00, #00c853); border-radius: 8px; text-decoration: none; }
-
-    /* CARDS DA DASHBOARD DO PROFESSOR */
-    .prof-metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 18px; margin-bottom: 30px; }
-    .prof-card { background: white; border-radius: 12px; padding: 20px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.04); border-top: 4px solid #ff7a00; }
-    .prof-card.accent { border-top-color: #00c853; }
-    .prof-card.blue { border-top-color: #3b82f6; }
-    .prof-card.yellow { border-top-color: #f59e0b; }
-    .prof-card-val { font-size: 28px; font-weight: 700; color: #111; margin-top: 6px; }
-    .prof-card-lbl { font-size: 13px; color: #666; font-weight: 600; text-transform: uppercase; }
-
-    /* PAINEL ADMIN STYLES */
-    .panel-box { max-width: 600px; margin: 40px auto; background: #ffffff; padding: 30px; border-radius: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-    .panel-box h2 { margin-bottom: 20px; border-bottom: 2px solid #f3f4f6; padding-bottom: 10px; }
-    .info-row { margin-bottom: 15px; font-size: 15px; }
-    .info-row span { font-weight: bold; color: #555; }
-
-    /* MODAL & TOAST */
-    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 500; justify-content: center; align-items: center; }
-    .modal-overlay.active { display: flex; }
-    .modal-box { background: white; padding: 30px; border-radius: 16px; max-width: 420px; width: 90%; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
-    .modal-buttons { display: flex; gap: 15px; justify-content: center; margin-top: 25px; }
-    .modal-summary { background: #f7f7f7; border-radius: 10px; padding: 14px; margin: 16px 0; font-size: 13px; text-align: left; line-height: 1.8; }
-    
-    .toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(20px); background: #222; color: white; padding: 10px 22px; border-radius: 10px; font-size: 14px; opacity: 0; pointer-events: none; transition: opacity .3s, transform .3s; z-index: 999; }
-    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-
-    footer { text-align: center; color: #777; padding: 28px; font-size: 14px; margin-top: auto; }
-    @media (max-width: 768px) { .courses-layout { flex-direction: column; } .filter-sidebar { width: 100%; } }
   </style>
 </head>
 <body>
 
-<header>
-  <h1>Arte Fora da Caixa</h1>
-  <div class="user-info" onclick="switchTab('user-profile', document.getElementById('profile-tab-btn'))">
-    <img src="{{ url_for('static', filename=session.get('picture')) if session.get('picture') else url_for('static', filename='default_profile.png') }}" alt="Avatar" />
-    <div class="user-details">
-      <strong>{{ session.get("name") or 'Usuário Exemplo' }}</strong>
-      {% if session.get("email") %}<span>{{ session.get("email") }}</span>{% endif %}
+<header class="header">
+  <span class="header-logo">Arte Fora da Caixa</span>
+  <div class="header-user" onclick="location.href='{{ url_for('user.user') }}'">
+    <img class="header-avatar" src="{{ url_for('static', filename=session.get('picture')) if session.get('picture') else url_for('static', filename='default_profile.png') }}" alt="Avatar" />
+    <div class="header-user-info">
+      <span class="header-user-name">{{ session.get("name") or 'Usuário Exemplo' }}</span>
+      {% if session.get("email") %}<span class="header-user-email">{{ session.get("email") }}</span>{% endif %}
     </div>
   </div>
 </header>
 
-<nav class="nav-tabs" id="main-nav-bar">
-  <button id="all-courses-btn" class="tab-btn active" onclick="switchTab('all-courses', this)">Todos os Cursos</button>
-  <button id="my-courses-btn" class="tab-btn" onclick="switchTab('my-courses', this)">Meus Cursos</button>
-  
+<nav class="nav-tabs-global" id="main-nav-bar">
+  <button id="all-courses-btn" class="nav-tab-item active" onclick="switchTab('all-courses', this)">📚 Todos os Cursos</button>
+  <button id="my-courses-btn" class="nav-tab-item" onclick="switchTab('my-courses', this)">📖 Meus Cursos</button>
   {% if session.get("cred") in ["admin", "professor"] %}
-    <button id="publications-tab-btn" class="tab-btn" onclick="switchTab('publications-section', this)">Conteúdos e Publicações</button>
+    <button id="publications-tab-btn" class="nav-tab-item" onclick="switchTab('publications-section', this)">📝 Conteúdos e Publicações</button>
   {% endif %}
-  
   {% if session.get("cred") == "professor" %}
-    <button id="professor-analytics-btn" class="tab-btn" onclick="switchTab('professor-panel', this); fetchProfessorAnalytics();">Minha análise de perfil</button>
+    <button id="professor-analytics-btn" class="nav-tab-item" onclick="switchTab('professor-panel', this); fetchProfessorAnalytics();">📊 Minha análise</button>
   {% endif %}
-  
   {% if session.get('cred') == "admin" %}
-    <button id="admin-panel-btn" class="tab-btn" style="background: #222; color: #fff;" onclick="switchTab('admin-panel', this)">Painel Admin 🔒</button>
+    <button id="admin-panel-btn" class="nav-tab-item admin-tab" onclick="switchTab('admin-panel', this)">🔒 Painel Admin</button>
   {% endif %}
-  
-  <button id="profile-tab-btn" class="tab-btn" onclick="switchTab('user-profile', this)">Meu Perfil</button>
+  <button id="profile-tab-btn" class="nav-tab-item" onclick="switchTab('user-profile', this)">👤 Meu Perfil</button>
 </nav>
 
+<div class="global-banner" id="global-banner">
+  <h2 class="global-banner-title">Arte Fora da Caixa</h2>
+  <p class="global-banner-sub">Cursos gratuitos e criativos para expandir seu conhecimento</p>
+</div>
+<!-- ═══════════════════════════════════════
+     ABA: TODOS OS CURSOS
+═══════════════════════════════════════ -->
 <section id="all-courses" class="view-section active">
-  <div class="banner">
-    <h2>Arte Fora da Caixa</h2>
-    <p>Cursos gratuitos e criativos para expandir seu conhecimento</p>
-  </div>
 
-  <div class="search-container" style="padding: 20px 34px 0 34px;">
-    <div class="search-input-wrapper">
-      <input type="text" id="all-courses-search" placeholder="🔍 Buscar conteúdos pelo nome..." oninput="runAllCoursesFilters()">
+  <!-- BARRA DE FILTROS -->
+  <div class="compact-filters-bar" id="filters-bar">
+    <!-- Campo de busca (autocomplete via fetch) -->
+    <div class="compact-search" style="position: relative;">
+      <input type="text" id="all-courses-search" name="search"
+             value="{{ request.args.get('search', '') }}"
+             placeholder="🔍 Buscar conteúdos pelo nome..."
+             autocomplete="off"
+             oninput="searchCourses(this.value)">
+      <!-- Dropdown de resultados (oculto por padrão) -->
+      <div id="search-results" class="autocomplete-list" style="display:none; position:absolute; top:100%; left:0; right:0; background:var(--bg-card); border:1px solid var(--border); border-radius:0 0 var(--radius-md) var(--radius-md); box-shadow:var(--shadow-md); z-index:20; max-height:300px; overflow-y:auto;"></div>
+    </div>
+
+    <!-- Filtro por tipo (recarrega a página) -->
+    <div class="compact-filter-group">
+      <span>Tipo:</span>
+      <select id="filter-type" name="type" onchange="applyFilters()">
+        <option value="all" {% if request.args.get('type', 'all') == 'all' %}selected{% endif %}>Todas as Áreas</option>
+        {% for value, label, emoji in content_types %}
+          <option value="{{ value }}" {% if request.args.get('type') == value %}selected{% endif %}>{{ emoji }} {{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Filtro por popularidade (recarrega a página) -->
+    <div class="compact-filter-group">
+      <span>Popularidade:</span>
+      <select id="filter-popularity" name="popularity" onchange="applyFilters()">
+        <option value="all" {% if request.args.get('popularity', 'all') == 'all' %}selected{% endif %}>Todos</option>
+        <option value="most_enrolled" {% if request.args.get('popularity') == 'most_enrolled' %}selected{% endif %}>🔥 Mais Inscritos</option>
+        <option value="most_reviewed" {% if request.args.get('popularity') == 'most_reviewed' %}selected{% endif %}>💬 Mais Avaliados</option>
+      </select>
+    </div>
+
+    <!-- Ordenação (recarrega a página) -->
+    <div class="compact-filter-group">
+      <span>Data:</span>
+      <select id="filter-sort" name="sort" onchange="applyFilters()">
+        <option value="recent" {% if request.args.get('sort', 'recent') == 'recent' %}selected{% endif %}>Mais recentes</option>
+        <option value="oldest" {% if request.args.get('sort') == 'oldest' %}selected{% endif %}>Mais antigos</option>
+      </select>
     </div>
   </div>
 
-  <div class="courses-layout" style="padding: 0 34px;">
-    <aside class="filter-sidebar">
-      <div class="filter-group">
-        <label for="filter-type">Tipo de Conteúdo</label>
-        <select id="filter-type" class="filter-control" onchange="runAllCoursesFilters()">
-          <option value="all">Todas as Áreas</option>
-          {% if content_types %}
-            {% for value, label, emoji in content_types %}
-              <option value="{{ value }}">{{ emoji }} {{ label }}</option>
-            {% endfor %}
-          {% endif %}
-        </select>
-      </div>
+  <!-- LISTA DE CURSOS (pré-renderizada pelo servidor) -->
+  <div class="courses-rows-container">
+    {% if contents %}
+      {% set grouped = {} %}
+      {% for c in contents %}
+        {% set type = c.content_type or 'Outros' %}
+        {% if type not in grouped %}
+          {% set _ = grouped.update({type: []}) %}
+        {% endif %}
+        {% set _ = grouped[type].append(c) %}
+      {% endfor %}
 
-      <div class="filter-group">
-        <label for="filter-popularity">Popularidade</label>
-        <select id="filter-popularity" class="filter-control" onchange="runAllCoursesFilters()">
-          <option value="all">Todos os conteúdos</option>
-          <option value="most_enrolled">🔥 Mais Inscritos</option>
-          <option value="most_reviewed">💬 Mais Avaliados (Volume)</option>
-        </select>
-      </div>
-
-      <div class="filter-group">
-        <label for="filter-sort">Ordenar por Data</label>
-        <select id="filter-sort" class="filter-control" onchange="runAllCoursesFilters()">
-          <option value="recent">Mais recentes primeiro</option>
-          <option value="oldest">Mais antigos primeiro</option>
-        </select>
-      </div>
-    </aside>
-
-    <div class="courses-grid-container">
-      <main class="courses" id="all-courses-grid" style="padding: 0;">
-        {% if contents %}
-          {% for c in contents %}
-          <div class="course" 
-               data-title="{{ c.title | lower }}" 
-               data-type="{{ c.content_type or 'aula' }}" 
-               data-rating="{{ c.rating.average_rating or 5 }}" 
-               data-date="{{ c.creation_date or '01/01/2026' }}"
-               data-enrollments="{{ c.rating.total_inscriptions or 0 }}"
-               data-reviews="{{ c.rating.total_reviews or 0 }}">
-            
-            {% if c["banner"] %}
-              <img src="{{ url_for('contents.get_banner', content_id=c['id']) }}" style="width:100%; height:180px; object-fit:cover;">
-            {% else %}
-              <div style="width:100%; height:180px; background: linear-gradient(90deg,#ff7a00,#00c853);"></div>
-            {% endif %}
-
-            <div class="course-content">
-              <h3>{{ c.title }}</h3>
-              <p>Autor: {{ c.author }} • Publicado: {{ c.creation_date }}</p>
-              
-              <div class="rating-stars">
-                {% set rating_int = (c.rating.average_rating) | int %}
-                {% for n in range(rating_int) %}⭐{% endfor %} <span>( {{ c.rating.average_rating or '0.0' }} )</span><br>
-                <span> {{ c.rating.total_inscriptions }} alunos inscritos </span> • <span>{{c.rating.total_reviews}} avaliações</span>
+      {% for type, courses in grouped.items() %}
+      <div class="course-row-section">
+        <h3 class="course-row-title">{{ type }}</h3>
+        <div class="course-scroll-track">
+          {% for c in courses %}
+          <div class="course-card-item">
+            <div class="course-card-banner">
+              {% if c.banner %}
+                <img src="{{ url_for('contents.get_banner', content_id=c.id) }}" alt="Banner">
+              {% else %}
+                <div class="course-card-placeholder">🎨</div>
+              {% endif %}
+            </div>
+            <div class="course-card-body">
+              <h4 class="course-card-title">{{ c.title }}</h4>
+              <p class="course-card-meta">{{ c.author or 'Autor desconhecido' }} • {{ c.creation_date }}</p>
+              <div class="course-card-rating">
+                {% if c.rating and c.rating.average_rating %}
+                  {% set stars = c.rating.average_rating|int %}
+                  {% for i in range(stars) %}⭐{% endfor %}
+                  <span>({{ c.rating.average_rating }})</span>
+                {% else %}
+                  <span>Sem avaliações</span>
+                {% endif %}
+                <div class="course-card-stats">
+                  {{ c.rating.total_inscriptions if c.rating else 0 }} alunos • {{ c.rating.total_reviews if c.rating else 0 }} avaliações
+                </div>
               </div>
-              
-              <button onclick="location.href='{{ url_for('contents.content_buss', content_id=c.id) }}'" style="margin-top: 10px;">Ver</button>
+              <button class="btn btn-primary btn-block btn-sm" onclick="location.href='/contents/content/{{ c.id }}'">Ver</button>
             </div>
           </div>
           {% endfor %}
-        {% else %}
-          <p style="text-align:center; font-size:18px; color:#555; grid-column: 1 / -1;">Nenhum conteúdo publicado.</p>
-        {% endif %}
-      </main>
-    </div>
-  </div>
-</section>
-
-<section id="my-courses" class="view-section">
-  <div class="my-courses-container">
-    <div class="section-title">Continuar Estudando de Onde Parou</div>
-    {% if last_accessed %}
-      <div class="rec-card">
-        <div class="rec-img-wrapper">
-          {% if last_accessed.banner %}
-            <img src="{{ url_for('contents.get_banner', content_id=last_accessed.id) }}" alt="Banner">
-          {% else %}
-            <div class="default-img" style="background: linear-gradient(90deg,#00c853,#ff7a00); width:100%; height:100%;"></div>
-          {% endif %}
-        </div>
-        <div class="rec-info">
-          <span class="rec-badge">{% if last_accessed.content_type %}{{ last_accessed.content_type }}{% else %}Conteúdo{% endif %}</span>
-          <h3 class="rec-title">{% if last_accessed.title %}{{ last_accessed.title }}{% else %}Sem Título{% endif %}</h3>
-          <a href="/success_page_mock" class="btn-continue" style="max-width: 160px;">Continuar estudando</a>
         </div>
       </div>
+      {% endfor %}
     {% else %}
-      <p style="font-size: 13px; color: #777; margin-bottom: 24px; font-style: italic;">Nenhum histórico de visualização encontrado.</p>
+      <div class="empty-state">Nenhum conteúdo encontrado.</div>
     {% endif %}
+  </div>
 
-    <div class="section-title">Meus Conteúdos Inscritos</div>
-    
-    <div class="sub-filter-bar">
-      <button class="sub-filter-btn active" onclick="filterSubTab('all', this)">Todos</button>
-      <button class="sub-filter-btn" onclick="filterSubTab('fav', this)">Favoritos</button>
-      <button class="sub-filter-btn" onclick="filterSubTab('views', this)">Por Visualização</button>
-      <button class="sub-filter-btn" onclick="filterSubTab('type', this)">Filtrar Tipo</button>
-      <button class="sub-filter-btn" onclick="filterSubTab('date', this)">Por Data de Publicação</button>
-    </div>
+  <!-- PAGINAÇÃO -->
+  {% if total_pages > 1 %}
+  <div style="display:flex; justify-content:center; align-items:center; gap:10px; padding:10px 28px 30px; flex-wrap:wrap;">
+    {% set args = request.args.copy() %}
+    {% if page > 1 %}
+      {% set _ = args.update({'page': 1}) %}
+      <a href="?{{ args|urlencode }}" class="btn btn-outline btn-sm">« Primeira</a>
+      {% set _ = args.update({'page': page - 1}) %}
+      <a href="?{{ args|urlencode }}" class="btn btn-outline btn-sm">‹ Anterior</a>
+    {% endif %}
+    <span style="color:var(--text-secondary); font-weight:600;">Página {{ page }} de {{ total_pages }}</span>
+    {% if page < total_pages %}
+      {% set _ = args.update({'page': page + 1}) %}
+      <a href="?{{ args|urlencode }}" class="btn btn-outline btn-sm">Próxima ›</a>
+      {% set _ = args.update({'page': total_pages}) %}
+      <a href="?{{ args|urlencode }}" class="btn btn-outline btn-sm">Última »</a>
+    {% endif %}
+  </div>
+  {% endif %}
+</section>
 
-    <div id="panel-type" class="inner-options-panel">
-      <span>Tipo:</span>
-      <select id="sel-type" onchange="runSubFilters()" style="padding:4px; border-radius:4px; border:1px solid #ccc;"></select>
-    </div>
+ ═══════════════════════════════════════
+     ABA: MEUS CURSOS
+═══════════════════════════════════════ -->
+<section id="my-courses" class="view-section">
+  <div class="my-courses-wrapper">
 
-    <div id="panel-date" class="inner-options-panel">
-      <span>Ordenar:</span>
-      <select id="sel-date" onchange="runSubFilters()" style="padding:4px; border-radius:4px; border:1px solid #ccc;">
-        <option value="recent">Mais recentes primeiro</option>
-        <option value="oldest">Mais antigos primeiro</option>
+    <div class="my-courses-filters">
+      <button class="my-filter-btn active" onclick="myFilterAll(this)">Todos</button>
+      <button class="my-filter-btn" onclick="myFilterType(this)">Filtrar por Tipo</button>
+      <button class="my-filter-btn" onclick="myFilterDate(this)">Por Data</button>
+      <select id="sel-type" class="my-courses-type-select" onchange="runMyFilters()">
+        <option value="all">Todos os tipos</option>
+      </select>
+      <select id="sel-date" class="my-courses-type-select" onchange="runMyFilters()">
+        <option value="recent">Mais recentes</option>
+        <option value="oldest">Mais antigos</option>
       </select>
     </div>
 
     <div class="my-courses-grid" id="my-grid">
-      {% if enrolled_contents %}
-        {% for mc in enrolled_contents %}
-          <div class="my-course-card"
-               data-fav="{% if mc.is_favorite %}true{% else %}false{% endif %}"
-               data-views="{% if mc.views_count %}{{ mc.views_count }}{% else %}0{% endif %}"
-               data-type="{% if mc.content_type %}{{ mc.content_type }}{% else %}Sem Tipo{% endif %}"
-               data-date="{% if mc.creation_date %}{{ mc.creation_date }}{% else %}0000-00-00{% endif %}">
-            
-            <div class="my-course-banner">
-              {% if mc.banner %}
-                <img src="{{ url_for('contents.get_banner', content_id=mc.id) }}" alt="Banner">
-              {% else %}
-                <div style="background: #cbd5e1; width:100%; height:100%;"></div>
-              {% endif %}
-            </div>
-
-            <div class="my-course-body">
-              <div class="my-course-title">{% if mc.title %}{{ mc.title }}{% else %}Título Indisponível{% endif %} criado em {{mc.creation_date}}</div>
-              <a href="/contents/content/{{mc.id}}" class="btn-continue">Continuar estudando</a>
-            </div>
-          </div>
-        {% endfor %}
-      {% else %}
-        <div class="empty-state">Você não está inscrito em nenhum conteúdo ainda.</div>
-      {% endif %}
-    </div>
-  </div>
-</section>
-
-<section id="publications-section" class="view-section">
-  <div style="display: flex; gap: 15px; justify-content: center; margin: 30px auto 10px; max-width: 850px;">
-    <button id="sub-my-pubs-btn" class="tab-btn active" onclick="switchSubSection('my-publications-view', this)">Minhas Publicações</button>
-    <button id="sub-publish-btn" class="tab-btn" onclick="switchSubSection('publish-content-view', this)">Publicar Conteúdo</button>
-  </div>
-
-  <div id="my-publications-view" class="sub-section-content">
-    <div class="publications-container">
-      <h2>Minhas Publicações</h2>
-      {% if publications %}
-        {% for c in publications %}
-        <div class="content-card">
-            {% if c.banner %}
-                <img src="{{ url_for('contents.get_banner', content_id=c.id) }}" alt="Banner de {{ c.title }}" class="card-banner-side">
-            {% else %}
-                <div class="card-banner-side" style="display: flex; align-items: center; justify-content: center; color: #9ca3af; font-size: 12px;">Sem Banner</div>
-            {% endif %}
-
-            <div class="card-body-side">
-                <div>
-                    <div class="title-side">{{ c.title }}</div>
-                    <div class="meta-info">
-                        <span>Autor: {{ c.author }}</span>
-                        <span>Data: {{ c.creation_date }}</span>
-                        <span>Tipo: {{ c.content_type }}</span>
-                    </div>
-                    <div class="desc-side">{{ c.desc }}</div>
-                </div>
-                <div class="actions-container">
-                    <form method="POST" action="{{ url_for('contents.content_buss', content_id = c.id)}}" style="margin: 0;">
-                        <button type="submit" class="btn">Editar</button>
-                    </form>
-                </div>
-            </div>
-        </div>
-        {% endfor %}
-      {% else %}
-        <div class="empty-state">Você ainda não realizou nenhuma publicação.</div>
-      {% endif %}
-    </div>
-  </div>
-
-  <div id="publish-content-view" class="sub-section-content" style="display: none;">
-    <div style="padding: 10px 0 40px;">
-      <form method="POST" action="{{ url_for('contents.publish_content') }}" enctype="multipart/form-data" id="publish-form">
-        <div class="form-card">
-          <div class="form-card-title">📋 Informações do conteúdo</div>
-          <div class="field">
-            <label for="content_name">Título <span style="color:#bbb">(mín. 15 caracteres)</span></label>
-            <input type="text" id="content_name" name="content_name" placeholder="Ex.: Introdução à Programação com Python">
-          </div>
-          <div class="field">
-            <label for="description">Descrição <span style="color:#bbb">(mín. 50 caracteres)</span></label>
-            <textarea id="description" name="description" placeholder="Descreva o conteúdo detalhadamente…"></textarea>
-          </div>
-          <div class="field">
-            <label for="file">Arquivo PDF</label>
-            <input type="file" id="file" name="file" accept="application/pdf" onchange="onPdfChosen(this)">
-            <p class="hint" id="pdf-hint">Nenhum arquivo selecionado</p>
-          </div>
-          {% if session.get("cred") == "admin" %}
-          <div class="field">
-            <label for="author">Autor (nome de usuário)</label>
-            <input type="text" id="author" name="author" placeholder="Nome exato do professor">
-          </div>
+      {% for mc in enrolled_contents %}
+      <div class="course-card-item"
+        data-type="{{ mc.content_type or 'Sem Tipo' }}"
+        data-date="{{ mc.creation_date or '0000-00-00' }}">
+        <div class="course-card-banner">
+          {% if mc.banner %}
+            <img src="{{ url_for('contents.get_banner', content_id=mc.id) }}" alt="Banner">
+          {% else %}
+            <div class="course-card-placeholder">📚</div>
           {% endif %}
         </div>
+        <div class="course-card-body">
+          <h3 class="course-card-title">{{ mc.title or 'Título Indisponível' }}</h3>
+          <p class="course-card-meta">{{ mc.author or '' }} • {{ mc.creation_date }}</p>
+          <div class="course-card-stats">{{ mc.content_type or '' }}</div>
+          <a href="/contents/content/{{ mc.id }}" class="btn btn-primary btn-block btn-sm" style="margin-top:12px;display:block;text-align:center;text-decoration:none;">Continuar estudando</a>
+        </div>
+      </div>
+      {% endfor %}
+      {% if not enrolled_contents %}
+        <div class="empty-state" style="grid-column:1/-1;">Você não está inscrito em nenhum conteúdo ainda.</div>
+      {% endif %}
+    </div>
+  </div>
+</section>
 
-        <div class="form-card">
-          <div class="form-card-title">🏷️ Tipo de conteúdo</div>
-          <div class="type-grid">
-            {% if content_types %}
-              {% for value, label, emoji in content_types %}
-              <div>
-                <input class="type-option" type="radio" name="content_type" id="type-{{ value }}" value="{{ value }}" {% if loop.first %}checked{% endif %} onchange="updatePreview()">
-                <label class="type-label" for="type-{{ value }}">
-                  <span class="emoji">{{ emoji }}</span>
-                  {{ label }}
-                </label>
-              </div>
-              {% endfor %}
+<!-- ═══════════════════════════════════════
+     ABA: PUBLICAÇÕES
+═══════════════════════════════════════ -->
+<section id="publications-section" class="view-section">
+
+  <div class="pubs-sub-nav">
+    <button class="pubs-sub-btn active" id="sub-my-pubs-btn" onclick="switchPubSection('my-publications-view', this)">📋 Minhas Publicações</button>
+    <button class="pubs-sub-btn" id="sub-publish-btn" onclick="switchPubSection('publish-content-view', this)">➕ Publicar Conteúdo</button>
+  </div>
+
+  <!-- ─── Minhas Publicações ─── -->
+  <div id="my-publications-view">
+    <div class="pubs-list-container">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;flex-wrap:wrap;gap:12px;">
+        <h2 style="font-family:var(--font-display);font-size:22px;font-weight:800;color:var(--text-primary);">Minhas Publicações</h2>
+        <span style="font-size:13px;color:var(--text-muted);">{{ publications|length if publications else 0 }} publicação(ões)</span>
+      </div>
+
+      {% if publications %}
+      <div class="pubs-grid">
+        {% for c in publications %}
+        <div class="pub-card-v2">
+          <div class="pub-card-v2-banner">
+            {% if c.banner %}
+              <img src="{{ url_for('contents.get_banner', content_id=c.id) }}" alt="Banner de {{ c.title }}">
             {% else %}
-              <div>
-                <input class="type-option" type="radio" name="content_type" id="type-aula" value="aula" checked onchange="updatePreview()">
-                <label class="type-label" for="type-aula"><span class="emoji">📚</span>Aula</label>
-              </div>
+              <div class="pub-card-v2-banner-empty">Sem Banner</div>
             {% endif %}
+            <span class="pub-type-badge">{{ c.content_type or 'Aula' }}</span>
           </div>
-        </div>
-
-        <div class="form-card">
-          <div class="form-card-title">🖼️ Banner</div>
-          <div class="banner-tabs">
-            <button type="button" class="tab-btn-sub active" onclick="switchBannerTab('default')">🎨 Banners do site</button>
-            <button type="button" class="tab-btn-sub" onclick="switchBannerTab('own')">📁 Enviar meu banner</button>
-          </div>
-
-          <div class="tab-panel active" id="tab-default">
-            <div class="banner-gallery">
-              {% if default_banners %}
-                {% for b in default_banners %}
-                <div>
-                  <input class="banner-opt" type="radio" name="banner_id" id="banner-{{ b.id }}" value="{{ b.id }}" {% if loop.first %}checked{% endif %} onchange="onDefaultBannerChange('{{ b.id }}')">
-                  <label class="banner-opt-label" for="banner-{{ b.id }}">
-                    <img src="{{ url_for('contents.get_banner_default', banner_id=b.id) }}" alt="{{ b.label }}">
-                    <span>{{ b.label }}</span>
-                  </label>
-                </div>
-                {% endfor %}
-              {% endif %}
+          <div class="pub-card-v2-body">
+            <div class="pub-card-v2-title">{{ c.title }}</div>
+            <div class="pub-card-v2-meta">
+              <span>✍️ {{ c.author }}</span>
+              <span>📅 {{ c.creation_date }}</span>
             </div>
-          </div>
-
-          <div class="tab-panel" id="tab-own">
-            <div class="upload-area" onclick="document.getElementById('banner_file').click()">
-              <div class="upload-icon">🖼️</div>
-              <p>Clique para escolher uma imagem</p>
-              <input type="file" id="banner_file" name="banner_file" accept="image/jpeg,image/png,image/webp" onchange="onBannerChosen(this)">
-            </div>
-            <img id="banner-preview-own" alt="preview do banner">
-          </div>
-
-          <div class="preview-wrapper visible" id="preview-wrapper">
-            <p class="preview-label">Como ficará para o público</p>
-            <div class="pub-card">
-              <div class="pub-card-banner" id="preview-banner">
-                <img id="preview-banner-img" src="" alt="Preview">
-              </div>
-              <div class="pub-card-body">
-                <div class="pub-card-title" id="preview-title">Título do conteúdo</div>
-                <div class="pub-card-meta">
-                  <span class="badge" id="preview-type">Aula</span>
-                  <span id="preview-author">{{ session.get("name") or 'Usuário' }}</span><br>
-                  <span id="preview-date">Hoje</span>
-                </div>
-                <div class="pub-card-btn">Ver</div>
-              </div>
+            <p class="pub-card-v2-desc">{{ c.desc }}</p>
+            <div class="pub-card-v2-footer">
+              <form method="POST" action="{{ url_for('contents.content_buss', content_id=c.id) }}" style="margin:0;flex:1;">
+                <button type="submit" class="btn btn-primary btn-sm btn-block">✏️ Editar</button>
+              </form>
             </div>
           </div>
         </div>
-
-        <input type="hidden" id="banner-mode-input" name="banner_mode" value="default">
-        <div class="row-btns">
-          <button type="button" class="btn" onclick="openConfirm()">Publicar</button>
-        </div>
-      </form>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty-state" style="padding:60px 20px;">
+        <div style="font-size:48px;margin-bottom:12px;">📝</div>
+        Você ainda não realizou nenhuma publicação.
+      </div>
+      {% endif %}
     </div>
   </div>
+
+  <!-- ─── Publicar Conteúdo ─── -->
+  <div id="publish-content-view" style="display:none;">
+    <div class="publish-form-outer">
+      <div class="publish-form-inner">
+        <form method="POST" action="{{ url_for('contents.publish_content') }}" enctype="multipart/form-data" id="publish-form">
+          <input type="hidden" id="banner-mode-input" name="banner_mode" value="default">
+
+          <div class="publish-sections-layout">
+            <!-- COLUNA ESQUERDA -->
+            <div class="publish-left">
+
+              <div class="publish-card">
+                <div class="publish-card-header">📋 Informações do conteúdo</div>
+                <div class="publish-card-body">
+                  <div class="form-field">
+                    <label class="form-label" for="content_name">Título <span class="hint">(mín. 15 caracteres)</span></label>
+                    <input type="text" id="content_name" name="content_name" class="form-input" placeholder="Ex.: Introdução à Programação com Python" oninput="updatePreview()">
+                  </div>
+                  <div class="form-field">
+                    <label class="form-label" for="description">Descrição <span class="hint">(mín. 50 caracteres)</span></label>
+                    <textarea id="description" name="description" class="form-textarea" placeholder="Descreva o conteúdo detalhadamente…" style="min-height:120px;"></textarea>
+                  </div>
+                  {% if session.get("cred") == "admin" %}
+                  <div class="form-field">
+                    <label class="form-label" for="author">Autor (nome de usuário)</label>
+                    <input type="text" id="author" name="author" class="form-input" placeholder="Nome exato do professor">
+                  </div>
+                  {% endif %}
+                </div>
+              </div>
+
+              <div class="publish-card">
+                <div class="publish-card-header">📄 Arquivo PDF</div>
+                <div class="publish-card-body">
+                  <div class="upload-area" onclick="document.getElementById('file').click()" style="padding:28px 20px;">
+                    <div class="upload-area-icon" style="font-size:40px;">📄</div>
+                    <div class="upload-area-text">Clique para selecionar um PDF</div>
+                    <div class="upload-area-hint">Somente arquivos .pdf</div>
+                    <div id="pdf-hint" class="upload-status"></div>
+                    <input type="file" id="file" name="file" accept="application/pdf" onchange="onPdfChosen(this)">
+                  </div>
+                </div>
+              </div>
+
+              <div class="publish-card">
+                <div class="publish-card-header">🏷️ Tipo de conteúdo</div>
+                <div class="publish-card-body">
+                  <div class="type-grid-v2">
+                    {% for value, label, emoji in content_types %}
+                    <div class="type-opt-v2">
+                      <input class="type-radio" type="radio" name="content_type" id="type-{{ value }}" value="{{ value }}" {% if loop.first %}checked{% endif %} onchange="updatePreview()">
+                      <label for="type-{{ value }}"><span class="emoji">{{ emoji }}</span>{{ label }}</label>
+                    </div>
+                    {% endfor %}
+                  </div>
+                </div>
+              </div>
+
+              <div class="publish-card">
+                <div class="publish-card-header">🖼️ Banner do conteúdo</div>
+                <div class="publish-card-body">
+                  <div style="display:flex;gap:0;margin-bottom:18px;border:1px solid var(--border);border-radius:var(--radius-pill);overflow:hidden;width:fit-content;">
+                    <button type="button" id="btn-tab-default" onclick="switchBannerTab('default')"
+                      style="padding:8px 20px;font-size:12px;font-weight:600;border:none;background:var(--orange);color:white;cursor:pointer;transition:all 0.15s;">
+                      🎨 Banners do site
+                    </button>
+                    <button type="button" id="btn-tab-own" onclick="switchBannerTab('own')"
+                      style="padding:8px 20px;font-size:12px;font-weight:600;border:none;background:transparent;color:var(--text-secondary);cursor:pointer;transition:all 0.15s;">
+                      📁 Enviar meu banner
+                    </button>
+                  </div>
+
+                  <div id="tab-default">
+                    <div class="banner-grid-large">
+                      {% for b in default_banners %}
+                      <div class="banner-opt" id="banner-opt-{{ b.id }}" onclick="selectBannerOpt('{{ b.id }}')">
+                        <input class="type-radio" type="radio" name="banner_id" id="banner-{{ b.id }}" value="{{ b.id }}" {% if loop.first %}checked{% endif %} onchange="onDefaultBannerChange('{{ b.id }}')">
+                        <label for="banner-{{ b.id }}">
+                          <img src="{{ url_for('contents.get_banner_default', banner_id=b.id) }}" alt="{{ b.label }}">
+                          <span class="banner-opt-label">{{ b.label }}</span>
+                        </label>
+                        <span class="banner-check-mark">✓</span>
+                      </div>
+                      {% endfor %}
+                    </div>
+                  </div>
+
+                  <div id="tab-own" style="display:none;">
+                    <div class="upload-area" onclick="document.getElementById('banner_file').click()" style="padding:24px 20px;">
+                      <div class="upload-area-icon" style="font-size:36px;">🖼️</div>
+                      <div class="upload-area-text">Clique para escolher uma imagem</div>
+                      <div class="upload-area-hint">Formatos: JPG, PNG, WEBP</div>
+                      <input type="file" id="banner_file" name="banner_file" accept="image/jpeg,image/png,image/webp" onchange="onBannerChosen(this)">
+                    </div>
+                    <img id="banner-preview-own" alt="preview do banner" style="display:none;width:100%;height:160px;object-fit:cover;border-radius:var(--radius-md);margin-top:12px;">
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- COLUNA DIREITA -->
+            <div class="publish-right">
+              <div class="publish-card" style="position:sticky;top:76px;">
+                <div class="publish-card-header">👁️ Pré-visualização</div>
+                <div class="publish-card-body" style="padding-bottom:22px;">
+                  <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;">Como ficará para o público</p>
+                  <div class="preview-card-wrap">
+                    <div class="course-card-banner" id="preview-banner" style="height:160px;">
+                      <img id="preview-banner-img" src="" alt="Preview" style="display:none;width:100%;height:100%;object-fit:cover;">
+                      <div id="preview-banner-placeholder" class="course-card-placeholder">🎨</div>
+                    </div>
+                    <div class="course-card-body" style="padding:14px 16px 16px;">
+                      <div class="course-card-title" id="preview-title">Título do conteúdo</div>
+                      <div class="course-card-meta">
+                        <span class="rec-badge" id="preview-type">Aula</span>
+                        <span id="preview-author"> • {{ session.get("name") or 'Usuário' }}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style="margin-top:20px;display:flex;flex-direction:column;gap:10px;">
+                    <button type="button" class="btn btn-primary btn-block btn-lg" onclick="openConfirm()">🚀 Publicar conteúdo</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
 </section>
 
+<!-- ═══════════════════════════════════════
+     ABA: PROFESSOR ANALYTICS
+═══════════════════════════════════════ -->
 <section id="professor-panel" class="view-section">
-  <div class="profile-container" style="margin-top: 20px;">
-    <h2 style="font-size: 24px; color: #222; margin-bottom: 5px;">📊 Painel de Análise do Professor</h2>
-    <p style="font-size: 14px; color: #666; margin-bottom: 25px;">Monitore o engajamento geral de suas publicações e faça buscas detalhadas.</p>
-    
-    <div class="prof-metric-grid">
-      <div class="prof-card">
-        <div class="prof-card-lbl">Conteúdos Publicados</div>
-        <div class="prof-card-val" id="meta-total-published">—</div>
-      </div>
-      <div class="prof-card accent">
-        <div class="prof-card-lbl">Inscrições Globais</div>
-        <div class="prof-card-val" id="meta-global-inscriptions">—</div>
-      </div>
-      <div class="prof-card blue">
-        <div class="prof-card-lbl">Total de Avaliações</div>
-        <div class="prof-card-val" id="meta-global-reviews">—</div>
-      </div>
-      <div class="prof-card yellow">
-        <div class="prof-card-lbl">Média de Avaliação</div>
-        <div class="prof-card-val" id="meta-global-rating">—</div>
-      </div>
+  <div class="profile-container" style="margin-top:20px;">
+    <h2 style="font-family:var(--font-display);font-size:22px;margin-bottom:4px;">📊 Painel de Análise do Professor</h2>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:22px;">Monitore o engajamento geral de suas publicações.</p>
+    <div class="metric-grid">
+      <div class="metric-card"><div class="metric-label">Conteúdos Publicados</div><div class="metric-value" id="meta-total-published">—</div></div>
+      <div class="metric-card accent"><div class="metric-label">Inscrições Globais</div><div class="metric-value" id="meta-global-inscriptions">—</div></div>
+      <div class="metric-card blue"><div class="metric-label">Total de Avaliações</div><div class="metric-value" id="meta-global-reviews">—</div></div>
+      <div class="metric-card yellow"><div class="metric-label">Média de Avaliação</div><div class="metric-value" id="meta-global-rating">—</div></div>
     </div>
-
-    <div class="courses-section-profile" style="margin-top: 35px;">
-      <div class="courses-section-header">
-        <h3>🔍 Detalhar Análise por Conteúdo</h3>
+    <div style="margin-top:30px;">
+      <div class="section-title">🔍 Detalhar Análise por Conteúdo</div>
+      <div style="display:flex;gap:10px;margin-bottom:18px;">
+        <input type="text" id="prof-course-search" class="search-input" placeholder="Digite o nome do conteúdo..." style="flex:1;">
+        <button class="btn btn-primary" onclick="searchProfessorContent()">Pesquisar</button>
       </div>
-      
-      <div class="search-input-wrapper" style="display: flex; gap: 10px; margin-bottom: 20px;">
-        <input type="text" id="prof-course-search" placeholder="Digite o nome exato ou parte do título do conteúdo..." style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 15px;">
-        <button class="btn" onclick="searchProfessorContent()" style="white-space: nowrap;">Pesquisar</button>
-      </div>
-
-      <div id="prof-search-results" style="display: grid; gap: 15px; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); margin-bottom: 25px;"></div>
-
-      <div id="prof-content-analytics-box" style="display: none; background: #f8fafc; border: 1px solid #e2e8f0; padding: 25px; border-radius: 12px; border-left: 5px solid #00c853;">
-        <h4 id="analytics-content-title" style="font-size: 18px; color: #111827; margin-bottom: 4px;">Título do Curso</h4>
-        <p style="font-size: 12px; color: #6b7280; margin-bottom: 18px;">Publicado por: <span id="analytics-content-author">—</span> em <span id="analytics-content-date">—</span></p>
-        
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px;">
-          <div style="background: white; padding: 14px; border-radius: 8px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
-            <div style="font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase;">Inscrições</div>
-            <div id="analytics-content-inscriptions" style="font-size: 20px; font-weight: bold; color: #1e293b; margin-top: 4px;">0</div>
-          </div>
-          <div style="background: white; padding: 14px; border-radius: 8px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
-            <div style="font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase;">Avaliações</div>
-            <div id="analytics-content-reviews" style="font-size: 20px; font-weight: bold; color: #1e293b; margin-top: 4px;">0</div>
-          </div>
-          <div style="background: white; padding: 14px; border-radius: 8px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
-            <div style="font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase;">Média Avaliação</div>
-            <div id="analytics-content-rating" style="font-size: 20px; font-weight: bold; color: #f59e0b; margin-top: 4px;">0.0</div>
-          </div>
+      <div id="prof-search-results" style="display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));margin-bottom:24px;"></div>
+      <div id="prof-content-analytics-box" style="display:none;background:#f8fafc;border:1px solid var(--border);padding:22px;border-radius:var(--radius-md);border-left:5px solid var(--green);">
+        <h4 id="analytics-content-title" style="font-family:var(--font-display);font-size:17px;margin-bottom:2px;">Título do Curso</h4>
+        <p style="font-size:11px;color:var(--text-muted);margin-bottom:16px;">Publicado por: <span id="analytics-content-author">—</span> em <span id="analytics-content-date">—</span></p>
+        <div class="metric-grid" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr));">
+          <div class="metric-card"><div class="metric-label">Inscrições</div><div class="metric-value" id="analytics-content-inscriptions" style="font-size:22px;">0</div></div>
+          <div class="metric-card accent"><div class="metric-label">Avaliações</div><div class="metric-value" id="analytics-content-reviews" style="font-size:22px;">0</div></div>
+          <div class="metric-card yellow"><div class="metric-label">Média</div><div class="metric-value" id="analytics-content-rating" style="font-size:22px;">0.0</div></div>
         </div>
       </div>
-
     </div>
   </div>
 </section>
 
+<!-- ═══════════════════════════════════════
+     ABA: PAINEL ADMIN
+═══════════════════════════════════════ -->
 <section id="admin-panel" class="view-section">
-  <div class="panel-box" style="border-top: 5px solid #222;">
+  <div class="panel-box">
     <h2>Painel Administrativo 🔒</h2>
-    <p style="font-size: 14px; color: #555; margin-bottom: 20px;">Bem-vindo à área de gestão de conteúdos do Arte Fora da Caixa.</p>
-    <div class="info-row"><span>Ações Rápidas:</span></div>
-    <button onclick="location.href='/admin/admin_page'" style="background: #00c853; width: 100%; color: white; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-bottom: 10px;">Usuários</button>
-    <button onclick="location.href='/admin/redirector'" style="background: #3b82f6; width: 100%; color: white; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">📊 Ver Relatórios de Acessos</button>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:18px;">Bem-vindo à área de gestão do Arte Fora da Caixa.</p>
+    <button onclick="location.href='/admin/admin_page'" class="btn btn-primary btn-block" style="margin-bottom:10px;">👥 Usuários</button>
+    <button onclick="location.href='/admin/redirector'" class="btn btn-blue btn-block">📊 Ver Relatórios de Acessos</button>
   </div>
 </section>
 
+<!-- ═══════════════════════════════════════
+     ABA: MEU PERFIL
+═══════════════════════════════════════ -->
 <section id="user-profile" class="view-section">
   <div class="profile-container">
     <div class="profile-header">
       <div class="avatar-wrapper">
-        <img id="avatar-preview" src="{{ url_for('static', filename=session.get('picture')) if session.get('picture') else url_for('static', filename='default_profile.png') }}" alt="Foto de perfil">
-        <button class="avatar-delete-btn" type="button" onclick="document.getElementById('delete-picture-form').submit();">
-          <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M19 6l-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+        <img id="avatar-preview"
+             src="{{ url_for('static', filename=session.get('picture')) if session.get('picture') else url_for('static', filename='default_profile.png') }}"
+             alt="Foto de perfil">
+
+        <button class="avatar-action-btn avatar-delete-btn" type="button" title="Excluir foto de perfil"
+                onclick="document.getElementById('delete-picture-form').submit();">
+          <svg viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M19 6l-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
         </button>
-        <button class="avatar-edit-btn" type="button" onclick="toggleAvatarForm()">
-          <svg viewBox="0 0 24 24"><path d="M12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7zm7-13h-1.586l-1.707-1.707A1 1 0 0 0 15 .5H9a1 1 0 0 0-.707.293L6.586 2.5H5A3 3 0 0 0 2 5.5v12a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3v-12a3 3 0 0 0-3-3z"/></svg>
+
+        <button class="avatar-action-btn avatar-edit-btn" type="button" title="Alterar foto" onclick="toggleAvatarForm()">
+          <svg viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7zm7-13h-1.586l-1.707-1.707A1 1 0 0 0 15 .5H9a1 1 0 0 0-.707.293L6.586 2.5H5A3 3 0 0 0 2 5.5v12a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3v-12a3 3 0 0 0-3-3z"/>
+          </svg>
         </button>
       </div>
+
       <form id="delete-picture-form" method="POST" action="{{ url_for('user.delete_picture') }}" style="display:none;"></form>
 
       <div class="profile-info">
-        <div class="name-row" id="name-display-row">
-          <h2 id="name-display">{{ session.get("name") or 'Usuário Exemplo' }}</h2>
-          <button class="icon-btn" type="button" onclick="toggleNameEdit()"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="#ff7a00" fill="none" stroke-width="2"/></svg></button>
+        <div class="profile-name-row" id="name-display-row">
+          <h2 class="profile-name" id="name-display">{{ session.get("name") or 'Usuário Exemplo' }}</h2>
+          <button class="profile-edit-icon" type="button" title="Editar nome" onclick="toggleNameEdit()">
+            <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
         </div>
-        <form method="POST" action="/edit_user" class="inline-name-form" id="name-edit-form">
-          <input type="text" name="new_name" id="name-input">
-          <button type="submit" class="btn-confirm">✓ Salvar</button>
-          <button type="button" class="btn-cancel-sm" onclick="toggleNameEdit()">✕</button>
+
+        <form method="POST" action="/edit_user" class="inline-name-form" id="name-edit-form" style="display: none; align-items: center; gap: 8px; margin-bottom: 5px;">
+          <input type="text" name="new_name" id="name-input" class="form-input" placeholder="Novo nome" style="flex:1;">
+          <button type="submit" class="btn btn-primary btn-sm">✓ Salvar</button>
+          <button type="button" class="btn btn-muted btn-sm" onclick="toggleNameEdit()">✕</button>
         </form>
 
         <form method="POST" action="/edit_user" enctype="multipart/form-data" id="avatar-form">
           <input type="file" name="profile_image" id="avatar-file-real" accept="image/*" style="display:none" onchange="onAvatarChosen(this)">
-          <div class="avatar-form-row" id="avatar-form-row">
-            <span id="avatar-file-name">Nenhum arquivo escolhido</span>
-            <button type="submit" class="btn-confirm">✓ Enviar</button>
-            <button type="button" class="btn-cancel-sm" onclick="cancelAvatarForm()">✕</button>
+          <div id="avatar-form-row" style="display: none; margin-top: 8px; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <span id="avatar-file-name" style="font-size:13px; color:#555;">Nenhum arquivo escolhido</span>
+            <button type="submit" class="btn btn-primary btn-sm">✓ Enviar foto</button>
+            <button type="button" class="btn btn-muted btn-sm" onclick="cancelAvatarForm()">✕ Cancelar</button>
           </div>
         </form>
-        {% if session.get("cred") %}<p><strong>Credencial:</strong> {{ session.get("cred") }}</p>{% endif %}
-        {% if session.get("email") %}<p><strong>Email:</strong> {{ session.get("email") }}</p>{% endif %}
+
+        {% if session.get("cred") %}<p class="profile-detail"><strong>Credencial:</strong> {{ session.get("cred") }}</p>{% endif %}
+        {% if session.get("email") %}<p class="profile-detail"><strong>Email:</strong> {{ session.get("email") }}</p>{% endif %}
+        <p class="profile-detail">Data de criação: {{ session.get("creation_date") or '01/01/2025' }}</p>
+        <p class="profile-detail">Cursos inscritos: {{ enrolled_contents|length if enrolled_contents else 0 }}</p>
       </div>
     </div>
 
-    <div>
-      <h3 style="font-size: 18px; margin-bottom: 15px;">Configurações Avançadas</h3>
-      <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-        <a href="/change_password" class="btn btn-password btn-fixed">🔒 Alterar senha</a>
-        <a href="#" class="btn btn-muted btn-fixed" onclick="openLogoutModal(event)">Sair da conta</a>
-        <a href="{{ url_for('user.delete_account_page') }}" class="btn btn-danger btn-fixed">Excluir conta</a>
+    <!-- Ações da conta (visíveis, botões harmonizados em coluna) -->
+    <div class="edit-section">
+      <h3 class="section-title">Ações da conta</h3>
+      <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px;">
+        <a href="/change_password" class="btn btn-primary btn-block">🔒 Alterar senha</a>
+        <a href="#" class="btn btn-outline btn-block" onclick="openLogoutModal(event)">🚪 Sair da conta</a>
+        <a href="{{ url_for('user.delete_account_page') }}" class="btn btn-danger btn-block">⚠️ Excluir conta</a>
       </div>
+    </div>
+
+    <!-- Meus cursos (visível) -->
+    <div class="courses-section" style="width: 100%; border-top: 1px solid #eee; padding-top: 20px; margin-top: 5px;">
+      <div class="courses-section-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; padding: 0 4px;">
+        <h3 style="font-size: 15px; font-weight: 600; color: #374151; margin: 0;">Meus cursos</h3>
+        {% if enrolled_contents %}
+          <span style="font-size: 13px; color: #6b7280;">{{ enrolled_contents|length }} inscrito{% if enrolled_contents|length != 1 %}s{% endif %}</span>
+        {% endif %}
+      </div>
+
+      {% if enrolled_contents %}
+        <div class="courses-scroll-wrapper" style="position: relative;">
+          <div class="courses-scroll-track" id="courses-track" style="display: flex; gap: 14px; overflow-x: auto; padding: 8px 6px 16px; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; scrollbar-width: none; scroll-behavior: smooth;">
+            {% for course in enrolled_contents %}
+            <div class="course-card-compact" style="flex: 0 0 200px; background: var(--bg-card); border: 1px solid var(--border-light); border-radius: var(--radius-md); overflow: hidden; display: flex; flex-direction: column;">
+              {% if course.banner %}
+                <img class="card-banner-sm" src="{{ url_for('contents.get_banner', content_id = course.id) }}" alt="Banner de {{ course.title }}" style="width: 100%; height: 95px; object-fit: cover; background: var(--gradient);">
+              {% else %}
+                <div class="card-banner-sm" style="width: 100%; height: 95px; background: linear-gradient(135deg, #e0e7ff, #f0fdf4); display: flex; align-items: center; justify-content: center; font-size: 28px; color: #a5b4fc;">🎨</div>
+              {% endif %}
+
+              <div class="card-body-sm" style="padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 4px; flex: 1;">
+                {% if course.content_type %}
+                  <span class="rec-badge" style="font-size: 10px;">{{ course.content_type }}</span>
+                {% endif %}
+                <div class="card-title" style="font-size: 13px; font-weight: 600; color: #111827; line-height: 1.35;">{{ course.title }}</div>
+                {% if course.author %}
+                  <div style="font-size: 11px; color: #6b7280;">{{ course.author }}</div>
+                {% endif %}
+                {% if course.creation_date %}
+                  <div style="font-size: 11px; color: #9ca3af;">{{ course.creation_date }}</div>
+                {% endif %}
+              </div>
+              <a href="/contents/content/{{ course.id }}" class="card-btn" style="display: block; margin: 8px 12px 12px; padding: 8px 0; text-align: center; font-size: 12px; font-weight: 700; color: white; background: var(--gradient); border-radius: 8px; text-decoration: none;">Acessar →</a>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      {% else %}
+        <div class="empty-state" style="text-align: center; padding: 30px 20px; color: #9ca3af; font-size: 14px; width: 100%;">
+          <span style="font-size: 28px; display: block; margin-bottom: 8px;">📭</span>
+          Você ainda não se inscreveu em nenhum curso.
+        </div>
+      {% endif %}
     </div>
   </div>
 </section>
-
+<!-- ═══════════════════════════════════════
+     MODAIS
+═══════════════════════════════════════ -->
 <div class="modal-overlay" id="logout-modal">
-  <div class="modal-box">
-    <h2>Deseja realmente sair?</h2>
-    <div class="modal-buttons">
-      <button class="btn btn-muted" onclick="closeLogoutModal()">Cancelar</button>
-      <a href="/logout" class="btn btn-danger" style="text-decoration:none;">Sim, sair</a>
-    </div>
-  </div>
+  <div class="modal-box"><h2>Deseja realmente sair?</h2><div class="modal-buttons"><button class="btn btn-muted" onclick="closeLogoutModal()">Cancelar</button><a href="/logout" class="btn btn-danger">Sim, sair</a></div></div>
 </div>
-
 <div class="modal-overlay" id="confirm-modal">
   <div class="modal-box">
     <h2>Confirmar publicação</h2>
@@ -853,298 +1061,419 @@
     </div>
     <div class="modal-buttons">
       <button class="btn btn-muted" onclick="closeConfirm()">Revisar</button>
-      <button class="btn" onclick="submitForm()">Publicar agora</button>
+      <button class="btn btn-primary" onclick="submitForm()">Publicar agora</button>
     </div>
   </div>
 </div>
 
-<footer>© 2026 Arte Fora da Caixa — Todos os direitos reservados</footer>
+<footer class="global-footer">
+  <div class="footer-content">
+    <div class="footer-brand">Arte Fora da Caixa</div>
+    <div class="footer-info"><span>📞 (11) 99999-9999</span><span>✉️ contato@arteforadacaixa.com.br</span><span>📍 São Paulo, Brasil</span></div>
+  </div>
+  <div class="footer-bottom">© 2026 Arte Fora da Caixa — Todos os direitos reservados</div>
+</footer>
 <div class="toast" id="toast"></div>
 
 <script>
-  const BANNER_URLS = {
-    {% for b in default_banners %} "{{ b.id }}": "{{ url_for('contents.get_banner_default', banner_id=b.id) }}", {% endfor %}
-  };
-  const TYPE_LABELS = {
-    {% for value, label, emoji in content_types %} "{{ value }}": "{{ emoji }} {{ label }}", {% endfor %}
-  };
+  /* ═══════════ DADOS GLOBAIS ═══════════ */
+  const BANNER_URLS = { {% for b in default_banners %} "{{ b.id }}": "{{ url_for('contents.get_banner_default', banner_id=b.id) }}", {% endfor %} };
+  const TYPE_LABELS = { {% for value, label, emoji in content_types %} "{{ value }}": "{{ emoji }} {{ label }}", {% endfor %} };
 
-  /* ==========================================
-     INTEGRAÇÃO DINÂMICA VIA FETCH: ANALYTICS PROFESSOR
-     ========================================== */
-  function fetchProfessorAnalytics() {
-    fetch('/professor/my_analytics')
-      .then(response => {
-        if (!response.ok) throw new Error('Não foi possível carregar as métricas.');
-        return response.json();
-      })
-      .then(data => {
-        document.getElementById('meta-total-published').textContent = data.total_published_contents ?? 0;
-        document.getElementById('meta-global-inscriptions').textContent = data.global_inscriptions ?? 0;
-        document.getElementById('meta-global-reviews').textContent = data.global_total_reviews ?? 0;
-        document.getElementById('meta-global-rating').textContent = (data.global_average_rating ?? 0.0).toFixed(2);
-      })
-      .catch(err => {
-        console.error(err);
-        showToast("Erro ao carregar análise de perfil.");
-      });
+  /* ═══════════ NAVEGAÇÃO DE ABAS ═══════════ */
+  function switchTab(id, btn) {
+    document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-tab-item').forEach(b => b.classList.remove('active'));
+    const t = document.getElementById(id);
+    if (t) t.classList.add('active');
+    if (btn) btn.classList.add('active');
   }
 
-  function searchProfessorContent() {
-    const query = document.getElementById('prof-course-search').value.trim();
-    if (!query) {
-      showToast("Insira um termo de busca.");
+  function switchPubSection(id, btn) {
+    document.getElementById('my-publications-view').style.display = 'none';
+    document.getElementById('publish-content-view').style.display = 'none';
+    document.querySelectorAll('.pubs-sub-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(id).style.display = 'block';
+    if (btn) btn.classList.add('active');
+  }
+
+  /* ═══════════ TODOS OS CURSOS ═══════════ */
+
+  /* ── Função de busca (autocomplete) ── */
+  function searchCourses(query) {
+    const dropdown = document.getElementById('search-results');
+    if (query.trim().length < 2) {
+      dropdown.style.display = 'none';
       return;
     }
-    
-    const resultsContainer = document.getElementById('prof-search-results');
-    resultsContainer.innerHTML = '<p style="font-size:14px; color:#666;">Buscando ocorrências...</p>';
-    document.getElementById('prof-content-analytics-box').style.display = 'none';
 
-    fetch(`/contents/search/all?title=${encodeURIComponent(query)}`)
+    fetch(`/contents/search/courses?title=${encodeURIComponent(query.trim())}`)
       .then(res => res.json())
-      .then(results => {
-        resultsContainer.innerHTML = '';
-        if (!results || results.length === 0) {
-          resultsContainer.innerHTML = '<p style="font-size:14px; color:#666; grid-column: 1/-1;">Nenhum conteúdo encontrado.</p>';
+      .then(data => {
+        dropdown.innerHTML = '';
+        if (data.length === 0) {
+          dropdown.innerHTML = '<div style="padding:12px;color:var(--text-muted);">Nenhum resultado.</div>';
+          dropdown.style.display = 'block';
           return;
         }
 
-        results.forEach(content => {
-          const card = document.createElement('div');
-          card.className = 'course-card-new';
-          card.style.flex = 'initial';
-          card.style.width = '100%';
-          card.innerHTML = `
-            <div class="card-body-new">
-              <div class="card-title-new" style="height:auto; font-size:14px; margin-bottom:4px;">${content.title}</div>
-              <div class="card-autor">Autor: ${content.author}</div>
-            </div>
-            <button class="card-btn-new" style="border:none; cursor:pointer;" onclick="fetchIndividualContentAnalytics('${content.id}')">Analisar Dados →</button>
-          `;
-          resultsContainer.appendChild(card);
+        data.forEach(course => {
+          const item = document.createElement('div');
+          item.className = 'autocomplete-item';
+          item.style.cssText = 'padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border-light);';
+          item.innerHTML = `<strong>${course.title}</strong><br><small style="color:var(--text-muted);">${course.author}</small>`;
+          item.onclick = () => {
+            document.getElementById('all-courses-search').value = course.title;
+            dropdown.style.display = 'none';
+            // Ao clicar, redireciona para a página do curso
+            window.location.href = `/contents/content/${course.id}`;
+          };
+          dropdown.appendChild(item);
         });
+        dropdown.style.display = 'block';
       })
       .catch(err => {
-        console.error(err);
-        resultsContainer.innerHTML = '<p style="font-size:14px; color:#c00; grid-column: 1/-1;">Erro ao processar busca.</p>';
+        console.error('Erro na busca:', err);
       });
   }
 
-  function fetchIndividualContentAnalytics(contentId) {
-    fetch(`/professor/analytics/contents/${contentId}`)
-      .then(res => {
-        if (!res.ok) throw new Error();
-        return res.json();
-      })
-      .then(data => {
-        document.getElementById('analytics-content-title').textContent = data.content_title || 'Sem título';
-        document.getElementById('analytics-content-author').textContent = data.publi_by || '—';
-        document.getElementById('analytics-content-date').textContent = data.publi_date || '—';
-        document.getElementById('analytics-content-inscriptions').textContent = data.total_inscriptions ?? 0;
-        document.getElementById('analytics-content-reviews').textContent = data.total_reviews ?? 0;
-        document.getElementById('analytics-content-rating').textContent = (data.average_rating ?? 0.0).toFixed(1);
-        
-        document.getElementById('prof-content-analytics-box').style.display = 'block';
-        document.getElementById('prof-content-analytics-box').scrollIntoView({ behavior: 'smooth' });
-      })
-      .catch(() => showToast("Erro ao obter dados deste conteúdo."));
+  /* ── Função de filtros (recarrega a página) ── */
+  function applyFilters() {
+    const params = new URLSearchParams();
+    const type = document.getElementById('filter-type').value;
+    const popularity = document.getElementById('filter-popularity').value;
+    const sort = document.getElementById('filter-sort').value;
+    const search = document.getElementById('all-courses-search').value.trim();
+
+    if (type !== 'all') params.set('type', type);
+    if (popularity !== 'all') params.set('popularity', popularity);
+    if (sort !== 'recent') params.set('sort', sort);
+    if (search) params.set('search', search);
+    params.set('page', '1');  // volta para a primeira página ao filtrar
+
+    window.location.href = '?' + params.toString() + '#all-courses';
   }
 
-  /* ==========================================
-     FILTRAGEM E CONTROLES SPA EXISTENTES
-     ========================================== */
-  const allCourseCards = Array.from(document.querySelectorAll('#all-courses-grid .course'));
-  const allCoursesGrid = document.getElementById('all-courses-grid');
-
-  function parseDateString(dateStr) {
-    if (!dateStr) return new Date(0);
-    const parts = dateStr.split('/');
-    return parts.length === 3 ? new Date(parts[2], parts[1] - 1, parts[0]) : new Date(dateStr);
-  }
-
-  function runAllCoursesFilters() {
-    const searchQuery = document.getElementById('all-courses-search').value.toLowerCase().trim();
-    const selectedType = document.getElementById('filter-type').value;
-    const selectedPopularity = document.getElementById('filter-popularity').value;
-    const selectedSort = document.getElementById('filter-sort').value;
-
-    let filteredCards = allCourseCards.filter(card => {
-      const title = card.dataset.title || '';
-      const type = card.dataset.type || '';
-      return title.includes(searchQuery) && (selectedType === 'all' || type === selectedType);
-    });
-
-    filteredCards.sort((a, b) => {
-      if (selectedPopularity === 'most_enrolled') {
-        return parseInt(b.dataset.enrollments || '0') - parseInt(a.dataset.enrollments || '0');
-      } else if (selectedPopularity === 'most_reviewed') {
-        return parseInt(b.dataset.reviews || '0') - parseInt(a.dataset.reviews || '0');
-      }
-      const dateA = parseDateString(a.dataset.date);
-      const dateB = parseDateString(b.dataset.date);
-      return selectedSort === 'recent' ? dateB - dateA : dateA - dateB;
-    });
-
-    allCoursesGrid.innerHTML = '';
-    if (filteredCards.length > 0) {
-      filteredCards.forEach(card => allCoursesGrid.appendChild(card));
-    } else {
-      allCoursesGrid.innerHTML = '<p style="text-align:center; font-size:16px; color:#555; grid-column: 1 / -1; padding: 20px;">Nenhum conteúdo corresponde aos filtros.</p>';
+  /* Fecha o dropdown ao clicar fora */
+  document.addEventListener('click', (e) => {
+    const dropdown = document.getElementById('search-results');
+    const searchInput = document.getElementById('all-courses-search');
+    if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
+      dropdown.style.display = 'none';
     }
+  })
+
+  function isFiltered() {
+    const sq = document.getElementById('all-courses-search').value.trim();
+    const st = document.getElementById('filter-type').value;
+    const sp = document.getElementById('filter-popularity').value;
+    return sq !== '' || st !== 'all' || sp !== 'all';
   }
 
-  function switchTab(targetSectionId, button) {
-    document.querySelectorAll('.view-section').forEach(sec => sec.classList.remove('active'));
-    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-    const targetSection = document.getElementById(targetSectionId);
-    if(targetSection) targetSection.classList.add('active');
-    if(button) button.classList.add('active');
+  function parseDateString(d) {
+    if (!d) return new Date(0);
+    const p = d.split('/');
+    return p.length === 3 ? new Date(p[2], p[1] - 1, p[0]) : new Date(d);
   }
 
-  function switchSubSection(subSectionId, button) {
-    document.getElementById('my-publications-view').style.display = 'none';
-    document.getElementById('publish-content-view').style.display = 'none';
-    document.getElementById('sub-my-pubs-btn').classList.remove('active');
-    document.getElementById('sub-publish-btn').classList.remove('active');
-    document.getElementById(subSectionId).style.display = 'block';
-    if(button) button.classList.add('active');
+  function createCourseCard(s) {
+    const c = document.createElement('div');
+    c.className = 'course-card-item';
+    const bu = s.dataset.banner, ti = s.dataset.title, au = s.dataset.author || 'Desconhecido',
+          da = s.dataset.creation || '', ra = s.dataset.rating || '5',
+          en = s.dataset.enrollments || '0', re = s.dataset.reviews || '0', id = s.dataset.id;
+    c.innerHTML = `
+      <div class="course-card-banner">
+        ${bu ? `<img src="${bu}" alt="Banner">` : '<div class="course-card-placeholder">🎨</div>'}
+      </div>
+      <div class="course-card-body">
+        <h4 class="course-card-title">${ti}</h4>
+        <p class="course-card-meta">${au} • ${da}</p>
+        <div class="course-card-rating">${'⭐'.repeat(Math.min(5, Math.floor(ra)))} <span>(${ra})</span>
+          <div class="course-card-stats">${en} alunos • ${re} avaliações</div>
+        </div>
+        <button class="btn btn-primary btn-block btn-sm" onclick="location.href='/contents/content/${id}'">Ver</button>
+      </div>`;
+    return c;
   }
 
-  let activeSubTab = 'all';
-  const myCards = Array.from(document.querySelectorAll('.my-course-card'));
-  const myGrid = document.getElementById('my-grid');
+  /* Layout horizontal (sem filtro) */
+  function buildCourseRows(cards) {
+    const rc = document.getElementById('all-courses-rows');
+    rc.innerHTML = '';
+    const g = {};
+    cards.forEach(c => {
+      const t = c.dataset.type || 'Outros';
+      if (!g[t]) g[t] = [];
+      g[t].push(c);
+    });
+    for (const [t, cs] of Object.entries(g)) {
+      const rs = document.createElement('div');
+      rs.className = 'course-row-section';
+      const ti = document.createElement('h3');
+      ti.className = 'course-row-title';
+      ti.textContent = t;
+      rs.appendChild(ti);
+      const st = document.createElement('div');
+      st.className = 'course-scroll-track';
+      cs.forEach(c => st.appendChild(createCourseCard(c)));
+      rs.appendChild(st);
+      rc.appendChild(rs);
+    }
+    if (cards.length === 0) rc.innerHTML = '<div class="empty-state">Nenhum conteúdo encontrado.</div>';
+  }
 
-  function initTypeFilter() {
-    const dropdown = document.getElementById('sel-type');
-    if(!dropdown) return;
+  /* Layout vertical em grid (com filtro ativo) */
+  function buildCourseGrid(cards) {
+    const rc = document.getElementById('all-courses-rows');
+    rc.innerHTML = '';
+    if (cards.length === 0) {
+      rc.innerHTML = '<div class="empty-state">Nenhum conteúdo encontrado com esses filtros.</div>';
+      return;
+    }
+    const grid = document.createElement('div');
+    grid.className = 'course-grid-vertical';
+    cards.forEach(c => grid.appendChild(createCourseCard(c)));
+    rc.appendChild(grid);
+  }
+
+  /* ═══════════ MEUS CURSOS ═══════════ */
+  let myCards = [], activeMyMode = 'all';
+
+  function initMyCourses() {
+    const grid = document.getElementById('my-grid');
+    if (!grid) return;
+    myCards = Array.from(grid.querySelectorAll('.course-card-item'));
+    const dd = document.getElementById('sel-type');
     const types = [...new Set(myCards.map(c => c.dataset.type))];
-    dropdown.innerHTML = '<option value="all">Todos</option>';
-    types.forEach(t => { dropdown.innerHTML += `<option value="${t}">${t}</option>`; });
+    dd.innerHTML = '<option value="all">Todos os tipos</option>';
+    types.forEach(t => { dd.innerHTML += `<option value="${t}">${t}</option>`; });
   }
 
-  function filterSubTab(subTabName, btn) {
-    activeSubTab = subTabName;
-    document.querySelectorAll('.sub-filter-btn').forEach(b => b.classList.remove('active'));
+  function hideMySelects() {
+    document.getElementById('sel-type').classList.remove('visible');
+    document.getElementById('sel-date').classList.remove('visible');
+  }
+
+  function myFilterAll(btn) {
+    activeMyMode = 'all';
+    hideMySelects();
+    document.querySelectorAll('.my-filter-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    document.getElementById('panel-type').style.display = (subTabName === 'type') ? 'flex' : 'none';
-    document.getElementById('panel-date').style.display = (subTabName === 'date') ? 'flex' : 'none';
-    runSubFilters();
+    runMyFilters();
   }
 
-  function runSubFilters() {
-    let output = [...myCards];
-    if (activeSubTab === 'fav') {
-      output = output.filter(c => c.dataset.fav === 'true');
-    } else if (activeSubTab === 'type') {
-      const selected = document.getElementById('sel-type').value;
-      if(selected !== 'all') output = output.filter(c => c.dataset.type === selected);
+  function myFilterType(btn) {
+    activeMyMode = 'type';
+    hideMySelects();
+    document.getElementById('sel-type').classList.add('visible');
+    document.querySelectorAll('.my-filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    runMyFilters();
+  }
+
+  function myFilterDate(btn) {
+    activeMyMode = 'date';
+    hideMySelects();
+    document.getElementById('sel-date').classList.add('visible');
+    document.querySelectorAll('.my-filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    runMyFilters();
+  }
+
+  function runMyFilters() {
+    let o = [...myCards];
+    if (activeMyMode === 'type') {
+      const s = document.getElementById('sel-type').value;
+      if (s !== 'all') o = o.filter(c => c.dataset.type === s);
+    } else if (activeMyMode === 'date') {
+      const ord = document.getElementById('sel-date').value;
+      o.sort((a, b) => ord === 'recent'
+        ? new Date(b.dataset.date) - new Date(a.dataset.date)
+        : new Date(a.dataset.date) - new Date(b.dataset.date));
     }
-
-    if (activeSubTab === 'views') {
-      output.sort((a,b) => parseInt(b.dataset.views) - parseInt(a.dataset.views));
-    } else if (activeSubTab === 'date') {
-      const order = document.getElementById('sel-date').value;
-      output.sort((a,b) => order === 'recent' ? new Date(b.dataset.date) - new Date(a.dataset.date) : new Date(a.dataset.date) - new Date(b.dataset.date));
-    }
-    myGrid.innerHTML = '';
-    if(output.length > 0) { output.forEach(c => myGrid.appendChild(c)); } 
-    else { myGrid.innerHTML = '<div class="empty-state">Nenhum resultado encontrado.</div>'; }
+    const grid = document.getElementById('my-grid');
+    grid.innerHTML = '';
+    if (o.length > 0) o.forEach(c => grid.appendChild(c));
+    else grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;">Nenhum resultado encontrado.</div>';
   }
 
-  function openLogoutModal(e) { e.preventDefault(); document.getElementById('logout-modal').classList.add('active'); }
-  function closeLogoutModal() { document.getElementById('logout-modal').classList.remove('active'); }
-
-  function toggleNameEdit() {
-    const displayRow = document.getElementById('name-display-row');
-    const editForm   = document.getElementById('name-edit-form');
-    const input      = document.getElementById('name-input');
-    if (!editForm.classList.contains('active')) {
-      input.value = document.getElementById('name-display').textContent.trim();
-      displayRow.style.display = 'none';
-      editForm.classList.add('active');
-      input.focus();
-    } else { displayRow.style.display = ''; editForm.classList.remove('active'); }
+  /* ═══════════ PROFESSOR ANALYTICS ═══════════ */
+  function fetchProfessorAnalytics() {
+    fetch('/professor/my_analytics').then(r => r.json()).then(d => {
+      document.getElementById('meta-total-published').textContent = d.total_published_contents ?? 0;
+      document.getElementById('meta-global-inscriptions').textContent = d.global_inscriptions ?? 0;
+      document.getElementById('meta-global-reviews').textContent = d.global_total_reviews ?? 0;
+      document.getElementById('meta-global-rating').textContent = (d.global_average_rating ?? 0).toFixed(2);
+    }).catch(() => showToast("Erro ao carregar análise de perfil."));
   }
 
-  function toggleAvatarForm() { document.getElementById('avatar-file-real').click(); }
-  function onAvatarChosen(input) {
-    if (!input.files || !input.files[0]) return;
-    const reader = new FileReader();
-    reader.onload = e => { document.getElementById('avatar-preview').src = e.target.result; };
-    reader.readAsDataURL(input.files[0]);
-    document.getElementById('avatar-file-name').textContent = input.files[0].name;
-    document.getElementById('avatar-form-row').classList.add('active');
-  }
-  function cancelAvatarForm() {
-    document.getElementById('avatar-form-row').classList.remove('active');
-    document.getElementById('avatar-file-real').value = '';
+  function searchProfessorContent() {
+    const q = document.getElementById('prof-course-search').value.trim();
+    if (!q) { showToast("Insira um termo de busca."); return; }
+    const rc = document.getElementById('prof-search-results');
+    rc.innerHTML = '<p style="font-size:13px;color:#94a3b8;">Buscando...</p>';
+    fetch(`/contents/search/all?title=${encodeURIComponent(q)}`).then(r => r.json()).then(r => {
+      rc.innerHTML = '';
+      if (!r || r.length === 0) { rc.innerHTML = '<p style="font-size:13px;color:#94a3b8;">Nenhum conteúdo encontrado.</p>'; return; }
+      r.forEach(c => {
+        const card = document.createElement('div');
+        card.className = 'course-card-compact';
+        card.innerHTML = `<div class="card-body-sm" style="padding:14px;"><div style="font-weight:700;font-size:14px;">${c.title}</div><div style="font-size:11px;color:#94a3b8;">Autor: ${c.author}</div></div><button class="card-btn" onclick="fetchIndividualContentAnalytics('${c.id}')">Analisar →</button>`;
+        rc.appendChild(card);
+      });
+    }).catch(() => { rc.innerHTML = '<p style="color:#e63946;">Erro ao processar busca.</p>'; });
   }
 
-  let bannerMode = "default";
-  let ownBannerDataUrl = null;
+  function fetchIndividualContentAnalytics(cid) {
+    fetch(`/professor/analytics/contents/${cid}`).then(r => r.json()).then(d => {
+      document.getElementById('analytics-content-title').textContent = d.content_title || 'Sem título';
+      document.getElementById('analytics-content-author').textContent = d.publi_by || '—';
+      document.getElementById('analytics-content-date').textContent = d.publi_date || '—';
+      document.getElementById('analytics-content-inscriptions').textContent = d.total_inscriptions ?? 0;
+      document.getElementById('analytics-content-reviews').textContent = d.total_reviews ?? 0;
+      document.getElementById('analytics-content-rating').textContent = (d.average_rating ?? 0).toFixed(1);
+      document.getElementById('prof-content-analytics-box').style.display = 'block';
+    }).catch(() => showToast("Erro ao obter dados."));
+  }
+
+  /* ═══════════ BANNER — PUBLICAR ═══════════ */
+  let bannerMode = "default", ownBannerDataUrl = null;
+  let selectedBannerId = null;
+
+  function selectBannerOpt(bid) {
+    document.querySelectorAll('.banner-opt').forEach(el => el.classList.remove('selected'));
+    const el = document.getElementById('banner-opt-' + bid);
+    if (el) el.classList.add('selected');
+    selectedBannerId = bid;
+    document.getElementById('banner-' + bid).checked = true;
+    onDefaultBannerChange(bid);
+  }
 
   function switchBannerTab(tab) {
     bannerMode = tab;
-    document.getElementById("banner-mode-input").value = tab;
-    document.querySelectorAll(".tab-btn-sub").forEach((b, i) => {
-      b.classList.toggle("active", (i === 0 && tab === "default") || (i === 1 && tab === "own"));
-    });
-    document.getElementById("tab-default").classList.toggle("active", tab === "default");
-    document.getElementById("tab-own").classList.toggle("active", tab === "own");
+    document.getElementById('banner-mode-input').value = tab;
+    document.getElementById('tab-default').style.display = tab === 'default' ? 'block' : 'none';
+    document.getElementById('tab-own').style.display = tab === 'own' ? 'block' : 'none';
+    const btnDef = document.getElementById('btn-tab-default');
+    const btnOwn = document.getElementById('btn-tab-own');
+    btnDef.style.background = tab === 'default' ? 'var(--orange)' : 'transparent';
+    btnDef.style.color = tab === 'default' ? 'white' : 'var(--text-secondary)';
+    btnOwn.style.background = tab === 'own' ? 'var(--orange)' : 'transparent';
+    btnOwn.style.color = tab === 'own' ? 'white' : 'var(--text-secondary)';
   }
 
-  function onDefaultBannerChange(bannerId) {
-    const url = BANNER_URLS[bannerId];
-    const img = document.getElementById("preview-banner-img");
-    if (url) { img.src = url; img.style.display = "block"; } 
-    else { img.style.display = "none"; }
+  function onDefaultBannerChange(bid) {
+    const url = BANNER_URLS[bid];
+    const img = document.getElementById('preview-banner-img');
+    const ph = document.getElementById('preview-banner-placeholder');
+    if (url) { img.src = url; img.style.display = 'block'; if (ph) ph.style.display = 'none'; }
+    else { img.style.display = 'none'; if (ph) ph.style.display = 'flex'; }
   }
 
-  function onBannerChosen(input) {
-    if (!input.files || !input.files[0]) return;
-    const reader = new FileReader();
-    reader.onload = e => {
+  function onBannerChosen(inp) {
+    if (!inp.files || !inp.files[0]) return;
+    const r = new FileReader();
+    r.onload = e => {
       ownBannerDataUrl = e.target.result;
-      document.getElementById("banner-preview-own").src = ownBannerDataUrl;
-      document.getElementById("banner-preview-own").style.display = "block";
-      document.getElementById("preview-banner-img").src = ownBannerDataUrl;
-      document.getElementById("preview-banner-img").style.display = "block";
+      document.getElementById('banner-preview-own').src = ownBannerDataUrl;
+      document.getElementById('banner-preview-own').style.display = 'block';
+      const img = document.getElementById('preview-banner-img');
+      const ph = document.getElementById('preview-banner-placeholder');
+      img.src = ownBannerDataUrl; img.style.display = 'block';
+      if (ph) ph.style.display = 'none';
     };
-    reader.readAsDataURL(input.files[0]);
+    r.readAsDataURL(inp.files[0]);
   }
 
   function updatePreview() {
-    document.getElementById("preview-title").textContent = document.getElementById("content_name").value.trim() || "Título do conteúdo";
+    document.getElementById('preview-title').textContent =
+      document.getElementById('content_name').value.trim() || 'Título do conteúdo';
     const typeEl = document.querySelector('input[name="content_type"]:checked');
-    document.getElementById("preview-type").textContent = typeEl ? TYPE_LABELS[typeEl.value] : "Aula";
+    document.getElementById('preview-type').textContent = typeEl ? TYPE_LABELS[typeEl.value] : 'Aula';
+  }
+  document.getElementById('content_name')?.addEventListener('input', updatePreview);
+
+  function onPdfChosen(inp) {
+    const hint = document.getElementById('pdf-hint');
+    if (inp.files[0]) { hint.textContent = '✓ ' + inp.files[0].name; hint.style.display = 'block'; }
   }
 
-  document.getElementById("content_name").addEventListener("input", updatePreview);
-  function onPdfChosen(input) { document.getElementById("pdf-hint").textContent = input.files[0] ? input.files[0].name : "Nenhum arquivo selecionado"; }
+  /* ═══════════ MODAIS ═══════════ */
+  function openLogoutModal(e) { e.preventDefault(); document.getElementById('logout-modal').classList.add('active'); }
+  function closeLogoutModal() { document.getElementById('logout-modal').classList.remove('active'); }
 
   function openConfirm() {
-    const title = document.getElementById("content_name").value.trim();
-    const desc  = document.getElementById("description").value.trim();
-    if (title.length < 15 || desc.length < 50 || !document.getElementById("file").files[0]) {
-      alert("Por favor, preencha todos os critérios mínimos informados nos campos.");
-      return;
+    const title = document.getElementById('content_name').value.trim();
+    const desc = document.getElementById('description').value.trim();
+    if (title.length < 15 || desc.length < 50 || !document.getElementById('file').files[0]) {
+      alert('Preencha todos os critérios mínimos.'); return;
     }
-    document.getElementById("sum-title").textContent = title;
-    document.getElementById("confirm-modal").classList.add("active");
+    document.getElementById('sum-title').textContent = title;
+    const typeEl = document.querySelector('input[name="content_type"]:checked');
+    document.getElementById('sum-type').textContent = typeEl ? TYPE_LABELS[typeEl.value] : '—';
+    document.getElementById('sum-pdf').textContent = document.getElementById('file').files[0]?.name || '—';
+    document.getElementById('sum-banner').textContent = bannerMode === 'own' ? 'Banner personalizado' : 'Banner do site';
+    document.getElementById('confirm-modal').classList.add('active');
   }
-  function closeConfirm() { document.getElementById("confirm-modal").classList.remove("active"); }
-  function submitForm() { document.getElementById("publish-form").submit(); }
+  function closeConfirm() { document.getElementById('confirm-modal').classList.remove('active'); }
+  function submitForm() { document.getElementById('publish-form').submit(); }
 
   function showToast(msg) {
-    const t = document.getElementById('toast');
-    t.textContent = msg; t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 2800);
+    const t = document.getElementById('toast'); t.textContent = msg;
+    t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2800);
   }
 
+  /* ═══════════ PERFIL ═══════════ */
+  function toggleNameEdit() {
+    const dr = document.getElementById('name-display-row'), ef = document.getElementById('name-edit-form'), inp = document.getElementById('name-input');
+    if (ef.style.display === 'none' || !ef.style.display) { inp.value = document.getElementById('name-display').textContent.trim(); dr.style.display = 'none'; ef.style.display = 'flex'; inp.focus(); }
+    else { dr.style.display = ''; ef.style.display = 'none'; }
+  }
+  function toggleAvatarForm() { document.getElementById('avatar-file-real').click(); }
+  function onAvatarChosen(inp) {
+    if (!inp.files || !inp.files[0]) return;
+    const r = new FileReader(); r.onload = e => { document.getElementById('avatar-preview').src = e.target.result; };
+    r.readAsDataURL(inp.files[0]);
+    document.getElementById('avatar-file-name').textContent = inp.files[0].name;
+    document.getElementById('avatar-form-row').style.display = 'flex';
+  }
+  function cancelAvatarForm() { document.getElementById('avatar-form-row').style.display = 'none'; document.getElementById('avatar-file-real').value = ''; }
+
+  /* ═══════════ INIT ═══════════ */
   document.addEventListener('DOMContentLoaded', () => {
-    initTypeFilter();
-    runAllCoursesFilters();
+    /* Todos os cursos: renderiza a partir dos dados já paginados */
+    const dc = document.getElementById('all-courses-data');
+    if (dc) {
+      const cards = Array.from(dc.querySelectorAll('.card'));
+      const hasFilter = window.location.search.includes('search') ||
+                        window.location.search.includes('type') ||
+                        window.location.search.includes('popularity');
+      if (hasFilter) {
+        buildCourseGrid(cards);
+      } else {
+        buildCourseRows(cards);
+      }
+    }
+
+    /* Meus cursos */
+    initMyCourses();
+
+    /* Seleciona primeiro banner por padrão */
+    const firstBannerOpt = document.querySelector('.banner-opt');
+    if (firstBannerOpt) {
+      const firstId = firstBannerOpt.id.replace('banner-opt-', '');
+      selectBannerOpt(firstId);
+    }
+
+    /* Rota por hash/query */
+    const hash = window.location.hash, params = new URLSearchParams(window.location.search), activeTab = params.get('tab');
+    if (hash === '#publications-section') {
+      const pubTabBtn = document.getElementById('publications-tab-btn');
+      if (pubTabBtn) switchTab('publications-section', pubTabBtn);
+      if (activeTab === 'my-publications-view') { const btn = document.getElementById('sub-my-pubs-btn'); if (btn) switchPubSection('my-publications-view', btn); }
+      else if (activeTab === 'publish-content-view') { const btn = document.getElementById('sub-publish-btn'); if (btn) switchPubSection('publish-content-view', btn); }
+    }
   });
 </script>
 </body>

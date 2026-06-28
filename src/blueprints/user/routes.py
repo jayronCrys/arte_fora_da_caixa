@@ -24,6 +24,7 @@ def _require_login():
 
 @user_bp.route("/user")
 def user():
+    print("user ativo")
     if getattr(g, "user", None):
         try:
             user_data = g.user.get_user()

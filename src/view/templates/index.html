@@ -2,102 +2,100 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Login</title>
+    <title>Login - Arte Fora da Caixa</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+
     <style>
+        /* Ajustes específicos para a página de Login, aproveitando suas variáveis */
         body {
-            background: #f3f4f6;
-            font-family: "Segoe UI", Roboto, sans-serif;
-            margin: 0;
-            display: flex;
+            /* Garante que o conteúdo fique perfeitamente centralizado */
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
-            color: #333;
+        }
+        
+        .login-wrapper {
+            width: 100%;
+            /* Aumentado para 550px para igualar à tela de Criar Conta */
+            max-width: 550px; 
+            padding: 20px;
         }
 
-        form {
-            background: white;
-            padding: 40px 35px;
-            border-radius: 18px;
-            box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+        .error-message {
+            background: #fff0f0;
+            color: var(--red);
+            padding: 12px 16px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 20px;
             text-align: center;
-            width: 320px;
+            border: 1px solid rgba(230, 57, 70, 0.15);
         }
 
-        h2 {
-            margin-bottom: 25px;
-            color: #222;
-            font-size: 24px;
+        .divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin: 20px 0;
+            color: var(--text-muted);
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
-        input {
-            width: 100%;
-            padding: 12px;
-            margin-bottom: 18px;
-            border-radius: 10px;
-            border: 1px solid #ccc;
-            background: #fafafa;
-            font-size: 14px;
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid var(--border-light);
         }
 
-        /* Botões com estilo uniforme */
-        button {
-            width: 100%;
-            padding: 12px 0;
-            border: none;
-            border-radius: 10px;
-            font-weight: bold;
-            font-size: 15px;
-            cursor: pointer;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-            transition: 0.2s ease-in-out;
-            margin-bottom: 12px;
-            color: white;
-        }
-
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 14px rgba(0,0,0,0.2);
-        }
-
-        /* Cores específicas dos botões */
-        button[name="method"][value="local"] {
-            background: linear-gradient(90deg, #ff7a00, #00c853); /* laranja-verde */
-        }
-
-        button.google {
-            background: linear-gradient(90deg, #4285F4, #2a66c7); /* azul Google */
-        }
-
-        button.new_account {
-            background: linear-gradient(90deg, #f39c12, #e67e22); /* tons de laranja */
-        }
-
-        .error {
-            color: #ff4444;
-            margin-bottom: 15px;
-            font-weight: bold;
-        }
+        .divider::before { margin-right: 12px; }
+        .divider::after { margin-left: 12px; }
     </style>
 </head>
 <body>
-    <form method="POST" action="/login">
-        <h2>Login</h2>
 
-        {% if error %}
-            <div class="error">{{ error }}</div>
-        {% endif %}
+    <div class="login-wrapper">
+        <div class="panel-box" style="margin: 0;">
+            <h2 class="text-center" style="margin-bottom: 24px;">Acesso ao Sistema</h2>
 
-        <input type="text" name="name" placeholder="Usuário" required>
-        <input type="password" name="password" placeholder="Senha" required>
+            {% if error %}
+                <div class="error-message">{{ error }}</div>
+            {% endif %}
 
-        <button type="submit" name="method" value="local">Entrar</button>
-        <button type="submit" name="method" value="google" class="google" formnovalidate>
-            Login com Google
-        </button>
-        <button type="submit" name="new_account" value="new_account" class="new_account" formnovalidate>
-            Criar Conta
-        </button>
-    </form>
+            <form method="POST" action="/login">
+                <div class="form-field">
+                    <label class="form-label">Usuário</label>
+                    <input type="text" name="name" class="form-input" placeholder="Digite seu usuário" required>
+                </div>
+
+                <div class="form-field" style="margin-bottom: 28px;">
+                    <label class="form-label">Senha</label>
+                    <input type="password" name="password" class="form-input" placeholder="Digite sua senha" required>
+                </div>
+
+                <button type="submit" name="method" value="local" class="btn btn-primary btn-block btn-lg" style="margin-bottom: 12px;">
+                    Entrar
+                </button>
+                
+                <button type="submit" name="method" value="google" class="btn btn-blue btn-block btn-lg" formnovalidate>
+                    Login com Google
+                </button>
+
+                <div class="divider">ou</div>
+
+                <button type="submit" name="new_account" value="new_account" class="btn btn-outline btn-block btn-lg" formnovalidate>
+                    Criar Nova Conta
+                </button>
+            </form>
+        </div>
+    </div>
+
 </body>
 </html>

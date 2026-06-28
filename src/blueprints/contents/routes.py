@@ -1,9 +1,7 @@
 import logging
 import os
-import uuid
-from io import BytesIO
 from datetime import datetime
-from src.Logs.terminal_logs import sucesfull_log, check_api, check_task, warning_log, error_log
+
 from flask import (
     abort, current_app, g, redirect, render_template,
     request, send_file, session, url_for, jsonify
@@ -13,7 +11,91 @@ from src.models.database import get_session
 from . import contents_bp
 from src.view.configs.statics_configs import CONTENT_TYPES, DEFAULT_BANNERS
 
-# ── Constantes ────────────────────────────────────────────────────────────────
+# Cache simples em memória
+_cache = {}
+
+def _cache_get(key, ttl_seconds=300):
+    if key in _cache:
+        value, timestamp = _cache[key]
+        if (datetime.now() - timestamp).seconds < ttl_seconds:
+            return value
+        del _cache[key]
+    return None
+
+def _cache_set(key, value):
+    _cache[key] = (value, datetime.now())
+
+
+@contents_bp.route("/contents/", defaults={"publications": None})
+@contents_bp.route("/contents/<publications>", methods=["GET", "POST"])
+def contents(publications):
+    try:
+        page = request.args.get("page", 1, type=int)
+        per_page = request.args.get("per_page", 12, type=int)
+        active_tab = request.args.get("tab", "all-courses")
+
+        # ── Novos filtros ────────────────────────
+        search = request.args.get("search", None, type=str)
+        content_type = request.args.get("type", "all", type=str)
+        popularity = request.args.get("popularity", "all", type=str)
+        sort = request.args.get("sort", "recent", type=str)
+
+        result = g.user.GET_FULL_CONTENT(
+            all_contents=True,
+            content_to_select=None,
+            review=True,
+            limit=per_page,
+            offset=(page - 1) * per_page,
+            search=search if search else None,
+            content_type=content_type,
+            popularity=popularity,
+            sort=sort
+        )
+        if not result:
+            return "Erro ao carregar conteúdos", 500
+
+        items = result["items"]
+        total_items = result["total"]
+        total_pages = max(1, (total_items + per_page - 1) // per_page)
+
+        enrolled_contents = g.user.get_my_courses_cached() if hasattr(g.user, 'get_my_courses_cached') else g.user.get_my_courses() or []
+
+        last_accessed = None
+        last_id = session.get("last_accessed_id")
+        if last_id:
+            last_accessed = {
+                "id": last_id,
+                "title": session.get("last_accessed_title", ""),
+                "banner": session.get("last_accessed_banner", ""),
+                "content_type": session.get("last_accessed_type", ""),
+            }
+
+        pub_items = []
+        if _cred() in _PUBLISHER_CREDS:
+            pub_items = _pub_items()
+
+        if publications is None:
+            publications = pub_items
+
+        return render_template(
+            "contents.html",
+            contents=items,
+            enrolled_contents=enrolled_contents,
+            publications=publications,
+            pub_items=pub_items,
+            last_accessed=last_accessed,
+            active_tab=active_tab,
+            page=page,
+            per_page=per_page,
+            total_pages=total_pages,
+            total_items=total_items,
+            **tpl_ctx,
+        )
+    except Exception as exc:
+        logging.error("Erro na rota principal: %s", exc)
+        return f"Erro ao carregar conteúdos: {exc}", 500
+
+
 _PUBLISHER_CREDS = ("admin", "professor")
 
 tpl_ctx = dict(
@@ -22,38 +104,32 @@ tpl_ctx = dict(
     now=datetime.now().strftime("%d/%m/%Y"),
 )
 
-
-# ── Helpers ───────────────────────────────────────────────────────────────────
 def _cred():
     return session.get("cred")
 
-
 def _pub_items():
-    """Retorna a lista de publicações do usuário logado (professor ou admin)."""
     if _cred() == "professor":
         return g.user.select_contents_by_publisher_id()
     return g.user.get_all_contents()
+
+# (demais helpers e rotas permanecem como já estavam)
+
 
 def _return_comment_by_cred(contentId):
     try:
         if _cred() == "aluno":
             return g.user.get_content_comment(contentId), []
-            
         if _cred() == "professor":
             return g.user.get_comment_by_professor(contentId)
-            
         if _cred() == "admin":
-            print("PASSO NO IF")
             return g.user.get_comment_by_admin(contentId)
-            
         return []
-                    
-    except Exception as E:
-        print("ERRO", E)
+    except Exception as e:
+        logging.error("Erro ao obter comentários: %s", e)
         return []
-        
+
+
 def _render_contents_error(msg, active_tab="publish-content-view"):
-    """Re-renderiza a SPA principal com uma mensagem de erro."""
     try:
         items = g.user.get_all_contents()
         publications = _pub_items() if _cred() in _PUBLISHER_CREDS else []
@@ -70,35 +146,30 @@ def _render_contents_error(msg, active_tab="publish-content-view"):
 
 
 # ── Redirecionamentos simples ─────────────────────────────────────────────────
-
 @contents_bp.route("/home")
 def home_page():
+    print("PASSO EM HOME")
     return redirect(url_for("contents.contents"))
+
 
 @contents_bp.route("/contents/search/<courses>", methods=["GET"])
 def seach_contents(courses):
-    
-    contents_title = request.args.get("title", " ").strip()
-    print(">"*10, contents_title)
-    if not contents_title:
-        return False
-    contents_results = g.user.get_content_by_name(contents_title)
-    print(">"*10, contents_results)
-            
-    return jsonify(contents_results), 200
-    
+    title = request.args.get("title", " ").strip()
+    if not title:
+        return jsonify([]), 200
+    results = g.user.get_content_by_name(title)
+    return jsonify(results), 200
+
+
 @contents_bp.route("/professors/search/<professors>", methods=["GET"])
 def seach_professors(professors):
-    
-    professors = request.args.get("name", " ").strip()
-    print("seach_professors>"*10, professors)
-    if not professors:
-        return False
-    professors_results = g.user.search_users_by_name(professors)
-    print("professors_results>"*10, professors_results)
-            
-    return jsonify(professors_results), 200
-        
+    name = request.args.get("name", " ").strip()
+    if not name:
+        return jsonify([]), 200
+    results = g.user.search_users_by_name(name)
+    return jsonify(results), 200
+
+
 @contents_bp.route("/redirect_publish_content", methods=["POST", "GET"])
 def redirect_publish_content():
     return redirect(url_for("contents.contents", tab="publish-content-view",
@@ -111,293 +182,105 @@ def redirect_get_publications():
                             _anchor="publications-section"))
 
 
-# ── Rota principal (SPA) ──────────────────────────────────────────────────────
-@contents_bp.route("/contents/", defaults={"publications": None})
-@contents_bp.route("/contents/<publications>", methods=["GET", "POST"])
-def contents(publications):
-    try:
+# ── CONTEÚDO INDIVIDUAL (PRÉ‑VISUALIZAÇÃO / EDIÇÃO) ─────────────────────────
+@contents_bp.route("/contents/publications", methods=["GET"])
+def get_publications():
+    if _cred() not in _PUBLISHER_CREDS:
+        return redirect(url_for("auth.login"))
+    publications = _pub_items()
+    return redirect(url_for("contents.contents", tab="my-publications-view",
+                            _anchor="publications-section",
+                            publications=publications))
 
-        items = g.user.GET_FULL_CONTENT(all_contents=True, content_to_select=None, review=True)
-        active_tab = request.args.get("tab", "all-courses")
-        for i in items:
-            i["comments"], i["moderated_comments"]= _return_comment_by_cred(i["id"])
-            
-        enrolled_contents = g.user.get_my_courses()
-        if not enrolled_contents:
-            enrolled_contents = []
-            
-        pub_items = []
-        if _cred() in _PUBLISHER_CREDS:
-            try:
-                pub_items = _pub_items()
-            except Exception:
-                pub_items = []
-
-        if publications is None:
-            publications = pub_items
-
-        return render_template(
-            "contents.html",
-            contents=items,
-            enrolled_contents=enrolled_contents,
-            publications=publications,
-            pub_items=pub_items,
-            active_tab=active_tab,
-            **tpl_ctx,
-        )
-    except Exception as exc:
-        logging.error("Erro na rota principal de conteúdos: %s", exc)
-        return f"Erro ao carregar conteúdos: {exc}", 500
 
 @contents_bp.route("/contents/content/<content_id>", methods=["GET", "POST"])
 def content_buss(content_id):
-    
     if not content_id:
         abort(404)
-        
+
     try:
-        my_courses = g.user.get_my_courses()        
+        my_courses = g.user.get_my_courses()
     except Exception as exc:
-        logging.error("Erro ao buscar conteúdo: %s", exc)        
-        abort(404)
-        
+        logging.error("Erro ao obter cursos do usuário: %s", exc)
+        abort(500)
+
     if request.method == "GET":
-                
-        content = g.user.GET_FULL_CONTENT( all_contents=False, content_to_select=content_id, review=True)  
-        
-        content = content[0] if content[0]["id"] == content_id else False
-        content["comments"], content["moderated_comments"] = _return_comment_by_cred(content_id)     
-        if content:
-            return render_template("content_preview.html", content=content, my_courses=my_courses)
-            
-    if request.method == "POST":
-        
-        
-        content = g.user.GET_FULL_CONTENT( all_contents=False, content_to_select=content_id, review=True)
-        
-        content = content[0] if content[0]["id"] == content_id else False
-        content["comments"], content["moderated_comments"]= _return_comment_by_cred(content_id)
-        
-        if content:
-            return render_template("edit_content.html", content=content, **tpl_ctx)
-    
-    if not content:
+        content = g.user.GET_FULL_CONTENT(all_contents=False, content_to_select=content_id, review=True)
+        if not content:
             abort(404)
-                
-    
+        content = content[0]
+        content["comments"], content["moderated_comments"] = _return_comment_by_cred(content_id)
+
+        # Armazena último acesso na sessão
+        session["last_accessed_id"] = content["id"]
+        session["last_accessed_title"] = content.get("title", "")
+        session["last_accessed_banner"] = content.get("banner", "")
+        session["last_accessed_type"] = content.get("content_type", "")
+        session.modified = True
+
+        return render_template("content_preview.html", content=content, my_courses=my_courses)
+
+    if request.method == "POST":
+        content = g.user.GET_FULL_CONTENT(all_contents=False, content_to_select=content_id, review=True)
+        if not content:
+            abort(404)
+        content = content[0]
+        content["comments"], content["moderated_comments"] = _return_comment_by_cred(content_id)
+        return render_template("edit_content.html", content=content, **tpl_ctx)
+
+    abort(404)
+
+
+# ── VISUALIZAÇÃO DO CONTEÚDO (LEITURA / FLIPBOOK) ────────────────────────────
 @contents_bp.route("/contents/publications/selec_content/<content_id>", methods=["POST", "GET"])
 def select_content(content_id):
     if _cred() not in _PUBLISHER_CREDS:
         return redirect(url_for("auth.login"))
 
-    content = (
-        g.user.get_content_by_admin(content_id)
-        if _cred() == "admin"
-        else g.user.professor_get_content_by_id(content_id)
-    )
-
+    content = g.user.GET_FULL_CONTENT(all_contents=False, content_to_select=content_id, review=False)
     if not content:
         return redirect(url_for("contents.get_publications"))
 
-    from pdf_to_html import pdf_bytes_to_html
-    content["html_body"] = pdf_bytes_to_html(content.get("pdf") or b"")
+    content = content[0]
+
+    if not content.get("s3_uuid") and content.get("pdf"):
+        from pdf_to_html import pdf_bytes_to_html
+        content["html_body"] = pdf_bytes_to_html(content.get("pdf") or b"")
+
     return render_template("content_view.html", content=content)
 
 
-#── REVIEWS──────────────────────────────────────────────────────
-
-@contents_bp.route("/contents/set_review/", methods=["POST"])
-def set_review():
-    if not _cred():
+# ── DOWNLOAD SEGURO DO PDF ───────────────────────────────────────────────────
+@contents_bp.route("/contents/download/<content_id>", methods=["GET"])
+def download(content_id):
+    if not g.user:
         return redirect(url_for("auth.login"))
 
-    course_request = request.get_json()
-    course_id = course_request.get("course_id")
-        
-    if not course_id:
-        return False
-        
-    rating = course_request.get("rating")
-    comment = course_request.get("comment")
-     
-    if g.user.get_my_comment(course_id):
-        print("JA TENHO COMENTARIOS")
-        g.user.update_my_comment(course_id, rating, comment)
-        
-    else:
-        print("NAO TENHO COMENTARIOS")
-        g.user.set_content_review(contentId=course_id, rating=rating,comment=comment)
-    
-    return redirect(url_for("contents.content_buss", content_id=course_id))
-    
-    
-@contents_bp.route("/contents/edit_review/<content_id>/", methods=["POST"])
-def edit_review(content_id):
-    if not content_id:
-        abort(404)
-    g.user.update_my_comment(content_id)
+    my_courses = g.user.get_my_courses() or []
+    is_enrolled = any(str(c.get("id")) == str(content_id) for c in my_courses)
+    if _cred() in _PUBLISHER_CREDS:
+        is_enrolled = True
 
-@contents_bp.route("/contents/ocult_user_review/<content_id>/<comment_id>", methods=["POST"])        
-def ocult_user_review(content_id, comment_id):
-    if _cred() not in ["admin", "professor"]:
-        return redirect(url_for("auth.login"))
-        
-    if not comment_id or not content_id:
-        return False
-    print(f"[OCULT_REVIEW]: content id {content_id} %%% comment id {comment_id}")        
-    if _cred() == "admin":
-        susp = g.user.suspended_comment_by_admin(content_id, comment_id)
-        
-    if _cred() == "professor":
-        susp = g.user.suspended_comment_by_professor(content_id, comment_id)
-        
-    if susp:
-        return redirect(url_for("contents.content_buss", content_id=content_id))
+    if not is_enrolled:
+        abort(403)
 
-    return redirect(url_for("contents.content_buss", content_id=content_id)), 404
+    download_url = g.user.get_content_download_url(content_id)
+    if download_url:
+        return redirect(download_url)
+
+    abort(404)
 
 
-@contents_bp.route("/contents/delete_my_review/<content_id>/<comment_id>", methods=["POST"])
-def delete_my_review(content_id, comment_id):
-    
-    if not _cred():
-        return redirect(url_for("auth.login"))
-    
-    if not comment_id or not content_id:
-        return False
-        
-    if g.user.delete_my_comment(comment_id, content_id):
-        return redirect(url_for("contents.content_buss", content_id=content_id))
-            
-    return redirect(url_for("contents.content_buss", content_id=content_id))
-
-
-@contents_bp.route("/contents/delete_user_review/<content_id>/<comment_id>", methods=["POST"])
-def delete_user_review(content_id, comment_id):    
-    if _cred() not in ["admin", "professor"]:
-        return redirect(url_for("auth.login"))
-        
-    if not comment_id or not content_id:
-        return False
-        
-    if _cred() == "admin":
-        delete = g.user.delete_comment_by_admin(content_id, comment_id)
-        
-    if _cred() == "professor":
-        delete = g.user.delete_comment_by_professor(content_id, comment_id)
-        
-    if delete:
-        return redirect(url_for("contents.content_buss", content_id=content_id))
-        
-    return redirect(url_for("contents.content_buss", content_id=content_id)), 404
-
-#── ──────────────────────────────────────────────────────
-# ── Publicar conteúdo ─────────────────────────────────────────────────────────
-
-@contents_bp.route("/publish_content", methods=["POST", "GET"])
-def publish_content():
-    
-    
-    if request.method == "GET":
-        return redirect(url_for("contents.contents", tab="publish-content-view",
-                                _anchor="publications-section"))
-
-    if _cred() not in _PUBLISHER_CREDS:
-        return redirect(url_for("auth.login"))
-
-    content_name = request.form.get("content_name", "").strip()
-    description  = request.form.get("description", "").strip()
-    content_type = request.form.get("content_type", "other")
-    banner_id    = request.form.get("banner_id")
-    banner_file  = request.files.get("banner_file")
-    file         = request.files.get("file")
-
-    # ── Validações ────────────────────────────────────────────────────────────
-    if len(content_name) < 15:
-        return _render_contents_error("Nome de conteúdo muito curto (mínimo 15 caracteres)")
-    if len(description) < 50:
-        return _render_contents_error("Descrição de conteúdo muito curta (mínimo 50 caracteres)")
-    if not file or not file.filename:
-        return _render_contents_error("Nenhum documento PDF selecionado")
-    if not banner_file and not banner_id:
-        return _render_contents_error("Nenhum banner selecionado")
-
-    # ── PDF ───────────────────────────────────────────────────────────────────
-    pdf_bytes = None
-    if file.filename.lower().endswith(".pdf"):
-        pdf_bytes = file.read()
-
-    # ── Banner ────────────────────────────────────────────────────────────────
-    banner_path = banner_id  # pode ser None se só vier o arquivo
-    if banner_file and banner_file.filename:
-        banners_dir = os.path.join(
-            current_app.root_path, "view", "static", "Banners", "by_user"
-        )
-        os.makedirs(banners_dir, exist_ok=True)
-        ext       = banner_file.filename.rsplit(".", 1)[-1].lower()
-        filename  = f"{uuid.uuid4().hex}.{ext}"
-        full_path = os.path.join(banners_dir, filename)
-        banner_file.save(full_path)
-        banner_path = f"Banners/by_user/{filename}"
-
-    if not all([pdf_bytes, description, content_name, banner_path]):
-        return _render_contents_error("Formato inválido ou arquivos corrompidos")
-
-    # ── Montar payload ────────────────────────────────────────────────────────
-    content = {
-        "title":        content_name,
-        "desc":         description,
-        "banner":       banner_path,
-        "content_type": content_type,
-        "pdf":          pdf_bytes,
-    }
-
-    # ── Persistir conforme credencial ─────────────────────────────────────────
-    upload = False
-    author = False
-
-    if _cred() == "admin":
-        author  = request.form.get("author")
-        author_obj = g.user.get_user_by_username(author)
-        
-        if author_obj and author_obj.get("name")==author:
-            author = author_obj["name"]
-            upload = g.user.publish_content_by_admin(content, author)
-            print("/"*10,upload)
-    elif _cred() == "professor":
-        author = g.user.get_user_name()
-        if author == session.get("name"):
-            upload = g.user.publish_content_by_professor(content, author)
-            
-        else:
-            author = False
-    
-    if not author:
-        return _render_contents_error("Nome de autor não existe no banco de dados")
-    if not upload:
-        return _render_contents_error("Não foi possível salvar no banco de dados. Tente novamente.")
-    print("\n"*10, upload)
-    # ── Sucesso: redireciona para visualização do conteúdo publicado ──────────
-    # `upload` deve ser o ID do conteúdo recém-criado (ou o objeto que o contém)
-    content_id = upload if isinstance(upload, str) else upload.get("id") if hasattr(upload, "get") else str(upload)
-    return redirect(url_for("contents.content_buss", content_id=content_id))
-
-
-# ── Servir arquivos ───────────────────────────────────────────────────────────
-
+# ── VISUALIZAÇÃO INTERNA DO PDF (EMBED NO NAVEGADOR) ─────────────────────────
 @contents_bp.route("/contents/view/<content_id>", methods=["GET"])
 def get_file(content_id):
-    content = g.user.get_content_by_id(content_id)
-    if not content:
-        abort(404)
-    return send_file(
-        BytesIO(content.get("pdf")),
-        mimetype="application/pdf",
-        as_attachment=False,
-        download_name=f"{content.get('title')}.pdf",
-    )
+    view_url = g.user.get_content_view_url(content_id)
+    if view_url:
+        return redirect(view_url)
+    abort(404)
 
 
+# ── BANNER ────────────────────────────────────────────────────────────────────
 @contents_bp.route("/contents/banner/<content_id>")
 def get_banner(content_id):
     content = g.user.get_content_by_id(content_id)
@@ -405,11 +288,14 @@ def get_banner(content_id):
         abort(404)
 
     banner = content["banner"]
+    if banner.startswith(("http://", "https://")):
+        return redirect(banner)
+
     if "/" not in banner:
         return redirect(url_for("contents.get_banner_default", banner_id=banner))
 
     static_dir = os.path.join(current_app.root_path, "view/static")
-    full_path  = os.path.join(static_dir, banner)
+    full_path = os.path.join(static_dir, banner)
     if not os.path.exists(full_path):
         abort(404)
     return send_file(full_path, mimetype="image/jpeg")
@@ -423,40 +309,113 @@ def get_banner_default(banner_id):
                 current_app.root_path, "view", "static", "Banners",
                 b["name"].split("/")[-1],
             )
-            if not os.path.exists(path):
-                abort(404)
-            return send_file(path, mimetype="image/jpg")
+            if os.path.exists(path):
+                return send_file(path, mimetype="image/jpg")
     abort(404)
 
 
-# ── Visualização / edição de conteúdo individual ──────────────────────────────
+# ── PUBLICAÇÃO DE CONTEÚDO (ADMIN / PROFESSOR) ───────────────────────────────
+@contents_bp.route("/publish_content", methods=["POST", "GET"])
+def publish_content():
+    if request.method == "GET":
+        return redirect(url_for("contents.contents", tab="publish-content-view",
+                                _anchor="publications-section"))
 
-
-
-# ── Minhas publicações / select_content ───────────────────────────────────────
-
-@contents_bp.route("/contents/publications", methods=["GET"])
-def get_publications():
     if _cred() not in _PUBLISHER_CREDS:
         return redirect(url_for("auth.login"))
-    publications = _pub_items()
-    return redirect(url_for("contents.contents", tab="my-publications-view",
-                            _anchor="publications-section",
-                            publications=publications))
+
+    content_name = request.form.get("content_name", "").strip()
+    description  = request.form.get("description", "").strip()
+    content_type = request.form.get("content_type", "other")
+    banner_id    = request.form.get("banner_id")
+    banner_file  = request.files.get("banner_file")
+    pdf_file     = request.files.get("file")
+
+    if len(content_name) < 15:
+        return _render_contents_error("Nome de conteúdo muito curto (mínimo 15 caracteres)")
+    if len(description) < 50:
+        return _render_contents_error("Descrição de conteúdo muito curta (mínimo 50 caracteres)")
+    if not pdf_file or not pdf_file.filename:
+        return _render_contents_error("Nenhum documento PDF selecionado")
+    if not banner_file and not banner_id:
+        return _render_contents_error("Nenhum banner selecionado")
+
+    if not pdf_file.filename.lower().endswith(".pdf"):
+        return _render_contents_error("O arquivo enviado precisa ser um PDF válido.")
+
+    pdf_bytes = pdf_file.read()
+
+    upload_result = None
+    if _cred() == "admin":
+        upload_result = g.user.upload_content_pdf_by_admin(pdf_bytes)
+    else:
+        upload_result = g.user.upload_content_pdf_by_professor(pdf_bytes)
+
+    if not upload_result or not upload_result.get("s3_uuid"):
+        return _render_contents_error("Erro no processamento/upload do PDF para a nuvem.")
+
+    banner_url = banner_id
+    if banner_file and banner_file.filename:
+        try:
+            if _cred() == "admin":
+                banner_url = g.user.upload_content_banner_by_admin(
+                    None, banner_file.filename, banner_file.read()
+                )
+            else:
+                banner_url = g.user.upload_content_banner_by_professor(
+                    None, banner_file.filename, banner_file.read()
+                )
+        except Exception as e:
+            logging.error("Erro ao fazer upload do banner: %s", e)
+            return _render_contents_error("Falha ao enviar o banner personalizado.")
+
+    content = {
+        "title":         content_name,
+        "desc":          description,
+        "banner":        banner_url,
+        "content_type":  content_type,
+        "s3_uuid":       upload_result["s3_uuid"],
+        "total_paginas": upload_result["total_paginas"],
+    }
+
+    author = None
+    if _cred() == "admin":
+        author_name = request.form.get("author")
+        author_obj = g.user.get_user_by_username(author_name)
+        if author_obj and author_obj.get("name") == author_name:
+            author = author_obj["name"]
+            upload = g.user.publish_content_by_admin(content, author)
+    else:
+        author = g.user.get_user_name()
+        if author == session.get("name"):
+            upload = g.user.publish_content_by_professor(content, author)
+
+    if not author:
+        return _render_contents_error("Nome de autor não encontrado no banco de dados.")
+    if not upload:
+        return _render_contents_error("Não foi possível salvar no banco de dados. Tente novamente.")
+
+    content_id = upload if isinstance(upload, str) else (upload.get("id") if hasattr(upload, "get") else str(upload))
+    if banner_file and banner_file.filename:
+        banner_file.seek(0)
+        if _cred() == "admin":
+            g.user.upload_content_banner_by_admin(content_id, banner_file.filename, banner_file.read())
+        else:
+            g.user.upload_content_banner_by_professor(content_id, banner_file.filename, banner_file.read())
+
+    return redirect(url_for("contents.content_buss", content_id=content_id))
 
 
-# ── Editar conteúdo ───────────────────────────────────────────────────────────
-
+# ── EDIÇÃO DE CONTEÚDO ───────────────────────────────────────────────────────
 @contents_bp.route("/contents/publications/selec_content/edit/<content_id>", methods=["POST", "GET"])
 def edit_content(content_id):
     if _cred() not in _PUBLISHER_CREDS:
         return redirect(url_for("auth.login"))
 
-    content = (
-        g.user.get_content_by_admin(content_id)
-        if _cred() == "admin"
-        else g.user.professor_get_content_by_id(content_id)
-    )
+    if _cred() == "admin":
+        content = g.user.get_content_by_admin(content_id)
+    else:
+        content = g.user.professor_get_content_by_id(content_id)
 
     if not content:
         return redirect(url_for("contents.get_publications"))
@@ -476,38 +435,42 @@ def edit_content(content_id):
         if len(new_title.strip()) <= 15:
             return _render_edit("Título muito curto")
         action = _update("title", new_title)
-        if not action:
-            return _render_edit("Erro ao atualizar título")
 
     new_desc = request.form.get("new_desc")
     if new_desc:
         if len(new_desc.strip()) <= 50:
             return _render_edit("Descrição muito curta")
         action = _update("desc", new_desc)
-        if not action:
-            return _render_edit("Erro ao atualizar descrição")
 
     new_type = request.form.get("content_type")
     valid_types = [v for v, _, _ in CONTENT_TYPES]
     if new_type and new_type in valid_types:
         action = _update("content_type", new_type)
-        if not action:
-            return _render_edit("Erro ao atualizar tipo de conteúdo")
 
-    new_banner_file = request.files.get("banner_file")
-    if new_banner_file and new_banner_file.filename:
-        banner_bytes = new_banner_file.read()
-        if banner_bytes:
-            action = _update("banner", banner_bytes)
-            if not action:
-                return _render_edit("Erro ao salvar banner")
+    banner_file = request.files.get("banner_file")
+    if banner_file and banner_file.filename:
+        try:
+            if _cred() == "admin":
+                g.user.upload_content_banner_by_admin(content_id, banner_file.filename, banner_file.read())
+            else:
+                g.user.upload_content_banner_by_professor(content_id, banner_file.filename, banner_file.read())
+            action = True
+        except Exception as e:
+            logging.error("Erro ao atualizar banner: %s", e)
+            return _render_edit("Erro ao salvar banner na nuvem")
 
-    new_file = request.files.get("file")
-    if new_file and new_file.filename.lower().endswith(".pdf"):
-        pdf_bytes = new_file.read()
-        action = _update("pdf", pdf_bytes)
-        if not action:
-            return _render_edit("Formato indevido para pdf")
+    new_pdf_file = request.files.get("file")
+    if new_pdf_file and new_pdf_file.filename.lower().endswith(".pdf"):
+        pdf_bytes = new_pdf_file.read()
+        try:
+            if _cred() == "admin":
+                g.user.replace_content_pdf_by_admin(content_id, pdf_bytes)
+            else:
+                g.user.replace_content_pdf_by_professor(content_id, pdf_bytes)
+            action = True
+        except Exception as e:
+            logging.error("Erro ao substituir PDF: %s", e)
+            return _render_edit("Formato indevido ou erro ao processar o novo PDF.")
 
     if action:
         get_session().expire_all()
@@ -516,8 +479,7 @@ def edit_content(content_id):
     return _render_edit()
 
 
-# ── Excluir conteúdo ──────────────────────────────────────────────────────────
-
+# ── EXCLUIR CONTEÚDO ─────────────────────────────────────────────────────────
 @contents_bp.route("/delete_content/<content_id>", methods=["POST"])
 def delete_content(content_id):
     if _cred() not in _PUBLISHER_CREDS:
@@ -528,11 +490,93 @@ def delete_content(content_id):
         if _cred() == "professor"
         else g.user.delete_contents_by_admin(content_id)
     )
-    print("\n\n\nresultado de deletar\n\n\n", action)
+
     if not action:
         return render_template(
             "edit_content.html",
             content={"id": content_id},
-            error="Não foi possível excluir arquivo",
+            error="Não foi possível excluir conteúdo",
         )
     return redirect(url_for("contents.redirect_get_publications"))
+
+
+# ── REVIEWS ────────────────────────────────────────────────────────────────────
+@contents_bp.route("/contents/set_review/", methods=["POST"])
+def set_review():
+    if not _cred():
+        return redirect(url_for("auth.login"))
+
+    course_request = request.get_json()
+    course_id = course_request.get("course_id")
+
+    if not course_id:
+        return False
+
+    rating = course_request.get("rating")
+    comment = course_request.get("comment")
+
+    if g.user.get_my_comment(course_id):
+        g.user.update_my_comment(course_id, rating, comment)
+    else:
+        g.user.set_content_review(contentId=course_id, rating=rating, comment=comment)
+
+    return redirect(url_for("contents.content_buss", content_id=course_id))
+
+
+@contents_bp.route("/contents/edit_review/<content_id>/", methods=["POST"])
+def edit_review(content_id):
+    if not content_id:
+        abort(404)
+    g.user.update_my_comment(content_id)
+
+
+@contents_bp.route("/contents/ocult_user_review/<content_id>/<comment_id>", methods=["POST"])
+def ocult_user_review(content_id, comment_id):
+    if _cred() not in ["admin", "professor"]:
+        return redirect(url_for("auth.login"))
+
+    if not comment_id or not content_id:
+        return False
+
+    if _cred() == "admin":
+        susp = g.user.suspended_comment_by_admin(content_id, comment_id)
+    elif _cred() == "professor":
+        susp = g.user.suspended_comment_by_professor(content_id, comment_id)
+
+    if susp:
+        return redirect(url_for("contents.content_buss", content_id=content_id))
+
+    return redirect(url_for("contents.content_buss", content_id=content_id)), 404
+
+
+@contents_bp.route("/contents/delete_my_review/<content_id>/<comment_id>", methods=["POST"])
+def delete_my_review(content_id, comment_id):
+    if not _cred():
+        return redirect(url_for("auth.login"))
+
+    if not comment_id or not content_id:
+        return False
+
+    if g.user.delete_my_comment(comment_id, content_id):
+        return redirect(url_for("contents.content_buss", content_id=content_id))
+
+    return redirect(url_for("contents.content_buss", content_id=content_id))
+
+
+@contents_bp.route("/contents/delete_user_review/<content_id>/<comment_id>", methods=["POST"])
+def delete_user_review(content_id, comment_id):
+    if _cred() not in ["admin", "professor"]:
+        return redirect(url_for("auth.login"))
+
+    if not comment_id or not content_id:
+        return False
+
+    if _cred() == "admin":
+        delete = g.user.delete_comment_by_admin(content_id, comment_id)
+    elif _cred() == "professor":
+        delete = g.user.delete_comment_by_professor(content_id, comment_id)
+
+    if delete:
+        return redirect(url_for("contents.content_buss", content_id=content_id))
+
+    return redirect(url_for("contents.content_buss", content_id=content_id)), 404

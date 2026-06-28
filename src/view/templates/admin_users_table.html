@@ -1,0 +1,59 @@
+<div class="users-table-wrapper" id="users-table-wrapper">
+    <table class="admin-table" id="users-table">
+        <thead>
+            <tr>
+                <th>Usuário</th>
+                <th>Permissão</th>
+                <th>Email</th>
+                <th>Criação</th>
+                <th style="text-align: center;">Ação</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <td>
+                    <div class="user-avatar-cell">
+                        {% if user.picture %}
+                            <img src="{{ url_for('static', filename=user.picture) }}" class="user-avatar-thumb" alt="Avatar">
+                        {% else %}
+                            <div class="user-avatar-placeholder">{{ user.name[0] | upper }}</div>
+                        {% endif %}
+                        <span>{{ user.name }}</span>
+                    </div>
+                </td>
+                <td>{{ user.cred.value }}</td>
+                <td>{{ user.email or '—' }}</td>
+                <td>
+                    {% if user.creation_date is not string %}
+                        {{ user.creation_date.strftime('%d/%m/%Y') }}
+                    {% else %}
+                        {{ user.creation_date }}
+                    {% endif %}
+                </td>
+                <td style="text-align: center;">
+                    <a href="{{ url_for('admin.admin_edit_user', user_id=user.id) }}" class="btn btn-primary btn-sm">👤 Ver perfil</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <div id="no-results-msg" class="no-results" style="display: {% if users %}none{% else %}block{% endif %};">
+        Nenhum usuário encontrado com esses filtros.
+    </div>
+
+    <!-- Paginação -->
+    {% if pagination.pages > 1 %}
+    <div style="display: flex; justify-content: center; align-items: center; gap: 12px; margin-top: 24px;" id="pagination-controls">
+        {% if pagination.page > 1 %}
+            <a href="#" class="btn btn-sm btn-outline" data-page="1">« Primeira</a>
+            <a href="#" class="btn btn-sm btn-outline" data-page="{{ pagination.page - 1 }}">‹ Anterior</a>
+        {% endif %}
+        <span style="color: var(--text-secondary); font-weight: 600;">Página {{ pagination.page }} de {{ pagination.pages }}</span>
+        {% if pagination.page < pagination.pages %}
+            <a href="#" class="btn btn-sm btn-outline" data-page="{{ pagination.page + 1 }}">Próxima ›</a>
+            <a href="#" class="btn btn-sm btn-outline" data-page="{{ pagination.pages }}">Última »</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>

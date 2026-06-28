@@ -1,4 +1,4 @@
-from src.models.contents_models import rating_models
+from src.models.mongo_models import rating_models
 from datetime import datetime
 from bson.objectid import ObjectId  # 🌟 Adicionado para manipular os IDs do MongoDB
 
@@ -157,6 +157,34 @@ def delete_comment(course_id, comment_id):
         return resultado.deleted_count > 0
     except Exception as e:
         print(f"🚨 Erro ao deletar comentário: {e}")
+        return False
+def unhide_comment(course_id, comment_id):
+    """
+    Desoculta um comentário alterando a flag 'is_moderated' para False.
+    Isso faz com que ele volte a aparecer no método 'get_comments' normal.
+    """
+    try:
+        course_comments_col = rating_models.get_course_comments_col()
+        
+        print(f"[UNHIDE_COMMENT]: Restaurando comentário {comment_id} do conteúdo {course_id}...")
+        
+        resultado = course_comments_col.update_one(
+            {
+                "_id": ObjectId(comment_id),
+                "course_id": str(course_id).strip()
+            },
+            {
+                "$set": {
+                    "is_moderated": False,
+                    "suspended_at": None # Remove a data de suspensão, se quiser manter o rastro, pode remover esta linha
+                }
+            }
+        )
+        
+        print(f"[UNHIDE_COMMENT]: MATCHED: {resultado.matched_count} | MODIFIED: {resultado.modified_count}")
+        return resultado.modified_count > 0
+    except Exception as e:
+        print(f"🚨 Erro ao desocultar comentário: {e}")
         return False
 
 def suspend_comment(course_id, comment_id):

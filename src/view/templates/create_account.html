@@ -2,105 +2,77 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Criar Conta</title>
+    <title>Criar Conta - Arte Fora da Caixa</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}"> 
+
     <style>
+        /* Ajustes específicos de alinhamento e largura para a página de Registro */
         body {
-            background: #f3f4f6;
-            font-family: "Segoe UI", Roboto, sans-serif;
-            margin: 0;
-            display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
-            color: #333;
+        }
+        
+        .register-wrapper {
+            width: 100%;
+            /* Aumentado para 550px para o formulário ocupar mais espaço na tela */
+            max-width: 550px; 
+            padding: 20px;
         }
 
-        form {
-            background: white;
-            padding: 40px 35px;
-            border-radius: 18px;
-            box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+        .error-message {
+            background: #fff0f0;
+            color: var(--red);
+            padding: 12px 16px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 20px;
             text-align: center;
-            width: 320px;
-        }
-
-        h2 {
-            margin-bottom: 25px;
-            color: #222;
-            font-size: 24px;
-        }
-
-        input {
-            width: 100%;
-            padding: 12px;
-            margin-bottom: 18px;
-            border-radius: 10px;
-            border: 1px solid #ccc;
-            background: #fafafa;
-            font-size: 14px;
-        }
-
-        /* Botão Criar */
-        button {
-            width: 100%;
-            padding: 12px 0;
-            border: none;
-            border-radius: 10px;
-            background: linear-gradient(90deg, #ff7a00, #00c853);
-            color: white;
-            font-weight: bold;
-            font-size: 15px;
-            cursor: pointer;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-            transition: 0.2s ease-in-out;
-            margin-bottom: 12px;
-        }
-
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 14px rgba(0,0,0,0.2);
-        }
-
-        /* Botão Voltar — mesmo estilo do Criar Conta do login */
-        .back-btn {
-            display: inline-block;
-            width: 100%;
-            padding: 12px 0;
-            border-radius: 10px;
-            text-decoration: none;
-            font-weight: bold;
-            font-size: 15px;
-            background: linear-gradient(90deg, #f39c12, #e67e22); /* mesma coloração */
-            color: white;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-            transition: 0.2s ease-in-out;
-            text-align: center;
-        }
-
-        .back-btn:hover {
-            transform: translateY(-2px);
-            opacity: 0.9;
-            box-shadow: 0 5px 14px rgba(0,0,0,0.2);
-        }
-        .error {
-            color: #ff4444;
-            margin-bottom: 15px;
-            font-weight: bold;
+            border: 1px solid rgba(230, 57, 70, 0.15);
         }
     </style>
 </head>
 <body>
-    <form method="POST" action="/create_account">
-        <h2>Criar Conta</h2>
-           
-        {% if error %}
-            <div class="error">{{ error }}</div>
-        {% endif %}
-        <input type="text" name="name" placeholder="Nome" required>
-        <input type="password" name="password_1" placeholder="Senha" required>
-        <input type="password" name="password_2" placeholder="Confirmar senha" required>
-        <button type="submit">Criar</button>
-        <a href="/login" class="back-btn">Voltar</a>
-    </form>
+
+    <div class="register-wrapper">
+        <div class="panel-box" style="margin: 0;">
+            <h2 class="text-center" style="margin-bottom: 24px;">Criar Conta</h2>
+
+            {% if error %}
+                <div class="error-message">{{ error }}</div>
+            {% endif %}
+
+            <form method="POST" action="/create_account">
+                <div class="form-field">
+                    <label class="form-label">Nome</label>
+                    <input type="text" name="name" class="form-input" placeholder="Digite seu nome" required>
+                </div>
+
+                <div class="form-field">
+                    <label class="form-label">Senha</label>
+                    <input type="password" name="password_1" class="form-input" placeholder="Digite sua senha" required>
+                </div>
+
+                <div class="form-field" style="margin-bottom: 28px;">
+                    <label class="form-label">Confirmar Senha</label>
+                    <input type="password" name="password_2" class="form-input" placeholder="Confirme sua senha" required>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block btn-lg" style="margin-bottom: 12px;">
+                    Criar
+                </button>
+                
+                <a href="/login" class="btn btn-outline btn-block btn-lg" style="justify-content: center;">
+                    Voltar
+                </a>
+            </form>
+        </div>
+    </div>
+
 </body>
 </html>
