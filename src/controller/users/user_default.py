@@ -43,6 +43,7 @@ from src.Logs.terminal_logs import(
 from src.controller.storage.s3_content_storage import generate_pdf_download_url, generate_pdf_view_url, build_pages_base_url
 
 logger = logging.getLogger(__name__)
+
 # src/controller/users/user_default.py (adicione ao final, fora das classes)
 
 def reset_user_password(user_id, new_password):
@@ -78,8 +79,6 @@ def reset_user_password(user_id, new_password):
         return False
     finally:
         conn.close()
-        
-
 def check_user(search, dataBase=database, column="name"):
     """
     dataBase -> função que retorna sessão (get_session)
@@ -445,46 +444,70 @@ class Management_User_Default(Login_Account):
             conn.close()
 
     @Login_Account.is_loged
-    def get_all_contents(self, limit=None, offset=None) -> Union[list, dict, bool]:
+    @Login_Account.is_loged
+    def get_all_contents(self, limit=None, offset=None,
+                         search=None, content_type=None,
+                         popularity=None, sort=None) -> Union[list, dict, bool]:
         conn = self.dataBase()
         try:
             query = conn.query(Contents)
+    
+            # Filtro por nome (busca textual)
+            if search:
+                query = query.filter(Contents.title.ilike(f'%{search}%'))
+    
+            # Filtro por tipo de conteúdo
+            if content_type and content_type != 'all':
+                query = query.filter(Contents.content_type == content_type)
+    
+            # Ordenação por data
+            if sort == 'oldest':
+                query = query.order_by(Contents.creation_date.asc())
+            else:  # recent
+                query = query.order_by(Contents.creation_date.desc())
+    
             total = query.count()
     
             if limit is not None:
                 query = query.limit(limit)
                 if offset is not None:
                     query = query.offset(offset)
-                all_contents = query.all()
-                items = [{
-                    "id":            str(c.id),
-                    "title":         c.title,
-                    "desc":          c.desc,
-                    "banner":        c.banner,
-                    "content_type":  c.content_type,
-                    "author":        c.author,
-                    "creation_date": c.creation_date,
-                    "publisher_id":  str(c.publisher_id),
-                    "s3_uuid":       c.s3_uuid,
-                    "total_paginas": c.total_paginas,
-                } for c in all_contents]
-                result_payload = {"items": items, "total": total}
-            else:
-                all_contents = query.all()
-                result_payload = [{
-                    "id":            str(c.id),
-                    "title":         c.title,
-                    "desc":          c.desc,
-                    "banner":        c.banner,
-                    "content_type":  c.content_type,
-                    "author":        c.author,
-                    "creation_date": c.creation_date,
-                    "publisher_id":  str(c.publisher_id),
-                    "s3_uuid":       c.s3_uuid,
-                    "total_paginas": c.total_paginas,
-                } for c in all_contents]
-            
-            return result_payload
+    
+            all_contents = query.all()
+    
+            items = [{
+                "id":            str(c.id),
+                "title":         c.title,
+                "desc":          c.desc,
+                "banner":        c.banner,
+                "content_type":  c.content_type,
+                "author":        c.author,
+                "creation_date": c.creation_date,
+                "publisher_id":  str(c.publisher_id),
+                "s3_uuid":       c.s3_uuid,
+                "total_paginas": c.total_paginas,
+            } for c in all_contents]
+    
+            # Popularidade (usa MongoDB para ordenar)
+            if popularity in ('most_enrolled', 'most_reviewed'):
+                from src.models.mongo_models.rating_models import get_reviews
+                for item in items:
+                    stats = get_reviews(item['id'])
+                    item['_total_inscriptions'] = stats.get('total_inscriptions', 0)
+                    item['_total_reviews'] = stats.get('total_reviews', 0)
+    
+                if popularity == 'most_enrolled':
+                    items.sort(key=lambda x: x['_total_inscriptions'], reverse=True)
+                elif popularity == 'most_reviewed':
+                    items.sort(key=lambda x: x['_total_reviews'], reverse=True)
+    
+                for item in items:
+                    item.pop('_total_inscriptions', None)
+                    item.pop('_total_reviews', None)
+    
+            if limit is not None:
+                return {"items": items, "total": total}
+            return items
         except Exception as e:
             logger.error(f"Erro ao listar todos os conteúdos: {e}")
             return False
@@ -516,19 +539,23 @@ class Management_User_Default(Login_Account):
             conn.close()
 
     @Login_Account.is_loged
+    @Login_Account.is_loged
     def GET_FULL_CONTENT(self, all_contents=False, content_to_select=None, review=False,
-                         limit=None, offset=None) -> Union[list, dict, bool]:
+                         limit=None, offset=None, search=None, content_type=None,
+                         popularity=None, sort=None) -> Union[list, dict, bool]:
         if not all_contents and content_to_select:
             contents = [self.get_content_by_id(content_to_select)]
         elif all_contents and content_to_select is None:
-            result = self.get_all_contents(limit=limit, offset=offset)
+            result = self.get_all_contents(limit=limit, offset=offset,
+                                           search=search, content_type=content_type,
+                                           popularity=popularity, sort=sort)
             if not result:
                 return False
             contents = result["items"]
             total = result["total"]
         else:
             return False
-
+    
         full_content = []
         for content in contents:
             if not content:
@@ -539,20 +566,20 @@ class Management_User_Default(Login_Account):
             if content.get("s3_uuid") and not content.get("url_base_s3"):
                 content["url_base_s3"] = build_pages_base_url(content["s3_uuid"])
             full_content.append(content)
-
+    
         if all_contents and content_to_select is None:
             return {"items": full_content, "total": total}
         return full_content
-        
-    @Login_Account.is_loged
-    def get_my_courses_cached(self, ttl=600):
-        cache_key = f"my_courses_{self.userId}"
-        cached = self._cache_get(cache_key, ttl)
-        if cached is not None:
-            return cached
-        courses = self.get_my_courses()
-        self._cache_set(cache_key, courses)
-        return courses
+                
+        @Login_Account.is_loged
+        def get_my_courses_cached(self, ttl=600):
+            cache_key = f"my_courses_{self.userId}"
+            cached = self._cache_get(cache_key, ttl)
+            if cached is not None:
+                return cached
+            courses = self.get_my_courses()
+            self._cache_set(cache_key, courses)
+            return courses
         
     @Login_Account.is_loged
     def get_content_download_url(self, contentId: str):

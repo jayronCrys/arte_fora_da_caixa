@@ -68,12 +68,13 @@ def logout():
 
 @auth_bp.route("/login/google", methods=["GET"])
 def google_login():
-    authorization = google_config(redirect_by="auth.google_login_checkout")
-    if authorization:
-        session["google_state"] = authorization.get("google_state")
-        session["google_client_config"] = authorization.get("client_config")
-        return redirect(authorization.get("oauth_autho"))
-    return redirect(url_for("auth.login"))
+    authorization = google_config("auth.google_login_checkout")
+
+    session["google_state"] = authorization["google_state"]
+    session["google_client_config"] = authorization["client_config"]
+    session["google_code_verifier"] = authorization["google_code_verifier"]
+    
+    return redirect(authorization["oauth_autho"])
 
 
 @auth_bp.route("/login/google/checkin")
@@ -90,6 +91,7 @@ def google_login_checkout():
         redirect_uri=url_for("auth.google_login_checkout", _external=True),
         state=session.get("google_state"),
     )
+    flow.code_verifier = session["google_code_verifier"]
     flow.fetch_token(authorization_response=request.url)
 
     req = goo_request.Request()

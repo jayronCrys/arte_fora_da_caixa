@@ -6,12 +6,12 @@ import os
 
 logger = logging.getLogger(__name__)
 
-CLIENT_ID = ["807683116571-bii3vcsftn86cekjg98h6m4kr756lk3p.apps.googleusercontent.com"]
+CLIENT_ID = "807683116571-e7a4d5hcfqb8udlsf99rfnoqfbrupuem.apps.googleusercontent.com"
  
 def google_config(redirect_by):
     try:
-        CLIENT_SECRET = "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"
-        CLIENT_ID_ENV = "807683116571-bii3vcsftn86cekjg98h6m4kr756lk3p.apps.googleusercontent.com"
+        CLIENT_SECRET = "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"
+        CLIENT_ID_ENV = CLIENT_ID
         SCOPES = ["https://www.googleapis.com/auth/userinfo.email",
                   "https://www.googleapis.com/auth/userinfo.profile",
                   "openid"]
@@ -28,15 +28,25 @@ def google_config(redirect_by):
                     "redirect_uris": [redirect_uri],
                 }
             }
-
-            flow = Flow.from_client_config(client_config, scopes=SCOPES, redirect_uri=redirect_uri)
+            redirect_uri = url_for("auth.google_login_checkout", _external=True)
+            print("Redirect URI:", repr(redirect_uri))
+            flow = Flow.from_client_config(
+            client_config,
+            scopes=SCOPES,
+            redirect_uri=redirect_uri
+        )
+        
             oauth_url, state = flow.authorization_url(
                 access_type="offline",
                 include_granted_scopes="true"
             )
-
-            # Retorna a URL e o state, sem tentar gerar token ainda
-            return {"oauth_autho": oauth_url, "google_state": state, "client_config": client_config}
+            
+            return {
+                "oauth_autho": oauth_url,
+                "google_state": state,
+                "google_code_verifier": flow.code_verifier,
+                "client_config": client_config
+            }
 
         logging.error("Erro interno nas credenciais")
         return False
@@ -48,7 +58,7 @@ def google_config(redirect_by):
 
 def client_ifo(token, req):
     try:
-        info_id = id_token.verify_oauth2_token(token, req, CLIENT_ID[0])
+        info_id = id_token.verify_oauth2_token(token, req, CLIENT_ID)
         print("passo?")
         return {"name": info_id.get("name"),
                 "email": info_id.get("email"),
