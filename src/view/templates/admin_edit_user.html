@@ -1,246 +1,652 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Editar Usuário — Arte Fora da Caixa</title>
+{% extends "base.html" %}
+{% block title %}Editar Usuário — Arte Fora da Caixa{% endblock %}
 
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+{% block styles %}
+<style>
+    /* ── Variáveis e Reset de Botões (Caso não estejam globais no main.css) ── */
+    :root {
+        --ease-out: 0.2s cubic-bezier(0.25, 0, 0.25, 1);
+        --ease-bounce: 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
 
-    <!-- Design System -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    /* ── Wrapper principal ── */
+    .edit-page-wrapper {
+        width: 90%;
+        max-width: 1000px;
+        margin: 40px auto 60px;
+    }
 
-    <style>
-        html, body {
-            height: 100%;
+    /* ── Cabeçalho da página ── */
+    .edit-page-header {
+        margin-bottom: 28px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+    }
+
+    .edit-page-header h1 {
+        font-family: var(--font-display);
+        font-size: 1.6rem;
+        font-weight: 800;
+        color: var(--text-primary);
+        margin: 0;
+    }
+
+    .edit-page-header h1 em {
+        font-style: normal;
+        background: var(--gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    /* ── Card único ── */
+    .edit-card {
+        background: var(--bg-card);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-md);
+        overflow: hidden;
+    }
+
+    /* ── Tabs ── */
+    .edit-tabs {
+        display: flex;
+        border-bottom: 2px solid var(--border);
+        background: var(--bg-muted);
+    }
+
+    .edit-tab-btn {
+        flex: 1;
+        padding: 14px 20px;
+        font-family: var(--font-display);
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text-secondary);
+        background: none;
+        border: none;
+        border-bottom: 3px solid transparent;
+        margin-bottom: -2px;
+        cursor: pointer;
+        transition: color var(--ease-out), border-color var(--ease-out), background var(--ease-out);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .edit-tab-btn:hover {
+        color: var(--orange);
+        background: rgba(255, 122, 0, 0.02);
+    }
+
+    .edit-tab-btn.active {
+        color: var(--orange);
+        border-bottom-color: var(--orange);
+        background: var(--bg-card);
+    }
+
+    .edit-tab-btn .tab-count {
+        background: var(--gradient);
+        color: #fff;
+        font-size: 11px;
+        font-weight: 800;
+        padding: 2px 8px;
+        border-radius: var(--radius-pill);
+        line-height: 1.4;
+    }
+
+    /* ── Painéis ── */
+    .edit-panel {
+        display: none;
+        padding: 36px 32px;
+    }
+
+    .edit-panel.active {
+        display: block;
+    }
+
+    /* ── Avatar row ── */
+    .avatar-row {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        padding-bottom: 24px;
+        margin-bottom: 24px;
+        border-bottom: 1px solid var(--border-light);
+    }
+
+    .avatar-img {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid var(--border-light);
+        flex-shrink: 0;
+    }
+
+    .avatar-info {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .avatar-info small {
+        font-size: 12px;
+        color: var(--text-muted);
+    }
+
+    /* ── Campos do form ── */
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group label {
+        display: block;
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        margin-bottom: 8px;
+    }
+
+    .form-group input,
+    .form-group select {
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    /* ── Password wrapper ── */
+    .password-wrapper {
+        position: relative;
+    }
+
+    .password-wrapper .form-input {
+        padding-right: 44px;
+    }
+
+    .toggle-pw {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 16px;
+        color: var(--text-muted);
+        padding: 4px;
+        line-height: 1;
+        transition: transform var(--ease-bounce);
+    }
+
+    .toggle-pw:hover {
+        transform: translateY(-50%) scale(1.1);
+    }
+
+    /* ── Form Actions (Botões reposicionados) ── */
+    .form-actions-bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+        margin-top: 36px;
+        padding-top: 24px;
+        border-top: 1px solid var(--border-light);
+    }
+
+    .btn-right {
+        margin-left: auto;
+    }
+
+    /* ── Analytics box ── */
+    .analytics-box {
+        margin-top: 24px;
+        padding: 24px;
+        background: var(--bg-muted);
+        border: 1px solid var(--border-light);
+        border-radius: var(--radius-md);
+        display: none;
+    }
+
+    .analytics-box.active {
+        display: block;
+    }
+
+    .analytics-box h4 {
+        margin: 0 0 16px 0;
+        font-family: var(--font-display);
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+
+    /* ── Modal Customizado ── */
+    .custom-modal-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+        opacity: 0;
+        transition: opacity var(--ease-out);
+    }
+
+    .custom-modal-overlay.active {
+        display: flex;
+        opacity: 1;
+    }
+
+    .custom-modal-box {
+        background: var(--bg-card);
+        padding: 32px;
+        border-radius: var(--radius-lg);
+        width: 90%;
+        max-width: 400px;
+        text-align: center;
+        box-shadow: var(--shadow-xl);
+        transform: scale(0.95) translateY(10px);
+        transition: transform var(--ease-out);
+    }
+
+    .custom-modal-overlay.active .custom-modal-box {
+        transform: scale(1) translateY(0);
+    }
+
+    .custom-modal-title {
+        font-family: var(--font-display);
+        font-size: 20px;
+        font-weight: 800;
+        color: var(--text-primary);
+        margin-bottom: 12px;
+    }
+
+    .custom-modal-msg {
+        font-size: 14px;
+        color: var(--text-secondary);
+        line-height: 1.5;
+        margin-bottom: 24px;
+    }
+
+    .custom-modal-buttons {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+    }
+
+    /* ── Grid de Cursos Inscritos ── */
+    .course-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        gap: 20px;
+        padding-top: 8px;
+    }
+
+    .course-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-light);
+        border-radius: var(--radius-md);
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        transition: transform var(--ease-out), box-shadow var(--ease-out), border-color var(--ease-out);
+    }
+
+    .course-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-md);
+        border-color: rgba(255, 122, 0, 0.4); 
+    }
+
+    .course-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .course-icon-wrapper {
+        font-size: 20px;
+        background: var(--bg-muted);
+        width: 44px;
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+        border: 1px solid var(--border-light);
+    }
+
+    .course-title {
+        font-family: var(--font-display);
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--text-primary);
+        line-height: 1.4;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .course-meta {
+        font-size: 12px;
+        color: var(--text-muted);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-weight: 500;
+    }
+
+    .course-footer {
+        margin-top: auto;
+        padding-top: 16px;
+        border-top: 1px solid var(--border-light);
+    }
+    
+    .course-footer .btn-block {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+    }
+
+    /* ── Empty State Moderno ── */
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        background: var(--bg-muted);
+        border-radius: var(--radius-lg);
+        border: 2px dashed var(--border-light);
+    }
+
+    .empty-icon {
+        font-size: 48px;
+        display: block;
+        margin-bottom: 16px;
+        opacity: 0.8;
+    }
+
+    .empty-state p {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        margin: 0;
+    }
+
+    .empty-msg {
+        font-size: 14px;
+        color: var(--text-muted);
+        text-align: center;
+        padding: 48px 0;
+    }
+
+    /* ── Controles de Paginação ── */
+    .pagination-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 8px;
+        margin-top: 32px;
+        padding-top: 24px;
+        border-top: 1px solid var(--border-light);
+    }
+
+    .page-btn {
+        padding: 8px 14px;
+        font-family: var(--font-display);
+        font-size: 13px;
+        font-weight: 700;
+        background: var(--bg-card);
+        border: 1px solid var(--border-light);
+        border-radius: var(--radius-sm);
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: all var(--ease-out);
+    }
+
+    .page-btn:hover:not(:disabled) {
+        border-color: var(--orange);
+        color: var(--orange);
+    }
+
+    .page-btn.active {
+        background: var(--orange);
+        color: #fff;
+        border-color: var(--orange);
+    }
+
+    .page-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        background: var(--bg-muted);
+    }
+
+    /* ── Responsivo ── */
+    @media (max-width: 768px) {
+        .edit-page-wrapper {
+            width: 96%;
+            margin: 24px auto 48px;
         }
-        body {
-            display: flex;
+
+        .edit-panel {
+            padding: 24px 18px;
+        }
+
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+
+        .form-actions-bar {
             flex-direction: column;
-            min-height: 100vh;
-        }
-        .password-wrapper {
-            position: relative;
-        }
-        .password-wrapper .toggle-password {
-            position: absolute;
-            right: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-size: 18px;
-            color: #64748b;
-            padding: 4px;
-            line-height: 1;
-        }
-        .avatar-upload-area {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            margin-bottom: 18px;
-        }
-        .avatar-preview {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 3px solid var(--border-light);
-            background: var(--bg-muted);
-        }
-        .inscriptions-list {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-        .inscription-item {
-            background: transparent;
-            border-bottom: 1px solid #e2e8f0;
-            padding: 8px 0;
-            font-size: 13px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-        .inscription-item:last-child {
-            border-bottom: none;
-        }
-        .inscription-item .title {
-            font-weight: 500;
-            color: var(--text-primary);
-        }
-        .inscription-item .date {
-            font-size: 11px;
-            color: var(--text-muted);
-        }
-        .analytics-box {
-            margin-top: 15px;
-            padding: 15px;
-            background: #f8fafc;
-            border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            display: none;
-        }
-        .analytics-box.active {
-            display: block;
+            align-items: stretch;
         }
 
-        /* Container ocupa 95% da tela, sem limite fixo pequeno */
-        .page-container {
-            width: 95%;
-            max-width: 1300px;
-            margin: 40px auto;
-            padding: 0 20px;
+        .btn-right {
+            margin-left: 0;
         }
-    </style>
-</head>
-<body>
 
-<header class="header">
-    <span class="header-logo">Arte Fora da Caixa</span>
-    <a href="{{ url_for('admin.admin_page') }}" class="btn btn-outline btn-sm">← Voltar</a>
-</header>
+        .edit-page-header h1 {
+            font-size: 1.3rem;
+        }
+    }
+</style>
+{% endblock %}
 
-<div class="page-container">
+{% block content %}
+<div class="edit-page-wrapper">
 
-    <!-- Bloco principal: edição do usuário + conteúdos mesclados -->
-    <div class="form-section" style="margin-bottom: 20px;">
-        <div class="form-section-title">✏️ Editar usuário {{ user.name }}</div>
-
-        <form method="POST" enctype="multipart/form-data">
-
-            <!-- Foto de perfil (avatar/banner) -->
-            <div class="form-field">
-                <label class="form-label">Foto de perfil</label>
-                <div class="avatar-upload-area">
-                    <img id="avatar-preview" class="avatar-preview"
-                         src="{{ url_for('static', filename=user.picture) if user.picture else url_for('static', filename='default_profile.png') }}"
-                         alt="Avatar atual">
-                    <div>
-                        <button type="button" class="btn btn-outline btn-sm avatar-upload-btn" onclick="document.getElementById('picture-input').click()">
-                            📁 Escolher foto
-                        </button>
-                        <input type="file" id="picture-input" name="picture" accept="image/*" style="display: none;" onchange="previewAvatar(this)">
-                        <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">JPG, PNG ou WEBP</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Nome -->
-            <div class="form-field">
-                <label class="form-label" for="nome">Nome completo</label>
-                <input id="nome" name="nome" type="text" class="form-input" value="{{ user.name }}" required>
-            </div>
-
-            <!-- Email -->
-            <div class="form-field">
-                <label class="form-label" for="email">Email</label>
-                <input id="email" name="email" type="email" class="form-input" value="{{ user.email or '' }}" placeholder="exemplo@email.com">
-            </div>
-
-            <!-- Nova senha com ícone de olho -->
-            <div class="form-field">
-                <label class="form-label" for="senha">Nova senha</label>
-                <div class="password-wrapper">
-                    <input id="senha" name="senha" type="password" class="form-input" placeholder="Deixe em branco para não alterar">
-                    <button type="button" class="toggle-password" onclick="togglePassword('senha', this)">👁️</button>
-                </div>
-            </div>
-
-            <!-- Confirmar nova senha com ícone de olho -->
-            <div class="form-field">
-                <label class="form-label" for="confirm_pass">Confirmar nova senha</label>
-                <div class="password-wrapper">
-                    <input id="confirm_pass" name="confirm_pass" type="password" class="form-input" placeholder="Repita a nova senha">
-                    <button type="button" class="toggle-password" onclick="togglePassword('confirm_pass', this)">👁️</button>
-                </div>
-            </div>
-
-            <!-- Permissão como select -->
-            <div class="form-field">
-                <label class="form-label" for="cred">Permissão</label>
-                <select id="cred" name="cred" class="form-select">
-                    <option value="aluno" {% if user.cred.value == 'aluno' %}selected{% endif %}>👨‍🎓 Aluno</option>
-                    <option value="professor" {% if user.cred.value == 'professor' %}selected{% endif %}>👩‍🏫 Professor</option>
-                    <option value="admin" {% if user.cred.value == 'admin' %}selected{% endif %}>🛡️ Administrador</option>
-                </select>
-            </div>
-
-            <!-- Botões principais -->
-            <div style="display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; margin-top: 28px;">
-                <button type="submit" class="btn btn-primary">💾 Salvar alterações</button>
-                <a href="{{ url_for('admin.admin_page') }}" class="btn btn-outline">↩️ Voltar</a>
-            </div>
-        </form>
-
-        <!-- Seção de ações adicionais (excluir e analytics) -->
-        <div style="margin-top: 30px; display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;">
-            {% if user.cred.value == 'professor' %}
-                <button type="button" class="btn btn-blue" onclick="loadProfessorAnalytics('{{ user.name }}')">
-                    📊 Ver analytics do professor
-                </button>
-            {% endif %}
-
-            <form action="{{ url_for('admin.admin_delete_user', user_id=user.id) }}" method="POST"
-                  onsubmit="return confirm('Tem certeza que deseja excluir este usuário permanentemente?')">
-                <button type="submit" class="btn btn-danger">🗑️ Excluir usuário</button>
-            </form>
-        </div>
-
-        <!-- Área para exibir analytics -->
-        <div id="analytics-box" class="analytics-box">
-            <h4 style="margin-top: 0;">Analytics do Professor</h4>
-            <div id="analytics-content">Carregando...</div>
-        </div>
-
-        <!-- Conteúdos inscritos mesclados ao perfil (sem card separado) -->
-        <div style="margin-top: 30px; border-top: 1px solid var(--border-light); padding-top: 20px;">
-            <h4 style="font-size: 15px; font-weight: 600; color: var(--text-secondary); margin: 0 0 12px 0;">
-                📚 Conteúdos inscritos ({{ inscrip|length if inscrip else 0 }})
-            </h4>
-            {% if inscrip %}
-                <div class="inscriptions-list">
-                    {% for item in inscrip %}
-                    <div class="inscription-item">
-                        <div>
-                            <span class="title">{{ item.content_title }}</span>
-                            <span class="date" style="margin-left: 12px;">
-                                Inscrito em: {{ item.inscription_date.strftime('%d/%m/%Y') if item.inscription_date is not string else item.inscription_date[:10] }}
-                            </span>
-                        </div>
-                        <a href="/contents/content/{{ item.content_id }}" class="btn btn-outline btn-sm">Ver</a>
-                    </div>
-                    {% endfor %}
-                </div>
-            {% else %}
-                <p style="color: var(--text-muted); font-size: 13px; margin: 0;">Nenhuma inscrição encontrada.</p>
-            {% endif %}
-        </div>
+    <div class="edit-page-header">
+        <h1><em>{{ user.name }}</em></h1>
     </div>
 
+    <div class="edit-card">
+
+        <div class="edit-tabs" role="tablist">
+            <button class="edit-tab-btn active" role="tab" onclick="switchTab('dados', this)">
+                 Dados do usuário
+            </button>
+            <button class="edit-tab-btn" role="tab" onclick="switchTab('inscricoes', this)">
+                Conteúdos inscritos
+                <span class="tab-count">{{ inscrip | length }}</span>
+            </button>
+        </div>
+
+        <div id="panel-dados" class="edit-panel active">
+            
+            <form id="form-edit-user" method="POST" enctype="multipart/form-data">
+                <div class="avatar-row">
+                    <img id="avatar-preview" class="avatar-img"
+                         src="{{ url_for('static', filename=user.picture) if user.picture else url_for('static', filename='default_profile.png') }}"
+                         alt="Avatar de {{ user.name }}">
+                    <div class="avatar-info">
+                        <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('picture-input').click()">
+                             Escolher foto
+                        </button>
+                        <input type="file" id="picture-input" name="picture" accept="image/*" style="display:none;" onchange="previewAvatar(this)">
+                        <small>JPG, PNG ou WEBP · máx. 2 MB</small>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="nome">Nome completo</label>
+                        <input id="nome" name="nome" type="text" class="form-input" value="{{ user.name }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input id="email" name="email" type="email" class="form-input" value="{{ user.email or '' }}" placeholder="exemplo@email.com">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="senha">Nova senha</label>
+                        <div class="password-wrapper">
+                            <input id="senha" name="senha" type="password" class="form-input" placeholder="Deixe em branco para manter">
+                            <button type="button" class="toggle-pw" onclick="togglePw('senha', this)">👁️</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="confirm_pass">Confirmar nova senha</label>
+                        <div class="password-wrapper">
+                            <input id="confirm_pass" name="confirm_pass" type="password" class="form-input" placeholder="Repita a nova senha">
+                            <button type="button" class="toggle-pw" onclick="togglePw('confirm_pass', this)">👁️</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="cred">Permissão</label>
+                    <select id="cred" name="cred" class="form-select">
+                        <option value="aluno" {% if user.cred.value == 'aluno' %}selected{% endif %}>Aluno</option>
+                        <option value="professor" {% if user.cred.value == 'professor' %}selected{% endif %}>Professor</option>
+                        <option value="admin" {% if user.cred.value == 'admin' %}selected{% endif %}>Administrador</option>
+                    </select>
+                </div>
+            </form>
+
+            <form id="form-delete-user" action="{{ url_for('admin.admin_delete_user', user_id=user.id) }}" method="POST" style="display: none;"></form>
+
+            <div class="form-actions-bar">
+                <button type="button" class="btn btn-primary" onclick="openConfirmModal('save')">
+                    Salvar alterações
+                </button>
+                
+                <a href="{{ url_for('admin.admin_page') }}" class="btn btn-outline">
+                    Voltar ao painel
+                </a>
+
+                {% if user.cred.value == 'professor' %}
+                <button type="button" class="btn btn-blue" onclick="loadProfessorAnalytics('{{ user.name }}')">
+                    Analytics do professor
+                </button>
+                {% endif %}
+
+                <button type="button" class="btn btn-danger btn-right" onclick="openConfirmModal('delete')">
+                    Excluir usuário
+                </button>
+            </div>
+
+            <div id="analytics-box" class="analytics-box">
+                <h4> Analytics do Professor</h4>
+                <div id="analytics-content">Carregando...</div>
+            </div>
+        </div>
+
+        <div id="panel-inscricoes" class="edit-panel">
+            {% if inscrip %}
+            <div class="course-grid">
+                {% for item in inscrip %}
+                <div class="course-card paginate-item">
+                    
+                    <div class="course-header">
+                        <div class="course-icon-wrapper">📚</div>
+                        {% if item.is_favorite %}
+                        <div class="course-fav" title="Favoritado">⭐</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="course-title" title="{{ item.content_title }}">
+                        {{ item.content_title }}
+                    </div>
+                    
+                    <div class="course-meta">
+                        🗓️ Inscrito em: 
+                        {% if item.inscription_date is string %}
+                            {{ item.inscription_date[:10] }}
+                        {% else %}
+                            {{ item.inscription_date.strftime('%d/%m/%Y') }}
+                        {% endif %}
+                    </div>
+                    
+                    <div class="course-footer">
+                        <a href="/contents/content/{{ item.content_id }}" class="btn btn-outline btn-sm btn-block">
+                            Ver Conteúdo
+                        </a>
+                    </div>
+
+                </div>
+                {% endfor %}
+            </div>
+            
+            <div id="pagination-controls" class="pagination-container"></div>
+            
+            {% else %}
+            <div class="empty-state">
+                <span class="empty-icon">📭</span>
+                <p>Este usuário não possui inscrições ativas no momento.</p>
+            </div>
+            {% endif %}
+        </div>
+
+    </div>
 </div>
 
-<footer class="footer" style="margin-top: 60px;">
-    Arte Fora da Caixa © 2025 — Administração
-</footer>
+<div id="custom-confirm-modal" class="custom-modal-overlay">
+    <div class="custom-modal-box">
+        <h2 id="modal-title" class="custom-modal-title">Confirmação</h2>
+        <p id="modal-message" class="custom-modal-msg">Tem certeza?</p>
+        <div class="custom-modal-buttons">
+            <button type="button" class="btn btn-outline" onclick="closeConfirmModal()">Cancelar</button>
+            <button type="button" id="modal-action-btn" class="btn" onclick="executeModalAction()">Confirmar</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
 
+{% block scripts %}
 <script>
+    /* ── Troca de abas ── */
+    function switchTab(name, btn) {
+        document.querySelectorAll('.edit-tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.edit-panel').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('panel-' + name).classList.add('active');
+    }
+
+    /* ── Preview de avatar ── */
     function previewAvatar(input) {
         if (input.files && input.files[0]) {
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = e => {
                 document.getElementById('avatar-preview').src = e.target.result;
             };
             reader.readAsDataURL(input.files[0]);
         }
     }
 
-    function togglePassword(fieldId, btn) {
+    /* ── Toggle senha ── */
+    function togglePw(fieldId, btn) {
         const input = document.getElementById(fieldId);
         if (input.type === 'password') {
             input.type = 'text';
@@ -251,6 +657,46 @@
         }
     }
 
+    /* ── Lógica do Modal Customizado ── */
+    let currentPendingAction = null;
+
+    function openConfirmModal(actionType) {
+        currentPendingAction = actionType;
+        const modal = document.getElementById('custom-confirm-modal');
+        const title = document.getElementById('modal-title');
+        const message = document.getElementById('modal-message');
+        const actionBtn = document.getElementById('modal-action-btn');
+
+        if (actionType === 'save') {
+            title.textContent = 'Salvar Alterações';
+            message.textContent = 'Deseja realmente aplicar e salvar as modificações feitas neste usuário?';
+            actionBtn.className = 'btn btn-primary';
+            actionBtn.textContent = 'Sim, salvar';
+        } else if (actionType === 'delete') {
+            title.textContent = 'Excluir Usuário';
+            message.textContent = 'Atenção! Esta ação é irreversível. Tem certeza que deseja excluir este usuário permanentemente do sistema?';
+            actionBtn.className = 'btn btn-danger';
+            actionBtn.textContent = 'Sim, excluir';
+        }
+
+        modal.classList.add('active');
+    }
+
+    function closeConfirmModal() {
+        document.getElementById('custom-confirm-modal').classList.remove('active');
+        currentPendingAction = null;
+    }
+
+    function executeModalAction() {
+        if (currentPendingAction === 'save') {
+            document.getElementById('form-edit-user').submit();
+        } else if (currentPendingAction === 'delete') {
+            document.getElementById('form-delete-user').submit();
+        }
+        closeConfirmModal();
+    }
+
+    /* ── Analytics do professor ── */
     async function loadProfessorAnalytics(professorName) {
         const box = document.getElementById('analytics-box');
         const content = document.getElementById('analytics-content');
@@ -258,28 +704,88 @@
         content.innerHTML = 'Carregando...';
 
         try {
-            const response = await fetch('/admin/analytics/professor/' + encodeURIComponent(professorName));
-            if (!response.ok) throw new Error('Erro ao carregar analytics');
-            const data = await response.json();
+            const res = await fetch('/admin/analytics/professor/' + encodeURIComponent(professorName));
+            if (!res.ok) throw new Error();
+            const data = await res.json();
             content.innerHTML = formatAnalytics(data);
-        } catch (error) {
-            content.innerHTML = '<p style="color: red;">Erro ao carregar analytics.</p>';
+        } catch {
+            content.innerHTML = '<p style="color:#ef4444;">Erro ao carregar analytics.</p>';
         }
     }
 
     function formatAnalytics(data) {
-        let html = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px;">';
+        let html = '<div class="metric-grid">';
         for (const [key, value] of Object.entries(data)) {
-            html += `
-                <div style="background: white; padding: 12px; border-radius: 8px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-                    <div style="font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase;">${key}</div>
-                    <div style="font-size: 20px; font-weight: 700; color: #1e293b; margin-top: 4px;">${value}</div>
-                </div>`;
+            html += `<div class="metric-card">
+                <div class="metric-label">${key}</div>
+                <div class="metric-value">${value}</div>
+            </div>`;
         }
         html += '</div>';
         return html;
     }
-</script>
 
-</body>
-</html>
+    /* ── Paginação de Cursos via JS ── */
+    const itemsPerPage = 10;
+    let currentPage = 1;
+    let courseItems = [];
+
+    document.addEventListener('DOMContentLoaded', () => {
+        courseItems = document.querySelectorAll('.paginate-item');
+        if (courseItems.length > 0) {
+            initPagination();
+        }
+    });
+
+    function initPagination() {
+        if (courseItems.length <= itemsPerPage) {
+            const controls = document.getElementById('pagination-controls');
+            if (controls) controls.style.display = 'none';
+            return;
+        }
+        showPage(1);
+    }
+
+    function showPage(page) {
+        currentPage = page;
+        
+        courseItems.forEach((item, index) => {
+            if (index >= (page - 1) * itemsPerPage && index < page * itemsPerPage) {
+                item.style.display = 'flex';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+        
+        renderPaginationControls();
+    }
+
+    function renderPaginationControls() {
+        const totalPages = Math.ceil(courseItems.length / itemsPerPage);
+        const container = document.getElementById('pagination-controls');
+        container.innerHTML = '';
+
+        const prevBtn = document.createElement('button');
+        prevBtn.className = 'page-btn';
+        prevBtn.innerText = '❮';
+        prevBtn.disabled = currentPage === 1;
+        prevBtn.onclick = () => showPage(currentPage - 1);
+        container.appendChild(prevBtn);
+
+        for (let i = 1; i <= totalPages; i++) {
+            const btn = document.createElement('button');
+            btn.className = `page-btn ${i === currentPage ? 'active' : ''}`;
+            btn.innerText = i;
+            btn.onclick = () => showPage(i);
+            container.appendChild(btn);
+        }
+
+        const nextBtn = document.createElement('button');
+        nextBtn.className = 'page-btn';
+        nextBtn.innerText = '❯';
+        nextBtn.disabled = currentPage === totalPages;
+        nextBtn.onclick = () => showPage(currentPage + 1);
+        container.appendChild(nextBtn);
+    }
+</script>
+{% endblock %}

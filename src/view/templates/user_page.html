@@ -1,339 +1,441 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Perfil do Usuário — Arte Fora da Caixa</title>
+{% extends "base.html" %}
+{% block title %}Perfil do Usuário — Arte Fora da Caixa{% endblock %}
 
-  <!-- Google Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+{% block styles %}
+<style>
+    /* ── Container do perfil — ocupa 90% da tela ── */
+    .profile-container {
+        width: 90%;
+        max-width: 1300px;
+        margin: 30px auto;
+        background: var(--bg-card);
+        padding: 36px 44px;
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-md);
+    }
 
-  <!-- Design System -->
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
-
-  <style>
-    /* Sobrescreve apenas as seções colapsáveis que não estão no main.css */
+    /* ── Sobrescreve apenas as seções colapsáveis que não estão no main.css ── */
     .advanced-content {
-      display: none;
-      margin-top: 20px;
-      padding: 25px;
-      background: #fafafa;
-      border: 1px solid #e5e7eb;
-      border-radius: 14px;
-      flex-direction: column;
-      gap: 12px;
-      align-items: stretch;  /* garante que botões ocupem toda a largura */
+        display: none;
+        margin-top: 20px;
+        padding: 25px;
+        background: var(--bg-muted);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        flex-direction: column;
+        gap: 12px;
+        align-items: stretch;
     }
     .advanced-content.active {
-      display: flex;
+        display: flex;
     }
 
+    /* ── Botões de ação ocupam toda a largura disponível ── */
+    .action-bar {
+        display: flex;
+        justify-content: center;
+        gap: 16px;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+    }
+    .action-bar .btn {
+        flex: 1;
+        min-width: 220px;
+        justify-content: center;
+    }
+
+    /* ── Correção do bug visual: nada de overlays de gradiente sobre o track ── */
     .courses-scroll-wrapper {
-      position: relative;
-    }
-    .courses-scroll-wrapper::before,
-    .courses-scroll-wrapper::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      bottom: 0;
-      width: 40px;
-      z-index: 2;
-      pointer-events: none;
-    }
-    .courses-scroll-wrapper::before {
-      left: 0;
-      background: linear-gradient(to right, #fafafa, transparent);
-    }
-    .courses-scroll-wrapper::after {
-      right: 0;
-      background: linear-gradient(to left, #fafafa, transparent);
+        position: relative;
     }
 
     .courses-scroll-track {
-      display: flex;
-      gap: 14px;
-      overflow-x: auto;
-      padding: 8px 6px 16px;
-      scroll-snap-type: x mandatory;
-      -webkit-overflow-scrolling: touch;
-      scrollbar-width: none;
-      scroll-behavior: smooth;
+        display: flex;
+        gap: 14px;
+        overflow-x: auto;
+        padding: 8px 6px 16px;
+        scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        scroll-behavior: smooth;
     }
     .courses-scroll-track::-webkit-scrollbar {
-      display: none;
+        display: none;
     }
-  </style>
-</head>
-<body>
 
-<header class="header">
-  <span class="header-logo">Arte Fora da Caixa</span>
-  <a href="/home" class="btn btn-outline btn-sm">🏠 Home</a>
-</header>
+    /* Cards com scroll-snap individual, sem corte de banner */
+    .course-card-compact {
+        scroll-snap-align: start;
+    }
 
+    /* ── Barra de cursos sempre visível para alunos (sem aba) ── */
+    .student-courses-block {
+        width: 100%;
+        border-top: 1px solid var(--border);
+        padding-top: 24px;
+        margin-top: 24px;
+    }
+
+    .courses-section-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 14px;
+        padding: 0 4px;
+    }
+
+    .courses-section-header h3 {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        margin: 0;
+    }
+
+    .courses-section-header .courses-count {
+        font-size: 13px;
+        color: var(--text-muted);
+    }
+
+    /* ── Atalhos extras para evitar vazio de tela ── */
+    .quick-links-bar {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+        margin-top: 20px;
+    }
+    .quick-links-bar .btn {
+        flex: 1;
+        min-width: 200px;
+        justify-content: center;
+    }
+
+    /* ── Responsivo ── */
+    @media (max-width: 768px) {
+        .profile-container {
+            width: 96%;
+            padding: 24px 20px;
+        }
+        .action-bar .btn,
+        .quick-links-bar .btn {
+            min-width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
 <div class="profile-container">
-  <div class="profile-header">
-    <div class="avatar-wrapper">
-      <img id="avatar-preview"
-           src="{{ url_for('static', filename=session.get('picture')) if session.get('picture') else url_for('static', filename='default_profile.png') }}"
-           alt="Foto de perfil">
+    <div class="profile-header">
+        <div class="avatar-wrapper">
+            <img id="avatar-preview"
+                 src="{{ url_for('static', filename=session.get('picture')) if session.get('picture') else url_for('static', filename='default_profile.png') }}"
+                 alt="Foto de perfil">
 
-      <button class="avatar-action-btn avatar-delete-btn" type="button" title="Excluir foto de perfil"
-              onclick="document.getElementById('delete-picture-form').submit();">
-        <svg viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
-          <path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M19 6l-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </button>
+            <button class="avatar-action-btn avatar-delete-btn" type="button" title="Excluir foto de perfil"
+                    onclick="document.getElementById('delete-picture-form').submit();">
+                <svg viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M19 6l-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </button>
 
-      <button class="avatar-action-btn avatar-edit-btn" type="button" title="Alterar foto" onclick="toggleAvatarForm()">
-        <svg viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7zm7-13h-1.586l-1.707-1.707A1 1 0 0 0 15 .5H9a1 1 0 0 0-.707.293L6.586 2.5H5A3 3 0 0 0 2 5.5v12a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3v-12a3 3 0 0 0-3-3z"/>
-        </svg>
-      </button>
-    </div>
-
-    <form id="delete-picture-form" method="POST" action="{{ url_for('user.delete_picture') }}" style="display:none;"></form>
-
-    <div class="profile-info">
-      <div class="profile-name-row" id="name-display-row">
-        <h2 class="profile-name" id="name-display">{{ session.get("name") or 'Usuário Exemplo' }}</h2>
-        <button class="profile-edit-icon" type="button" title="Editar nome" onclick="toggleNameEdit()">
-          <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-        </button>
-      </div>
-
-      <form method="POST" action="/edit_user" class="inline-name-form" id="name-edit-form" style="display: none; align-items: center; gap: 8px; margin-bottom: 5px;">
-        <input type="text" name="new_name" id="name-input" class="form-input" placeholder="Novo nome" style="flex:1;">
-        <button type="submit" class="btn btn-primary btn-sm">✓ Salvar</button>
-        <button type="button" class="btn btn-muted btn-sm" onclick="toggleNameEdit()">✕</button>
-      </form>
-
-      <form method="POST" action="/edit_user" enctype="multipart/form-data" id="avatar-form">
-        <input type="file" name="profile_image" id="avatar-file-real" accept="image/*" style="display:none" onchange="onAvatarChosen(this)">
-        <div id="avatar-form-row" style="display: none; margin-top: 8px; align-items: center; gap: 8px; flex-wrap: wrap;">
-          <span id="avatar-file-name" style="font-size:13px; color:#555;">Nenhum arquivo escolhido</span>
-          <button type="submit" class="btn btn-primary btn-sm">✓ Enviar foto</button>
-          <button type="button" class="btn btn-muted btn-sm" onclick="cancelAvatarForm()">✕ Cancelar</button>
-        </div>
-      </form>
-
-      {% if session.get("cred") %}<p class="profile-detail"><strong>Credencial:</strong> {{ session.get("cred") }}</p>{% endif %}
-      {% if session.get("email") %}<p class="profile-detail"><strong>Email:</strong> {{ session.get("email") }}</p>{% endif %}
-      <p class="profile-detail">Data de criação: {{ session.get("creation_date") or '01/01/2025' }}</p>
-      <p class="profile-detail">Cursos inscritos: {{ total_courses or 0 }}</p>
-    </div>
-  </div>
-
-  <div class="edit-section">
-    <h3 class="section-title">Ações da conta</h3>
-    <div class="action-bar" style="display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; margin-bottom: 20px;">
-      <button class="btn btn-outline" type="button" onclick="toggleAdvanced()">
-        ⚙️ Informações avançadas
-        <span id="advanced-arrow" style="transition: .3s;">▼</span>
-      </button>
-
-      <button class="btn btn-outline" type="button" onclick="togglePublications()">
-        📚 Publicações e conteúdos
-        <span id="publications-arrow" style="transition: .3s;">▼</span>
-      </button>
-
-      {% if session.get("cred") == "admin" %}
-        <a href="/admin/admin_page" id="admin-panel-link" class="btn btn-primary">🛡️ Painel de Administração</a>
-      {% endif %}
-    </div>
-
-    <div class="advanced-content" id="advanced-content">
-      <a href="/change_password" class="btn btn-primary btn-block">🔒 Alterar senha</a>
-      <a href="#" class="btn btn-outline btn-block" onclick="openLogoutModal(event)">🚪 Sair da conta</a>
-      <a href="{{ url_for('user.delete_account_page') }}" class="btn btn-danger btn-block">⚠️ Excluir conta</a>
-    </div>
-
-    <div class="advanced-content" id="publications-content">
-
-      {% if session.get("cred") in ["admin", "professor"] %}
-      <div style="display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; width: 100%; margin-bottom: 8px;">
-        <a href="{{ url_for('contents.redirect_publish_content') }}" class="btn btn-primary" style="flex: 1; min-width: 180px;">📝 Publicar Conteúdo</a>
-        <a href="{{ url_for('contents.redirect_get_publications') }}" class="btn btn-primary" style="flex: 1; min-width: 180px;">📚 Minhas Publicações</a>
-      </div>
-      {% endif %}
-
-      <div class="courses-section" style="width: 100%; border-top: 1px solid #eee; padding-top: 20px; margin-top: 5px;">
-        <div class="courses-section-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; padding: 0 4px;">
-          <h3 style="font-size: 15px; font-weight: 600; color: #374151; margin: 0;">Meus cursos</h3>
-          {% if enrolled_courses %}
-            <span style="font-size: 13px; color: #6b7280;">{{ enrolled_courses|length }} inscrito{% if enrolled_courses|length != 1 %}s{% endif %}</span>
-          {% endif %}
+            <button class="avatar-action-btn avatar-edit-btn" type="button" title="Alterar foto" onclick="toggleAvatarForm()">
+                <svg viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7zm7-13h-1.586l-1.707-1.707A1 1 0 0 0 15 .5H9a1 1 0 0 0-.707.293L6.586 2.5H5A3 3 0 0 0 2 5.5v12a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3v-12a3 3 0 0 0-3-3z"/>
+                </svg>
+            </button>
         </div>
 
-        {% if enrolled_courses %}
-          <div class="courses-scroll-wrapper">
-            <div class="courses-scroll-track" id="courses-track">
-              {% for course in enrolled_courses %}
-              <div class="course-card-compact" style="flex-shrink: 0; width: 200px;">
-                {% if course.banner %}
-                  <img class="card-banner-sm" src="{{ url_for('contents.get_banner', content_id = course.id) }}" alt="Banner de {{ course.title }}">
-                {% else %}
-                  <div class="card-banner-sm" style="background: linear-gradient(135deg, #e0e7ff, #f0fdf4); display: flex; align-items: center; justify-content: center; font-size: 28px; color: #a5b4fc;">🎨</div>
-                {% endif %}
+        <form id="delete-picture-form" method="POST" action="{{ url_for('user.delete_picture') }}" style="display:none;"></form>
 
-                <div class="card-body-sm" style="padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 4px; flex: 1;">
-                  {% if course.content_type %}
-                    <span class="rec-badge" style="font-size: 10px;">{{ course.content_type }}</span>
-                  {% endif %}
-                  <div class="card-title" style="font-size: 13px; font-weight: 600; color: #111827; line-height: 1.35;">{{ course.title }}</div>
-                  {% if course.author %}
-                    <div style="font-size: 11px; color: #6b7280;">{{ course.author }}</div>
-                  {% endif %}
-                  {% if course.creation_date %}
-                    <div style="font-size: 11px; color: #9ca3af;">{{ course.creation_date }}</div>
-                  {% endif %}
-                </div>
-                <a href="/contents/content/{{ course.id }}" class="card-btn">Acessar →</a>
-              </div>
-              {% endfor %}
+        <div class="profile-info">
+            <div class="profile-name-row" id="name-display-row">
+                <h2 class="profile-name" id="name-display">{{ session.get("name") or 'Usuário Exemplo' }}</h2>
+                <button class="profile-edit-icon" type="button" title="Editar nome" onclick="toggleNameEdit()">
+                    <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </button>
             </div>
-          </div>
-        {% else %}
-          <div class="empty-state">
-            <span style="font-size: 28px; display: block; margin-bottom: 8px;">📭</span>
-            Você ainda não se inscreveu em nenhum curso.
-          </div>
-        {% endif %}
-      </div>
+
+            <form method="POST" action="/edit_user" class="inline-name-form" id="name-edit-form" style="display: none; align-items: center; gap: 8px; margin-bottom: 5px;">
+                <input type="text" name="new_name" id="name-input" class="form-input" placeholder="Novo nome" style="flex:1;">
+                <button type="submit" class="btn btn-primary btn-sm">✓ Salvar</button>
+                <button type="button" class="btn btn-muted btn-sm" onclick="toggleNameEdit()">✕</button>
+            </form>
+
+            <form method="POST" action="/edit_user" enctype="multipart/form-data" id="avatar-form">
+                <input type="file" name="profile_image" id="avatar-file-real" accept="image/*" style="display:none" onchange="onAvatarChosen(this)">
+                <div id="avatar-form-row" style="display: none; margin-top: 8px; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <span id="avatar-file-name" style="font-size:13px; color:var(--text-secondary);">Nenhum arquivo escolhido</span>
+                    <button type="submit" class="btn btn-primary btn-sm">✓ Enviar foto</button>
+                    <button type="button" class="btn btn-muted btn-sm" onclick="cancelAvatarForm()">✕ Cancelar</button>
+                </div>
+            </form>
+
+            {% if session.get("cred") %}<p class="profile-detail"><strong>Credencial:</strong> {{ session.get("cred") }}</p>{% endif %}
+            {% if session.get("email") %}<p class="profile-detail"><strong>Email:</strong> {{ session.get("email") }}</p>{% endif %}
+            <p class="profile-detail">Data de criação: {{ session.get("creation_date") or '01/01/2025' }}</p>
+            <p class="profile-detail">Cursos inscritos: {{ total_courses or 0 }}</p>
+        </div>
     </div>
-  </div>
+
+    <div class="edit-section">
+        <h3 class="section-title">Ações da conta</h3>
+        <div class="action-bar">
+            <button class="btn btn-outline" type="button" onclick="toggleAdvanced()">
+                ⚙️ Informações avançadas
+                <span id="advanced-arrow" style="transition: .3s;">▼</span>
+            </button>
+
+            {% if session.get("cred") in ["admin", "professor"] %}
+            <button class="btn btn-outline" type="button" onclick="togglePublications()">
+                📚 Publicações e conteúdos
+                <span id="publications-arrow" style="transition: .3s;">▼</span>
+            </button>
+            {% endif %}
+
+            {% if session.get("cred") == "admin" %}
+            <a href="/admin/admin_page" id="admin-panel-link" class="btn btn-outline">🛡️ Painel de Administração</a>
+            {% endif %}
+        </div>
+
+        <div class="advanced-content" id="advanced-content">
+            <a href="/change_password" class="btn btn-primary btn-block">🔒 Alterar senha</a>
+            <a href="#" class="btn btn-outline btn-block" onclick="openLogoutModal(event)">🚪 Sair da conta</a>
+            <a href="{{ url_for('user.delete_account_page') }}" class="btn btn-danger btn-block">⚠️ Excluir conta</a>
+        </div>
+
+        {% if session.get("cred") in ["admin", "professor"] %}
+        <div class="advanced-content" id="publications-content">
+            <div style="display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; width: 100%; margin-bottom: 8px;">
+                <a href="{{ url_for('contents.redirect_publish_content') }}" class="btn btn-primary" style="flex: 1; min-width: 180px;">📝 Publicar Conteúdo</a>
+                <a href="{{ url_for('contents.redirect_get_publications') }}" class="btn btn-primary" style="flex: 1; min-width: 180px;">📚 Minhas Publicações</a>
+            </div>
+
+            <div class="courses-section" style="width: 100%; border-top: 1px solid var(--border); padding-top: 20px; margin-top: 5px;">
+                <div class="courses-section-header">
+                    <h3>Meus cursos</h3>
+                    {% if enrolled_courses %}
+                    <span class="courses-count">{{ enrolled_courses|length }} inscrito{% if enrolled_courses|length != 1 %}s{% endif %}</span>
+                    {% endif %}
+                </div>
+
+                {% if enrolled_courses %}
+                <div class="courses-scroll-wrapper">
+                    <div class="courses-scroll-track" id="courses-track">
+                        {% for course in enrolled_courses %}
+                        <div class="course-card-compact" style="flex-shrink: 0; width: 200px;">
+                            {% if course.banner %}
+                            <img class="card-banner-sm" src="{{ url_for('contents.get_banner', content_id = course.id) }}" alt="Banner de {{ course.title }}">
+                            {% else %}
+                            <div class="card-banner-sm" style="background: linear-gradient(135deg, #e0e7ff, #f0fdf4); display: flex; align-items: center; justify-content: center; font-size: 28px; color: #a5b4fc;">🎨</div>
+                            {% endif %}
+
+                            <div class="card-body-sm">
+                                {% if course.content_type %}
+                                <span class="rec-badge" style="font-size: 10px;">{{ course.content_type }}</span>
+                                {% endif %}
+                                <div class="card-title" style="font-size: 13px; font-weight: 600; color: var(--text-primary); line-height: 1.35;">{{ course.title }}</div>
+                                {% if course.author %}
+                                <div style="font-size: 11px; color: var(--text-secondary);">{{ course.author }}</div>
+                                {% endif %}
+                                {% if course.creation_date %}
+                                <div style="font-size: 11px; color: var(--text-muted);">{{ course.creation_date }}</div>
+                                {% endif %}
+                            </div>
+                            <a href="/contents/content/{{ course.id }}" class="card-btn">Acessar →</a>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <span style="font-size: 28px; display: block; margin-bottom: 8px;">📭</span>
+                    Você ainda não se inscreveu em nenhum curso.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- ── Para alunos: a barra de "Meus cursos" fica sempre visível, sem precisar de aba ── -->
+        {% if session.get("cred") not in ["admin", "professor"] %}
+        <div class="student-courses-block">
+            <div class="courses-section-header">
+                <h3>Meus cursos</h3>
+                {% if enrolled_courses %}
+                <span class="courses-count">{{ enrolled_courses|length }} inscrito{% if enrolled_courses|length != 1 %}s{% endif %}</span>
+                {% endif %}
+            </div>
+
+            {% if enrolled_courses %}
+            <div class="courses-scroll-wrapper">
+                <div class="courses-scroll-track" id="courses-track">
+                    {% for course in enrolled_courses %}
+                    <div class="course-card-compact" style="flex-shrink: 0; width: 200px;">
+                        {% if course.banner %}
+                        <img class="card-banner-sm" src="{{ url_for('contents.get_banner', content_id = course.id) }}" alt="Banner de {{ course.title }}">
+                        {% else %}
+                        <div class="card-banner-sm" style="background: linear-gradient(135deg, #e0e7ff, #f0fdf4); display: flex; align-items: center; justify-content: center; font-size: 28px; color: #a5b4fc;">🎨</div>
+                        {% endif %}
+
+                        <div class="card-body-sm">
+                            {% if course.content_type %}
+                            <span class="rec-badge" style="font-size: 10px;">{{ course.content_type }}</span>
+                            {% endif %}
+                            <div class="card-title" style="font-size: 13px; font-weight: 600; color: var(--text-primary); line-height: 1.35;">{{ course.title }}</div>
+                            {% if course.author %}
+                            <div style="font-size: 11px; color: var(--text-secondary);">{{ course.author }}</div>
+                            {% endif %}
+                            {% if course.creation_date %}
+                            <div style="font-size: 11px; color: var(--text-muted);">{{ course.creation_date }}</div>
+                            {% endif %}
+                        </div>
+                        <a href="/contents/content/{{ course.id }}" class="card-btn">Acessar →</a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <span style="font-size: 28px; display: block; margin-bottom: 8px;">📭</span>
+                Você ainda não se inscreveu em nenhum curso.
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- ── Atalhos rápidos para evitar espaço vazio ── -->
+        <div class="quick-links-bar">
+            <a href="/home" class="btn btn-outline">🏠 Voltar para Home</a>
+            <a href="/contents#about-section" class="btn btn-outline">ℹ️ Sobre o projeto</a>
+        </div>
+    </div>
 </div>
 
 <div class="modal-overlay" id="logout-modal">
-  <div class="modal-box">
-    <h2>Deseja realmente sair?</h2>
-    <p>Você precisará fazer login novamente para acessar sua conta.</p>
-    <div class="modal-buttons">
-      <button class="btn btn-muted" onclick="closeLogoutModal()">Cancelar</button>
-      <a href="/logout" class="btn btn-danger">Sim, sair</a>
+    <div class="modal-box">
+        <h2>Deseja realmente sair?</h2>
+        <p>Você precisará fazer login novamente para acessar sua conta.</p>
+        <div class="modal-buttons">
+            <button class="btn btn-muted" onclick="closeLogoutModal()">Cancelar</button>
+            <a href="/logout" class="btn btn-danger">Sim, sair</a>
+        </div>
     </div>
-  </div>
 </div>
 
-<footer class="footer">© 2025 Arte Fora da Caixa — Todos os direitos reservados</footer>
-
 <div class="toast" id="toast"></div>
+{% endblock %}
 
+{% block scripts %}
 <script>
-  /* ==========================================
-     SCRIPTS ORIGINAIS (mantidos integralmente)
-     ========================================== */
-  function openLogoutModal(e) {
-    e.preventDefault();
-    document.getElementById('logout-modal').classList.add('active');
-  }
-  function closeLogoutModal() {
-    document.getElementById('logout-modal').classList.remove('active');
-  }
-  document.getElementById('logout-modal').addEventListener('click', function(e) {
-    if (e.target === this) closeLogoutModal();
-  });
-
-  function toggleNameEdit() {
-    const displayRow = document.getElementById('name-display-row');
-    const editForm   = document.getElementById('name-edit-form');
-    const input      = document.getElementById('name-input');
-    if (editForm.style.display === 'none' || !editForm.style.display) {
-      input.value = document.getElementById('name-display').textContent.trim();
-      displayRow.style.display = 'none';
-      editForm.style.display = 'flex';
-      input.focus();
-    } else {
-      displayRow.style.display = '';
-      editForm.style.display = 'none';
-    }
-  }
-
-  function toggleAvatarForm() {
-    document.getElementById('avatar-file-real').click();
-  }
-
-  function onAvatarChosen(input) {
-    if (!input.files || !input.files[0]) return;
-    const file = input.files[0];
-    const reader = new FileReader();
-    reader.onload = e => { document.getElementById('avatar-preview').src = e.target.result; };
-    reader.readAsDataURL(file);
-    document.getElementById('avatar-file-name').textContent = file.name;
-    document.getElementById('avatar-form-row').style.display = 'flex';
-  }
-
-  function cancelAvatarForm() {
-    document.getElementById('avatar-form-row').style.display = 'none';
-    document.getElementById('avatar-file-real').value = '';
-    document.getElementById('avatar-preview').src = "{{ url_for('static', filename=session.get('picture')) if session.get('picture') else url_for('static', filename='default_profile.png') }}";
-  }
-
-  function toggleAdvanced() {
-    const content = document.getElementById('advanced-content');
-    const arrow = document.getElementById('advanced-arrow');
-    const isActive = content.classList.toggle('active');
-    arrow.textContent = isActive ? '▲' : '▼';
-    if (isActive) {
-      document.getElementById('publications-content').classList.remove('active');
-      document.getElementById('publications-arrow').textContent = '▼';
-    }
-  }
-
-  function togglePublications() {
-    const content = document.getElementById('publications-content');
-    const arrow = document.getElementById('publications-arrow');
-    const isActive = content.classList.toggle('active');
-    arrow.textContent = isActive ? '▲' : '▼';
-    if (isActive) {
-      document.getElementById('advanced-content').classList.remove('active');
-      document.getElementById('advanced-arrow').textContent = '▼';
-    }
-  }
-
-  function showToast(msg) {
-    const t = document.getElementById('toast');
-    t.textContent = msg;
-    t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 2800);
-  }
-
-  {% with messages = get_flashed_messages() %}
-    {% if messages %}
-      {% for msg in messages %}
-        showToast("{{ msg }}");
-      {% endfor %}
-    {% endif %}
-  {% endwith %}
-
-  window.addEventListener('DOMContentLoaded', () => {
-    const hash = window.location.hash;
-    if (hash === '#publications-content') {
-      togglePublications();
-      setTimeout(() => {
-        document.getElementById('publications-content').scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 100);
-    } else if (hash === '#advanced-content') {
-      toggleAdvanced();
-      setTimeout(() => {
-        document.getElementById('advanced-content').scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 100);
-    }
-  });
-
-  const track = document.getElementById('courses-track');
-  if (track) {
-    track.addEventListener('wheel', (e) => {
-      if (e.deltaY !== 0) {
+    function openLogoutModal(e) {
         e.preventDefault();
-        track.scrollLeft += e.deltaY * 1.2;
-      }
+        document.getElementById('logout-modal').classList.add('active');
+    }
+    function closeLogoutModal() {
+        document.getElementById('logout-modal').classList.remove('active');
+    }
+    document.getElementById('logout-modal').addEventListener('click', function (e) {
+        if (e.target === this) closeLogoutModal();
     });
-  }
-</script>
 
-</body>
-</html>
+    function toggleNameEdit() {
+        const displayRow = document.getElementById('name-display-row');
+        const editForm = document.getElementById('name-edit-form');
+        const input = document.getElementById('name-input');
+        if (editForm.style.display === 'none' || !editForm.style.display) {
+            input.value = document.getElementById('name-display').textContent.trim();
+            displayRow.style.display = 'none';
+            editForm.style.display = 'flex';
+            input.focus();
+        } else {
+            displayRow.style.display = '';
+            editForm.style.display = 'none';
+        }
+    }
+
+    function toggleAvatarForm() {
+        document.getElementById('avatar-file-real').click();
+    }
+
+    function onAvatarChosen(input) {
+        if (!input.files || !input.files[0]) return;
+        const file = input.files[0];
+        const reader = new FileReader();
+        reader.onload = e => { document.getElementById('avatar-preview').src = e.target.result; };
+        reader.readAsDataURL(file);
+        document.getElementById('avatar-file-name').textContent = file.name;
+        document.getElementById('avatar-form-row').style.display = 'flex';
+    }
+
+    function cancelAvatarForm() {
+        document.getElementById('avatar-form-row').style.display = 'none';
+        document.getElementById('avatar-file-real').value = '';
+        document.getElementById('avatar-preview').src = "{{ url_for('static', filename=session.get('picture')) if session.get('picture') else url_for('static', filename='default_profile.png') }}";
+    }
+
+    function toggleAdvanced() {
+        const content = document.getElementById('advanced-content');
+        const arrow = document.getElementById('advanced-arrow');
+        const isActive = content.classList.toggle('active');
+        arrow.textContent = isActive ? '▲' : '▼';
+        const pubContent = document.getElementById('publications-content');
+        if (isActive && pubContent) {
+            pubContent.classList.remove('active');
+            const pubArrow = document.getElementById('publications-arrow');
+            if (pubArrow) pubArrow.textContent = '▼';
+        }
+    }
+
+    function togglePublications() {
+        const content = document.getElementById('publications-content');
+        if (!content) return;
+        const arrow = document.getElementById('publications-arrow');
+        const isActive = content.classList.toggle('active');
+        arrow.textContent = isActive ? '▲' : '▼';
+        if (isActive) {
+            document.getElementById('advanced-content').classList.remove('active');
+            document.getElementById('advanced-arrow').textContent = '▼';
+        }
+    }
+
+    function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 2800);
+    }
+
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+    {% for msg in messages %}
+    showToast("{{ msg }}");
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    window.addEventListener('DOMContentLoaded', () => {
+        const hash = window.location.hash;
+        if (hash === '#publications-content') {
+            const pubContent = document.getElementById('publications-content');
+            if (pubContent) {
+                togglePublications();
+                setTimeout(() => pubContent.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+            }
+        } else if (hash === '#advanced-content') {
+            toggleAdvanced();
+            setTimeout(() => {
+                document.getElementById('advanced-content').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 100);
+        }
+    });
+
+    document.querySelectorAll('.courses-scroll-track').forEach(track => {
+        track.addEventListener('wheel', (e) => {
+            if (e.deltaY !== 0) {
+                e.preventDefault();
+                track.scrollLeft += e.deltaY * 1.2;
+            }
+        });
+    });
+</script>
+{% endblock %}

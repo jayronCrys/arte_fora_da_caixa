@@ -41,7 +41,9 @@ logger = logging.getLogger(__name__)
     region_name=os.getenv("AWS_REGION", "sa-east-1"),
 )
 
-
+s3_client.create_bucket(Bucket="myminio")
+print(s3_client.list_buckets())s3_client.create_bucket(Bucket="myminio")
+print(s3_client.list_buckets())
 BUCKET_NAME = os.getenv("AWS_BUCKET_NAME")"""
 s3_client = boto3.client(
     "s3",
@@ -52,8 +54,10 @@ s3_client = boto3.client(
 )
 
 
-BUCKET_NAME = "meu-bucket"
+BUCKET_NAME = "myminio"
 
+#s3_client.create_bucket(Bucket="myminio")
+#print(s3_client.list_buckets())
 
 CONTENT_PREFIX = "conteudos"
 JPEG_QUALITY = 85
@@ -119,6 +123,8 @@ def create_content_storage(pdf_bytes: bytes) -> dict:
     """
     s3_uuid = uuid.uuid4().hex
     try:
+        print("Buckets:", s3_client.list_buckets())
+        print("Usando bucket:", BUCKET_NAME)
         s3_client.put_object(
             Bucket=BUCKET_NAME,
             Key=_pdf_key(s3_uuid),

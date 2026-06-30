@@ -63,9 +63,8 @@ def contents(publications):
         total_items = result["total"]
         total_pages = max(1, (total_items + per_page - 1) // per_page)
 
-        # ── Comentários ─────────────────────────
-        for item in items:
-            item["comments"], item["moderated_comments"] = _return_comment_by_cred(item["id"])
+        # Comentários são carregados apenas na página individual do curso (content_buss),
+        # não na listagem — evita N queries desnecessárias ao MongoDB.
 
         enrolled_contents = g.user.get_my_courses_cached() if hasattr(g.user, 'get_my_courses_cached') else g.user.get_my_courses() or []
 
@@ -106,7 +105,7 @@ def contents(publications):
         
 # Constantes
 _PUBLISHER_CREDS = ("admin", "professor")
-
+_VALID_CREDS = ("admin", "professor", "aluno")
 tpl_ctx = dict(
     content_types=CONTENT_TYPES,
     default_banners=DEFAULT_BANNERS,
@@ -190,7 +189,7 @@ def redirect_get_publications():
 
 @contents_bp.route("/contents/publications", methods=["GET"])
 def get_publications():
-    if _cred() not in _PUBLISHER_CREDS:
+    if _cred() not in _VALID_CREDS:
         return redirect(url_for("auth.login"))
     publications = _pub_items()
     return redirect(url_for("contents.contents", tab="my-publications-view",
@@ -235,7 +234,7 @@ def content_buss(content_id):
 # ── VISUALIZAÇÃO DO CONTEÚDO (LEITURA / FLIPBOOK) ────────────────────────────
 @contents_bp.route("/contents/publications/selec_content/<content_id>", methods=["POST", "GET"])
 def select_content(content_id):
-    if _cred() not in _PUBLISHER_CREDS:
+    if _cred() not in _VALID_CREDS:
         return redirect(url_for("auth.login"))
 
     # Obtém o conteúdo enriquecido (já com url_base_s3) usando a nova camada
@@ -608,5 +607,3 @@ def delete_user_review(content_id, comment_id):
         return redirect(url_for("contents.content_buss", content_id=content_id))
         
     return redirect(url_for("contents.content_buss", content_id=content_id)), 404
-
-

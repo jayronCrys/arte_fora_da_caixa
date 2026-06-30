@@ -7,7 +7,7 @@ from flask import (
 )
 
 from src.controller.users.user_default import Login_Account, check_user
-from extensions import convert_heic_to_jpeg, make_session_from_dbuser
+from src.extensions import convert_heic_to_jpeg, make_session_from_dbuser
 from .inscriptions import get_my_courses
 from . import user_bp
 

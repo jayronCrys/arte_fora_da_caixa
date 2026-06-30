@@ -1,224 +1,409 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel Administrativo — Arte Fora da Caixa</title>
+{% extends "base.html" %}
+{% block title %}Painel Administrativo — Arte Fora da Caixa{% endblock %}
 
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+{% block styles %}
+<style>
+    .admin-wrapper {
+        width: 92%;
+        max-width: 1500px;
+        margin: 0 auto;
+        padding: 32px 0 56px;
+    }
 
-    <!-- Design System -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    /* ── Cabeçalho da página ── */
+    .admin-page-header {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 28px;
+        flex-wrap: wrap;
+    }
 
-    <style>
-        html, body { height: 100%; }
-        body {
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-        }
+    .admin-page-header h1 {
+        font-family: var(--font-display);
+        font-size: 1.4rem;
+        font-weight: 800;
+        /* Gradiente Verde para Laranja */
+        background: linear-gradient(90deg, #10b981, #ff7a00);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin: 0;
+        flex: 1;
+    }
+
+    /* ── Métricas ── */
+    .admin-metrics {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-bottom: 28px;
+    }
+
+    .metric-pill {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-pill);
+        padding: 8px 18px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .metric-pill strong {
+        color: var(--text-primary);
+        font-weight: 800;
+    }
+
+    .metric-pill.total {
+        background: var(--gradient);
+        color: #fff;
+        border-color: transparent;
+    }
+
+    .metric-pill.total strong {
+        color: #fff;
+    }
+
+    /* ── Abas ── */
+    .admin-tabs {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 24px;
+        flex-wrap: wrap;
+    }
+
+    .admin-tab-btn {
+        background: var(--bg-muted);
+        border: 1.5px solid var(--border);
+        padding: 11px 26px;
+        border-radius: var(--radius-pill);
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: all var(--ease-out);
+        font-family: var(--font-display);
+        white-space: nowrap;
+    }
+
+    .admin-tab-btn:hover {
+        background: var(--bg-card);
+        color: var(--text-primary);
+        border-color: var(--orange);
+    }
+
+    .admin-tab-btn.active {
+        background: var(--gradient);
+        color: #fff;
+        border-color: transparent;
+        box-shadow: 0 4px 12px rgba(255,122,0,0.25);
+    }
+
+    /* ── Painéis ── */
+    .admin-panel {
+        display: none;
+        animation: fadeSlideIn 0.25s var(--ease-out);
+    }
+
+    .admin-panel.active {
+        display: block;
+    }
+
+    /* ── Filtros ── */
+    .filters-bar {
+        display: flex;
+        gap: 14px;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+        align-items: flex-end;
+        background: var(--bg-card);
+        padding: 18px 22px;
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow-sm);
+    }
+
+    .search-box {
+        flex: 2;
+        min-width: 220px;
+    }
+
+    .filter-group {
+        flex: 1;
+        min-width: 130px;
+    }
+
+    .filter-group label,
+    .search-box label {
+        display: block;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        margin-bottom: 6px;
+        letter-spacing: 0.05em;
+    }
+
+    /* ── Tabela ── */
+    .users-table-wrapper {
+        background: var(--bg-card);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-sm);
+        overflow-x: auto;
+        border: 1px solid var(--border);
+    }
+
+    .admin-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+        min-width: 700px;
+    }
+
+    .admin-table th {
+        text-align: left;
+        padding: 13px 18px;
+        background: var(--bg-muted);
+        border-bottom: 2px solid var(--border);
+        color: var(--text-secondary);
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .admin-table td {
+        padding: 13px 18px;
+        border-bottom: 1px solid var(--border);
+        color: var(--text-primary);
+        vertical-align: middle;
+    }
+
+    .admin-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .admin-table tbody tr:hover td {
+        background: var(--bg-muted);
+    }
+
+    .user-avatar-cell {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .user-avatar-thumb {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid var(--border);
+        flex-shrink: 0;
+    }
+
+    .user-avatar-placeholder {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: var(--gradient);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 15px;
+        font-weight: 700;
+        flex-shrink: 0;
+    }
+
+    .no-results {
+        text-align: center;
+        padding: 52px 20px;
+        color: var(--text-muted);
+        font-size: 15px;
+    }
+
+    /* ── Painel Criar Usuário ── */
+    .create-user-card {
+        width: 90%;
+        max-width: 1200px; /* Aumentado para acompanhar os 90% em telas maiores */
+        margin: 0 auto;
+        background: var(--bg-card);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-md);
+        overflow: hidden;
+    }
+
+    .create-user-card-header {
+        background: var(--gradient);
+        padding: 22px 32px;
+    }
+
+    .create-user-card-header h2 {
+        font-family: var(--font-display);
+        font-size: 1.2rem;
+        font-weight: 800;
+        color: #fff;
+        margin: 0;
+    }
+
+    .create-user-card-body {
+        padding: 32px;
+    }
+
+    .create-user-alert {
+        padding: 12px 16px;
+        border-radius: 8px;
+        margin-bottom: 18px;
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    .create-user-alert.error {
+        background: rgba(239, 68, 68, 0.12);
+        color: #ef4444;
+        border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .create-user-alert.success {
+        background: rgba(16, 185, 129, 0.12);
+        color: #10b981;
+        border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .create-user-card-body .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+    }
+
+    .create-user-card-body .form-group {
+        margin-bottom: 18px;
+    }
+
+    .create-user-card-body .form-group label {
+        display: block;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        margin-bottom: 6px;
+    }
+
+    .create-user-card-body .form-group input,
+    .create-user-card-body .form-group select {
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .create-user-card-body .form-actions {
+        margin-top: 24px;
+        padding-top: 20px;
+        border-top: 1px solid var(--border);
+        display: flex;
+        gap: 12px;
+    }
+
+    /* ── Modificações Olhinho de Senha ── */
+    .password-container {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+    .toggle-password {
+        position: absolute;
+        right: 12px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--text-muted);
+        font-size: 14px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* ── Responsivo ── */
+    @media (max-width: 768px) {
         .admin-wrapper {
-            flex: 1 0 auto;
-            width: 100%;
-            max-width: 1500px;
-            margin: 0 auto;
-            padding: 36px 28px 48px;
-        }
-        .sticky-footer {
-            flex-shrink: 0;
-            width: 100%;
-            background: #1e293b;
-            color: #cbd5e1;
-            text-align: center;
-            padding: 16px 20px;
-            font-size: 13px;
-            letter-spacing: 0.3px;
-            border-top: 3px solid var(--orange);
-            margin-top: auto;
-        }
-
-        .admin-tabs {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 28px;
-            flex-wrap: wrap;
-        }
-        .admin-tab-btn {
-            background: var(--bg-muted);
-            border: 1.5px solid transparent;
-            padding: 12px 28px;
-            border-radius: var(--radius-pill);
-            font-size: 15px;
-            font-weight: 600;
-            color: var(--text-secondary);
-            cursor: pointer;
-            transition: all var(--ease-out);
-            font-family: var(--font-body);
-        }
-        .admin-tab-btn:hover {
-            background: #e8ecf1;
-            color: var(--text-primary);
-        }
-        .admin-tab-btn.active {
-            background: var(--gradient);
-            color: white;
-            border-color: transparent;
-            box-shadow: 0 4px 12px rgba(255,122,0,0.25);
-        }
-        .admin-panel {
-            display: none;
-            animation: fadeSlideIn 0.3s ease;
-        }
-        .admin-panel.active {
-            display: block;
-        }
-
-        .users-table-wrapper {
-            background: var(--bg-card);
-            border-radius: var(--radius-lg);
-            padding: 28px;
-            box-shadow: var(--shadow-sm);
-            margin-bottom: 20px;
-            overflow-x: auto;
-        }
-        .admin-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 15px;
-            min-width: 700px;
-        }
-        .admin-table th {
-            text-align: left;
-            padding: 14px 18px;
-            background: #f8fafc;
-            border-bottom: 2px solid #e2e8f0;
-            color: #475569;
-            font-size: 12px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-        .admin-table td {
-            padding: 14px 18px;
-            border-bottom: 1px solid #e2e8f0;
-            color: #1e293b;
-            vertical-align: middle;
-        }
-        .admin-table tbody tr:hover td {
-            background: #f1f5f9;
-        }
-        .user-avatar-cell {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .user-avatar-thumb {
-            width: 34px;
-            height: 34px;
-            border-radius: 50%;
-            object-fit: cover;
-            background: var(--bg-muted);
-            border: 2px solid var(--border-light);
-        }
-        .user-avatar-placeholder {
-            width: 34px;
-            height: 34px;
-            border-radius: 50%;
-            background: var(--gradient);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 16px;
-            font-weight: 700;
-        }
-        .no-results {
-            text-align: center;
-            padding: 48px 20px;
-            color: var(--text-muted);
-            font-size: 16px;
+            width: 96%;
+            padding: 20px 0 40px;
         }
 
         .filters-bar {
-            display: flex;
-            gap: 16px;
-            flex-wrap: wrap;
-            margin-bottom: 24px;
-            align-items: flex-end;
-        }
-        .search-box {
-            flex: 2;
-            min-width: 240px;
-        }
-        .filter-group {
-            flex: 1;
-            min-width: 140px;
-        }
-        .filter-group label {
-            display: block;
-            font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-            color: var(--text-muted);
-            margin-bottom: 6px;
-            letter-spacing: 0.04em;
+            flex-direction: column;
         }
 
-        @media (max-width: 768px) {
-            .filters-bar {
-                flex-direction: column;
-            }
-            .admin-tabs {
-                justify-content: center;
-            }
+        .admin-tabs {
+            justify-content: center;
         }
-    </style>
-</head>
-<body>
 
-<header class="header">
-    <span class="header-logo">Arte Fora da Caixa</span>
-    <a href="/home" class="btn btn-outline btn-sm">🏠 Home</a>
-</header>
+        .create-user-card {
+            width: 100%;
+        }
 
+        .create-user-card-body .form-row {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
 <div class="admin-wrapper">
 
-    <!-- Barra de resumo discreta (métricas) -->
-    {% set alunos   = role_counts.alunos %}
-    {% set profs    = role_counts.professores %}
-    {% set admins   = role_counts.admins %}
-    {% set total    = alunos + profs + admins %}
-
-    <div style="display: flex; gap: 24px; flex-wrap: wrap; align-items: center;
-                background: #f1f5f9; border-radius: 12px; padding: 14px 24px;
-                margin-bottom: 28px; font-size: 15px; color: #334155; font-weight: 500;
-                border: 1px solid #e2e8f0;">
-        <span>📊 <strong>Total:</strong> {{ total }}</span>
-        <span style="width: 1px; height: 20px; background: #cbd5e1;"></span>
-        <span>👨‍🎓 <strong>Alunos:</strong> {{ alunos }}</span>
-        <span>👩‍🏫 <strong>Professores:</strong> {{ profs }}</span>
-        <span>🛡️ <strong>Admins:</strong> {{ admins }}</span>
+    <div class="admin-page-header">
+        <h1> Painel Administrativo</h1>
+        <a href="{{ url_for('contents.contents') }}" class="btn btn-outline btn-sm"> Voltar ao site</a>
     </div>
 
-    <!-- Abas -->
+    {% set alunos  = role_counts.alunos %}
+    {% set profs   = role_counts.professores %}
+    {% set admins  = role_counts.admins %}
+    {% set total   = alunos + profs + admins %}
+
+    <div class="admin-metrics">
+        <div class="metric-pill total">
+            <strong>{{ total }}</strong> usuários no total
+        </div>
+        <div class="metric-pill">
+             Alunos: <strong>{{ alunos }}</strong>
+        </div>
+        <div class="metric-pill">
+             Professores: <strong>{{ profs }}</strong>
+        </div>
+        <div class="metric-pill">
+             Admins: <strong>{{ admins }}</strong>
+        </div>
+    </div>
+
     <div class="admin-tabs">
-        <button class="admin-tab-btn active" onclick="switchAdminTab('users-list-panel', this)">📋 Lista de Usuários</button>
-        <button class="admin-tab-btn" onclick="switchAdminTab('create-user-panel', this)">✨ Criar Usuário</button>
+        <button class="admin-tab-btn active"
+                onclick="switchAdminTab('users-list-panel', this)">
+             Lista de Usuários
+        </button>
+        <button class="admin-tab-btn"
+                onclick="switchAdminTab('create-user-panel', this)">
+             Criar Usuário
+        </button>
     </div>
 
-    <!-- Painel Lista -->
     <div id="users-list-panel" class="admin-panel active">
+
         <div class="filters-bar">
             <div class="search-box">
                 <label>🔍 Buscar por nome</label>
-                <input type="text" id="user-search" class="form-input" placeholder="Digite o nome do usuário...">
+                <input type="text" id="user-search" class="form-input"
+                       placeholder="Digite o nome do usuário...">
             </div>
             <div class="filter-group">
                 <label>Permissão</label>
-                <select id="filter-permission" class="form-select">
+                <select id="filter-permission" class="form-input">
                     <option value="all">Todas</option>
                     <option value="aluno">Aluno</option>
                     <option value="professor">Professor</option>
@@ -227,7 +412,7 @@
             </div>
             <div class="filter-group">
                 <label>Email</label>
-                <select id="filter-email" class="form-select">
+                <select id="filter-email" class="form-input">
                     <option value="all">Todos</option>
                     <option value="with">Com email</option>
                     <option value="without">Sem email</option>
@@ -235,7 +420,7 @@
             </div>
             <div class="filter-group">
                 <label>Ordenar</label>
-                <select id="filter-sort" class="form-select">
+                <select id="filter-sort" class="form-input">
                     <option value="name_asc">A → Z</option>
                     <option value="name_desc">Z → A</option>
                     <option value="date_desc">Mais recentes</option>
@@ -244,48 +429,63 @@
             </div>
         </div>
 
-        <!-- Container que receberá o HTML da tabela via AJAX -->
-        <div id="users-table-container">
+        <div id="users-table-container" class="users-table-wrapper">
             {% include "admin_users_table.html" %}
         </div>
     </div>
 
-    <!-- Painel Criar -->
     <div id="create-user-panel" class="admin-panel">
-        <div class="form-section" style="max-width: 600px; margin: 0 auto;">
-            <div class="form-section-title">✨ Criar novo usuário</div>
-            <form method="POST" action="{{ url_for('admin.admin_create_user') }}">
-                <div class="form-field">
-                    <label class="form-label" for="nome">Nome completo</label>
-                    <input id="nome" name="nome" type="text" class="form-input" placeholder="Ex.: Maria Silva" required>
-                </div>
-                <div class="form-field">
-                    <label class="form-label" for="cred">Permissão</label>
-                    <select id="cred" name="cred" class="form-select" required>
-                        <option value="aluno">👨‍🎓 Aluno</option>
-                        <option value="professor">👩‍🏫 Professor</option>
-                        <option value="admin">🛡️ Administrador</option>
-                    </select>
-                </div>
-                <div class="form-field">
-                    <label class="form-label" for="password">Senha</label>
-                    <input id="password" name="password" type="password" class="form-input" placeholder="Mínimo 6 caracteres" required>
-                </div>
-                <div class="form-field">
-                    <label class="form-label" for="confirm">Confirmar senha</label>
-                    <input id="confirm" name="confirm" type="password" class="form-input" placeholder="Repita a senha" required>
-                </div>
-                <button type="submit" class="btn btn-primary btn-block">Criar usuário</button>
-            </form>
+        <div class="create-user-card">
+            <div class="create-user-card-header">
+                <h2> Criar novo usuário</h2>
+            </div>
+            <div class="create-user-card-body">
+                <div id="create-user-alert" class="create-user-alert" style="display:none;"></div>
+                <form id="create-user-form" method="POST" action="{{ url_for('admin.admin_create_user') }}">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="nome">Nome completo</label>
+                            <input id="nome" name="nome" type="text" class="form-input"
+                                   placeholder="Ex.: Maria Silva" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="cred">Permissão</label>
+                            <select id="cred" name="cred" class="form-input" required>
+                                <option value="aluno"> Aluno</option>
+                                <option value="professor"> Professor</option>
+                                <option value="admin"> Administrador</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="password">Senha</label>
+                            <div class="password-container">
+                                <input id="password" name="password" type="password" class="form-input" placeholder="Mínimo 6 caracteres" required>
+                                <button type="button" class="toggle-password" onclick="togglePassword('password')">👁️</button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="confirm">Confirmar senha</label>
+                            <div class="password-container">
+                                <input id="confirm" name="confirm" type="password" class="form-input" placeholder="Repita a senha" required>
+                                <button type="button" class="toggle-password" onclick="togglePassword('confirm')">👁️</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary"> Criar usuário</button>
+                        <button type="reset" class="btn btn-outline"> Limpar</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
 </div>
+{% endblock %}
 
-<footer class="sticky-footer">
-    Arte Fora da Caixa © 2025 — Painel Administrativo
-</footer>
-
+{% block scripts %}
 <script>
     function switchAdminTab(panelId, btn) {
         document.querySelectorAll('.admin-panel').forEach(p => p.classList.remove('active'));
@@ -294,7 +494,6 @@
         btn.classList.add('active');
     }
 
-    // Configuração dos filtros atuais
     let currentFilters = {
         name: '',
         permission: 'all',
@@ -314,46 +513,79 @@
         const params = new URLSearchParams(currentFilters);
 
         fetch(`/admin/admin_page/search?${params.toString()}`)
-            .then(response => {
-                if (!response.ok) throw new Error('Erro na busca');
-                return response.text();
-            })
+            .then(r => { if (!r.ok) throw new Error(); return r.text(); })
             .then(html => {
                 document.getElementById('users-table-container').innerHTML = html;
                 bindPaginationEvents();
             })
-            .catch(err => {
-                console.error(err);
-                alert('Erro ao filtrar usuários.');
-            });
+            .catch(() => alert('Erro ao filtrar usuários.'));
     }
 
     function bindPaginationEvents() {
         document.querySelectorAll('#pagination-controls a[data-page]').forEach(link => {
             link.addEventListener('click', function(e) {
                 e.preventDefault();
-                const page = parseInt(this.getAttribute('data-page'));
-                applyFilters(page);
+                applyFilters(parseInt(this.getAttribute('data-page')));
             });
         });
     }
 
-    // Event listeners para filtros (com debounce para busca por nome)
-    document.addEventListener('DOMContentLoaded', function() {
+    function togglePassword(inputId) {
+        const input = document.getElementById(inputId);
+        if (input.type === "password") {
+            input.type = "text";
+        } else {
+            input.type = "password";
+        }
+    }
+
+    function showCreateUserAlert(type, message) {
+        const box = document.getElementById('create-user-alert');
+        box.className = 'create-user-alert ' + type;
+        box.textContent = message;
+        box.style.display = 'block';
+    }
+
+    document.getElementById('create-user-form').addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        const form = e.target;
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const alertBox = document.getElementById('create-user-alert');
+
+        alertBox.style.display = 'none';
+        submitBtn.disabled = true;
+
+        fetch(form.action, {
+            method: 'POST',
+            body: new FormData(form)
+        })
+            .then(r => r.json().then(data => ({ status: r.status, data })))
+            .then(({ data }) => {
+                if (data.success) {
+                    showCreateUserAlert('success', data.message || 'Usuário criado com sucesso.');
+                    form.reset();
+                    applyFilters(1);
+                } else {
+                    showCreateUserAlert('error', data.error || 'Erro ao criar usuário.');
+                }
+            })
+            .catch(() => showCreateUserAlert('error', 'Erro de conexão. Tente novamente.'))
+            .finally(() => { submitBtn.disabled = false; });
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
         bindPaginationEvents();
 
-        const searchInput = document.getElementById('user-search');
-        let debounceTimer;
-        searchInput.addEventListener('input', function() {
-            clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(() => applyFilters(1), 300);
+        let debounce;
+        document.getElementById('user-search').addEventListener('input', function () {
+            clearTimeout(debounce);
+            debounce = setTimeout(() => applyFilters(1), 300);
         });
 
-        document.getElementById('filter-permission').addEventListener('change', () => applyFilters(1));
-        document.getElementById('filter-email').addEventListener('change', () => applyFilters(1));
-        document.getElementById('filter-sort').addEventListener('change', () => applyFilters(1));
+        ['filter-permission', 'filter-email', 'filter-sort'].forEach(id => {
+            document.getElementById(id).addEventListener('change', () => applyFilters(1));
+        });
     });
 </script>
-
-</body>
-</html>
+{% endblock %}

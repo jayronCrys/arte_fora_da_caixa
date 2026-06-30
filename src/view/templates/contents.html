@@ -17,19 +17,18 @@
     .nav-tabs-global {
       background: var(--bg-card);
       display: flex;
-      justify-content: stretch;
-      gap: 0;
-      padding: 0;
+      justify-content: flex-start;
+      gap: 2px;
+      padding: 0 8px;
       border-bottom: 1px solid var(--border-light);
       flex-wrap: nowrap;
       width: 100%;
       overflow-x: auto;
     }
     .nav-tab-item {
-      flex: 1;
-      min-width: 0;
+      flex: 0 0 auto;
       text-align: center;
-      padding: 14px 8px;
+      padding: 14px 16px;
       font-family: var(--font-display);
       font-size: 13px;
       font-weight: 600;
@@ -122,73 +121,100 @@
     .compact-filter-group select:focus { border-color: var(--orange); }
 
     /* ══════════════════════════════════════════
-       TODOS OS CURSOS — LAYOUT POR LINHAS (padrão)
+       TODOS OS CURSOS — LAYOUT GRID MODERNO
     ══════════════════════════════════════════ */
     .courses-rows-container { padding: 28px 28px 40px; }
-    .course-row-section { margin-bottom: 40px; }
+    .course-row-section { margin-bottom: 48px; }
     .course-row-title {
       font-family: var(--font-display);
-      font-size: 19px;
+      font-size: 18px;
       font-weight: 700;
-      margin-bottom: 16px;
+      margin-bottom: 20px;
       color: var(--text-primary);
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid var(--border-light);
     }
-    .course-row-title::after {
-      content: "";
-      flex: 1;
-      height: 1px;
-      background: var(--border-light);
-      margin-left: 4px;
+    .course-row-title .row-title-count {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: var(--bg-input);
+      border-radius: var(--radius-pill);
+      padding: 2px 10px;
     }
 
-    /* Trilha horizontal (padrão, sem filtro ativo) */
+    /* Grid responsivo sempre — sem scroll horizontal */
     .course-scroll-track {
-      display: flex;
-      gap: 20px;
-      overflow-x: auto;
-      padding-bottom: 12px;
-      scroll-snap-type: x mandatory;
-      -webkit-overflow-scrolling: touch;
-      scrollbar-width: thin;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 18px;
     }
-    .course-scroll-track::-webkit-scrollbar { height: 5px; }
-    .course-scroll-track::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-
-    /* Grid vertical (quando filtro está ativo) */
     .course-grid-vertical {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-      gap: 20px;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 18px;
     }
 
     /* ══════════════════════════════════════════
-       CARD DE CURSO — COMPARTILHADO
+       CARD DE CURSO — REDESENHADO
     ══════════════════════════════════════════ */
     .course-card-item {
-      flex: 0 0 280px;          /* horizontal scroll */
       background: var(--bg-card);
       border-radius: var(--radius-md);
       overflow: hidden;
       border: 1px solid var(--border-light);
       box-shadow: var(--shadow-xs);
       transition: transform 0.18s ease, box-shadow 0.18s ease;
-      scroll-snap-align: start;
+      display: flex;
+      flex-direction: column;
     }
-    .course-grid-vertical .course-card-item { flex: unset; }
-    .course-card-item:hover { transform: translateY(-5px); box-shadow: var(--shadow-md); }
+    .course-card-item:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
 
-    .course-card-banner { width: 100%; height: 165px; background: var(--gradient); overflow: hidden; }
+    .course-card-banner { width: 100%; height: 148px; background: var(--gradient); overflow: hidden; position: relative; flex-shrink: 0; }
     .course-card-banner img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease; }
     .course-card-item:hover .course-card-banner img { transform: scale(1.04); }
-    .course-card-placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 40px; color: rgba(255,255,255,0.7); }
-    .course-card-body { padding: 16px 18px 18px; }
-    .course-card-title { font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 5px; line-height: 1.35; }
-    .course-card-meta { font-size: 12px; color: var(--text-muted); margin-bottom: 7px; }
-    .course-card-rating { font-size: 13px; color: #f59e0b; margin-bottom: 10px; }
-    .course-card-stats { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+    .course-card-placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 36px; color: rgba(255,255,255,0.7); }
+
+    .course-card-type-tag {
+      position: absolute;
+      bottom: 8px;
+      left: 10px;
+      background: rgba(0,0,0,0.55);
+      backdrop-filter: blur(4px);
+      color: white;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: var(--radius-pill);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .course-card-body { padding: 14px 16px 16px; display: flex; flex-direction: column; flex: 1; }
+    .course-card-title { font-size: 14px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .course-card-author { font-size: 11px; color: var(--text-muted); margin-bottom: 10px; display: flex; align-items: center; gap: 4px; }
+
+    .course-card-stars { display: flex; align-items: center; gap: 5px; margin-bottom: 8px; }
+    .course-card-stars .stars-icons { color: #f59e0b; font-size: 12px; letter-spacing: 1px; }
+    .course-card-stars .stars-num { font-size: 12px; font-weight: 700; color: var(--text-primary); }
+    .course-card-stars .no-rating { font-size: 11px; color: var(--text-muted); }
+
+    .course-card-stats-row {
+      display: flex;
+      gap: 12px;
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+    .course-card-stats-row span { display: flex; align-items: center; gap: 3px; }
+
+    .course-card-cta {
+      margin-top: auto;
+    }
 
     /* ══════════════════════════════════════════
        MEUS CURSOS
@@ -269,7 +295,7 @@
     .pubs-sub-btn:hover { color: var(--orange); }
     .pubs-sub-btn.active { color: var(--orange); border-bottom-color: var(--orange); }
 
-    .pubs-list-container { padding: 28px 28px 40px; max-width: 1200px; margin: 0 auto; }
+    .pubs-list-container { padding: 28px 28px 40px; max-width: 90%; margin: 0 auto; }
     .pubs-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -364,12 +390,11 @@
        PUBLICAR CONTEÚDO
     ══════════════════════════════════════════ */
     .publish-form-outer { padding: 28px 28px 48px; }
-    .publish-form-inner { max-width: 92%; margin: 0 auto; }
+    .publish-form-inner { max-width: 88%; margin: 0 auto; }
     .publish-sections-layout {
-      display: grid;
-      grid-template-columns: 1fr 380px;
+      display: flex;
+      flex-direction: column;
       gap: 24px;
-      align-items: start;
     }
     .publish-left { display: flex; flex-direction: column; gap: 20px; }
     .publish-right { display: flex; flex-direction: column; gap: 20px; }
@@ -471,18 +496,51 @@
     }
 
     /* ══════════════════════════════════════════
+       LIMPAR CAMPO — botão borracha individual
+    ══════════════════════════════════════════ */
+    .form-field-label-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 0;
+    }
+    .form-field-label-row .form-label {
+      margin-bottom: 0;
+      flex: 1;
+    }
+    .field-clear-btn {
+      flex-shrink: 0;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: 1.5px solid var(--border);
+      background: var(--bg-input);
+      color: var(--text-secondary);
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all var(--ease-out);
+      line-height: 1;
+    }
+    .field-clear-btn:hover {
+      border-color: var(--orange);
+      background: rgba(255,122,0,0.08);
+      color: var(--orange);
+      transform: scale(1.08);
+    }
+
+    /* ══════════════════════════════════════════
        PAINEL ADMIN / PROFESSOR / PERFIL
     ══════════════════════════════════════════ */
     .section-content-wrapper { max-width: 1400px; margin: 0 auto; padding: 0 20px; }
 
-    @media (max-width: 900px) {
-      .publish-sections-layout { grid-template-columns: 1fr; }
-      .publish-right { order: -1; }
-    }
     @media (max-width: 768px) {
       .global-banner { padding: 30px 16px; }
       .global-banner-title { font-size: 24px; }
-      .nav-tab-item { font-size: 11px; padding: 10px 4px; }
+      .nav-tab-item { font-size: 11px; padding: 10px 10px; }
       .compact-filters-bar { flex-direction: column; padding: 10px 16px; }
       .footer-content { flex-direction: column; text-align: center; }
       .courses-rows-container { padding: 20px 16px 30px; }
@@ -493,10 +551,22 @@
       .pubs-sub-nav { padding: 0 16px; }
       .banner-grid-large { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
     }
+    html, body { height: 100%; }
+    body {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    .site-main-content {
+      flex: 1 0 auto;
+      display: flex;
+      flex-direction: column;
+    }
   </style>
 </head>
 <body>
 
+<main class="site-main-content">
 <header class="header">
   <span class="header-logo">Arte Fora da Caixa</span>
   <div class="header-user" onclick="location.href='{{ url_for('user.user') }}'">
@@ -521,6 +591,7 @@
     <button id="admin-panel-btn" class="nav-tab-item admin-tab" onclick="switchTab('admin-panel', this)">🔒 Painel Admin</button>
   {% endif %}
   <button id="profile-tab-btn" class="nav-tab-item" onclick="switchTab('user-profile', this)">👤 Meu Perfil</button>
+  <button id="about-tab-btn" class="nav-tab-item" onclick="switchTab('about-section', this)">ℹ️ Sobre</button>
 </nav>
 
 <div class="global-banner" id="global-banner">
@@ -534,15 +605,27 @@
 
   <!-- BARRA DE FILTROS -->
   <div class="compact-filters-bar" id="filters-bar">
-    <!-- Campo de busca (autocomplete via fetch) -->
-    <div class="compact-search" style="position: relative;">
-      <input type="text" id="all-courses-search" name="search"
-             value="{{ request.args.get('search', '') }}"
-             placeholder="🔍 Buscar conteúdos pelo nome..."
-             autocomplete="off"
-             oninput="searchCourses(this.value)">
-      <!-- Dropdown de resultados (oculto por padrão) -->
-      <div id="search-results" class="autocomplete-list" style="display:none; position:absolute; top:100%; left:0; right:0; background:var(--bg-card); border:1px solid var(--border); border-radius:0 0 var(--radius-md) var(--radius-md); box-shadow:var(--shadow-md); z-index:20; max-height:300px; overflow-y:auto;"></div>
+    <!-- Campo de busca (autocomplete + filtro de página) -->
+    <div class="compact-search" style="position: relative; display: flex; gap: 6px;">
+      <div style="position:relative;flex:1;">
+        <input type="text" id="all-courses-search" name="search"
+               value="{{ request.args.get('search', '') }}"
+               placeholder="🔍 Buscar conteúdos pelo nome..."
+               autocomplete="off"
+               oninput="searchCourses(this.value)"
+               onkeydown="if(event.key==='Enter'){document.getElementById('search-results').style.display='none';applyFilters();}">
+        <!-- Dropdown de sugestões -->
+        <div id="search-results" style="display:none; position:absolute; top:100%; left:0; right:0; background:var(--bg-card); border:1px solid var(--border); border-radius:0 0 var(--radius-md) var(--radius-md); box-shadow:var(--shadow-md); z-index:20; max-height:280px; overflow-y:auto;"></div>
+      </div>
+      <button type="button" onclick="document.getElementById('search-results').style.display='none';applyFilters();"
+              style="padding:10px 18px;border-radius:var(--radius-pill);border:none;background:var(--orange);color:white;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:opacity .15s;"
+              onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">Buscar</button>
+      {% if request.args.get('search') %}
+      <button type="button" onclick="document.getElementById('all-courses-search').value='';applyFilters();"
+              title="Limpar busca"
+              style="padding:10px 14px;border-radius:var(--radius-pill);border:1.5px solid var(--border);background:var(--bg-input);color:var(--text-muted);font-size:13px;cursor:pointer;flex-shrink:0;transition:all .15s;"
+              onmouseover="this.style.borderColor='var(--orange)';this.style.color='var(--orange)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-muted)'">✕</button>
+      {% endif %}
     </div>
 
     <!-- Filtro por tipo (recarrega a página) -->
@@ -590,7 +673,7 @@
 
       {% for type, courses in grouped.items() %}
       <div class="course-row-section">
-        <h3 class="course-row-title">{{ type }}</h3>
+        <h3 class="course-row-title">{{ type }} <span class="row-title-count">{{ courses|length }}</span></h3>
         <div class="course-scroll-track">
           {% for c in courses %}
           <div class="course-card-item">
@@ -600,23 +683,26 @@
               {% else %}
                 <div class="course-card-placeholder">🎨</div>
               {% endif %}
+              <span class="course-card-type-tag">{{ c.content_type or 'Conteúdo' }}</span>
             </div>
             <div class="course-card-body">
               <h4 class="course-card-title">{{ c.title }}</h4>
-              <p class="course-card-meta">{{ c.author or 'Autor desconhecido' }} • {{ c.creation_date }}</p>
-              <div class="course-card-rating">
+              <div class="course-card-author">✍️ {{ c.author or 'Autor desconhecido' }}</div>
+              <div class="course-card-stars">
                 {% if c.rating and c.rating.average_rating %}
-                  {% set stars = c.rating.average_rating|int %}
-                  {% for i in range(stars) %}⭐{% endfor %}
-                  <span>({{ c.rating.average_rating }})</span>
+                  <span class="stars-icons">{% set stars = c.rating.average_rating|int %}{% for i in range(stars) %}★{% endfor %}{% for i in range(5 - stars) %}☆{% endfor %}</span>
+                  <span class="stars-num">{{ "%.1f"|format(c.rating.average_rating) }}</span>
                 {% else %}
-                  <span>Sem avaliações</span>
+                  <span class="no-rating">Sem avaliações</span>
                 {% endif %}
-                <div class="course-card-stats">
-                  {{ c.rating.total_inscriptions if c.rating else 0 }} alunos • {{ c.rating.total_reviews if c.rating else 0 }} avaliações
-                </div>
               </div>
-              <button class="btn btn-primary btn-block btn-sm" onclick="location.href='/contents/content/{{ c.id }}'">Ver</button>
+              <div class="course-card-stats-row">
+                <span>👥 {{ c.rating.total_inscriptions if c.rating else 0 }} alunos</span>
+                <span>💬 {{ c.rating.total_reviews if c.rating else 0 }} avaliações</span>
+              </div>
+              <div class="course-card-cta">
+                <button class="btn btn-primary btn-block btn-sm" onclick="location.href='/contents/content/{{ c.id }}'">Acessar →</button>
+              </div>
             </div>
           </div>
           {% endfor %}
@@ -649,9 +735,6 @@
   {% endif %}
 </section>
 
- ═══════════════════════════════════════
-     ABA: MEUS CURSOS
-═══════════════════════════════════════ -->
 <section id="my-courses" class="view-section">
   <div class="my-courses-wrapper">
 
@@ -765,16 +848,25 @@
                 <div class="publish-card-header">📋 Informações do conteúdo</div>
                 <div class="publish-card-body">
                   <div class="form-field">
-                    <label class="form-label" for="content_name">Título <span class="hint">(mín. 15 caracteres)</span></label>
+                    <div class="form-field-label-row">
+                      <label class="form-label" for="content_name">Título <span class="hint">(mín. 15 caracteres)</span></label>
+                      <button type="button" class="field-clear-btn" title="Limpar título" onclick="clearField('content_name')">🧹</button>
+                    </div>
                     <input type="text" id="content_name" name="content_name" class="form-input" placeholder="Ex.: Introdução à Programação com Python" oninput="updatePreview()">
                   </div>
                   <div class="form-field">
-                    <label class="form-label" for="description">Descrição <span class="hint">(mín. 50 caracteres)</span></label>
+                    <div class="form-field-label-row">
+                      <label class="form-label" for="description">Descrição <span class="hint">(mín. 50 caracteres)</span></label>
+                      <button type="button" class="field-clear-btn" title="Limpar descrição" onclick="clearField('description')">🧹</button>
+                    </div>
                     <textarea id="description" name="description" class="form-textarea" placeholder="Descreva o conteúdo detalhadamente…" style="min-height:120px;"></textarea>
                   </div>
                   {% if session.get("cred") == "admin" %}
                   <div class="form-field">
-                    <label class="form-label" for="author">Autor (nome de usuário)</label>
+                    <div class="form-field-label-row">
+                      <label class="form-label" for="author">Autor (nome de usuário)</label>
+                      <button type="button" class="field-clear-btn" title="Limpar autor" onclick="clearField('author')">🧹</button>
+                    </div>
                     <input type="text" id="author" name="author" class="form-input" placeholder="Nome exato do professor">
                   </div>
                   {% endif %}
@@ -782,7 +874,10 @@
               </div>
 
               <div class="publish-card">
-                <div class="publish-card-header">📄 Arquivo PDF</div>
+                <div class="publish-card-header" style="display:flex;align-items:center;justify-content:space-between;">
+                  <span>📄 Arquivo PDF</span>
+                  <button type="button" class="field-clear-btn" title="Remover PDF" onclick="clearField('file')">🧹</button>
+                </div>
                 <div class="publish-card-body">
                   <div class="upload-area" onclick="document.getElementById('file').click()" style="padding:28px 20px;">
                     <div class="upload-area-icon" style="font-size:40px;">📄</div>
@@ -853,7 +948,7 @@
 
             <!-- COLUNA DIREITA -->
             <div class="publish-right">
-              <div class="publish-card" style="position:sticky;top:76px;">
+              <div class="publish-card" style="position:static;top:unset;">
                 <div class="publish-card-header">👁️ Pré-visualização</div>
                 <div class="publish-card-body" style="padding-bottom:22px;">
                   <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;">Como ficará para o público</p>
@@ -873,6 +968,7 @@
 
                   <div style="margin-top:20px;display:flex;flex-direction:column;gap:10px;">
                     <button type="button" class="btn btn-primary btn-block btn-lg" onclick="openConfirm()">🚀 Publicar conteúdo</button>
+                    <button type="button" class="btn btn-muted btn-block" onclick="openClearConfirm()">🧹 Limpar tudo</button>
                   </div>
                 </div>
               </div>
@@ -923,11 +1019,119 @@
      ABA: PAINEL ADMIN
 ═══════════════════════════════════════ -->
 <section id="admin-panel" class="view-section">
-  <div class="panel-box">
-    <h2>Painel Administrativo 🔒</h2>
-    <p style="font-size:13px;color:var(--text-muted);margin-bottom:18px;">Bem-vindo à área de gestão do Arte Fora da Caixa.</p>
-    <button onclick="location.href='/admin/admin_page'" class="btn btn-primary btn-block" style="margin-bottom:10px;">👥 Usuários</button>
-    <button onclick="location.href='/admin/redirector'" class="btn btn-blue btn-block">📊 Ver Relatórios de Acessos</button>
+  <style>
+    .admin-wrapper { max-width: 92%; margin: 0 auto; padding: 32px 24px 48px; }
+    .admin-header { margin-bottom: 32px; }
+    .admin-header h2 { font-family: var(--font-display); font-size: 26px; font-weight: 800; color: var(--text-primary); margin-bottom: 4px; }
+    .admin-header p { font-size: 14px; color: var(--text-muted); }
+
+    .admin-section-label {
+      font-family: var(--font-display);
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-muted);
+      margin: 0 0 14px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    .admin-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 16px;
+      margin-bottom: 36px;
+    }
+
+    .admin-action-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-lg);
+      padding: 22px 22px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      box-shadow: var(--shadow-xs);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .admin-action-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+
+    .admin-card-icon {
+      width: 44px; height: 44px;
+      border-radius: var(--radius-md);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+      flex-shrink: 0;
+    }
+    .admin-card-icon.orange { background: rgba(255,122,0,0.12); }
+    .admin-card-icon.blue   { background: rgba(59,130,246,0.12); }
+    .admin-card-icon.green  { background: rgba(16,185,129,0.12); }
+    .admin-card-icon.purple { background: rgba(139,92,246,0.12); }
+    .admin-card-icon.slate  { background: rgba(100,116,139,0.10); }
+
+    .admin-card-info { display: flex; flex-direction: column; gap: 3px; }
+    .admin-card-title { font-family: var(--font-display); font-size: 15px; font-weight: 700; color: var(--text-primary); }
+    .admin-card-desc { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
+
+    .admin-card-arrow { margin-top: auto; font-size: 13px; font-weight: 700; color: var(--orange); display: flex; align-items: center; gap: 4px; }
+
+    .admin-info-strip {
+      background: linear-gradient(135deg, rgba(255,122,0,0.07) 0%, rgba(59,130,246,0.07) 100%);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-md);
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+    .admin-info-strip strong { color: var(--text-primary); }
+  </style>
+
+  <div class="admin-wrapper">
+    <div class="admin-header">
+      <h2>🔒 Painel Administrativo</h2>
+      <p>Gerencie usuários, conteúdos e dados da plataforma Arte Fora da Caixa.</p>
+    </div>
+
+    <p class="admin-section-label">Gestão</p>
+    <div class="admin-cards-grid">
+      <a class="admin-action-card" onclick="location.href='/admin/admin_page'">
+        <div class="admin-card-icon orange">👥</div>
+        <div class="admin-card-info">
+          <div class="admin-card-title">Usuários</div>
+          <div class="admin-card-desc">Visualize, edite e remova contas de alunos e professores.</div>
+        </div>
+        <div class="admin-card-arrow">Acessar →</div>
+      </a>
+
+      <a class="admin-action-card" onclick="location.href='/admin/redirector'">
+        <div class="admin-card-icon blue">📊</div>
+        <div class="admin-card-info">
+          <div class="admin-card-title">Relatórios de Acesso</div>
+          <div class="admin-card-desc">Monitore acessos, sessões e métricas de uso da plataforma.</div>
+        </div>
+        <div class="admin-card-arrow">Ver relatórios →</div>
+      </a>
+
+      <a class="admin-action-card" onclick="location.href='{{ url_for('contents.redirect_get_publications') }}'">
+        <div class="admin-card-icon green">📚</div>
+        <div class="admin-card-info">
+          <div class="admin-card-title">Conteúdos</div>
+          <div class="admin-card-desc">Gerencie e publique conteúdos e cursos na plataforma.</div>
+        </div>
+        <div class="admin-card-arrow">Gerenciar →</div>
+      </a>
+    </div>
+
+    <div class="admin-info-strip">
+      <span style="font-size:20px;">ℹ️</span>
+      <span>Logado como <strong>{{ session.get("name") }}</strong> · Credencial: <strong>admin</strong> · {{ now }}</span>
+    </div>
   </div>
 </section>
 
@@ -1044,6 +1248,14 @@
     </div>
   </div>
 </section>
+
+<!-- ═══════════════════════════════════════
+     ABA: SOBRE
+═══════════════════════════════════════ -->
+<section id="about-section" class="view-section">
+</section>
+</main>
+
 <!-- ═══════════════════════════════════════
      MODAIS
 ═══════════════════════════════════════ -->
@@ -1062,6 +1274,26 @@
     <div class="modal-buttons">
       <button class="btn btn-muted" onclick="closeConfirm()">Revisar</button>
       <button class="btn btn-primary" onclick="submitForm()">Publicar agora</button>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="clear-all-modal">
+  <div class="modal-box">
+    <h2>Limpar todos os campos?</h2>
+    <p style="font-size:13px;color:var(--text-secondary);margin-top:8px;">Todas as informações preenchidas neste formulário serão apagadas. Essa ação não pode ser desfeita.</p>
+    <div class="modal-buttons">
+      <button class="btn btn-muted" onclick="closeClearAllModal()">Cancelar</button>
+      <button class="btn btn-danger" onclick="confirmClearAll()">Sim, limpar tudo</button>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="clear-field-modal">
+  <div class="modal-box">
+    <h2>Limpar este campo?</h2>
+    <p style="font-size:13px;color:var(--text-secondary);margin-top:8px;">O conteúdo deste campo será apagado. Essa ação não pode ser desfeita.</p>
+    <div class="modal-buttons">
+      <button class="btn btn-muted" onclick="closeClearFieldModal()">Cancelar</button>
+      <button class="btn btn-danger" onclick="confirmClearField()">Sim, limpar</button>
     </div>
   </div>
 </div>
@@ -1125,8 +1357,7 @@
           item.onclick = () => {
             document.getElementById('all-courses-search').value = course.title;
             dropdown.style.display = 'none';
-            // Ao clicar, redireciona para a página do curso
-            window.location.href = `/contents/content/${course.id}`;
+            applyFilters();
           };
           dropdown.appendChild(item);
         });
@@ -1151,7 +1382,7 @@
     if (search) params.set('search', search);
     params.set('page', '1');  // volta para a primeira página ao filtrar
 
-    window.location.href = '?' + params.toString() + '#all-courses';
+    window.location.href = window.location.pathname + '?' + params.toString() + '#all-courses';
   }
 
   /* Fecha o dropdown ao clicar fora */
@@ -1180,19 +1411,31 @@
     const c = document.createElement('div');
     c.className = 'course-card-item';
     const bu = s.dataset.banner, ti = s.dataset.title, au = s.dataset.author || 'Desconhecido',
-          da = s.dataset.creation || '', ra = s.dataset.rating || '5',
-          en = s.dataset.enrollments || '0', re = s.dataset.reviews || '0', id = s.dataset.id;
+          ra = parseFloat(s.dataset.rating) || 0,
+          en = s.dataset.enrollments || '0', re = s.dataset.reviews || '0',
+          id = s.dataset.id, ty = s.dataset.type || 'Conteúdo';
+
+    const starsInt = Math.min(5, Math.floor(ra));
+    const starsHtml = ra > 0
+      ? `<span class="stars-icons">${'★'.repeat(starsInt)}${'☆'.repeat(5-starsInt)}</span><span class="stars-num">${ra.toFixed(1)}</span>`
+      : `<span class="no-rating">Sem avaliações</span>`;
+
     c.innerHTML = `
       <div class="course-card-banner">
         ${bu ? `<img src="${bu}" alt="Banner">` : '<div class="course-card-placeholder">🎨</div>'}
+        <span class="course-card-type-tag">${ty}</span>
       </div>
       <div class="course-card-body">
         <h4 class="course-card-title">${ti}</h4>
-        <p class="course-card-meta">${au} • ${da}</p>
-        <div class="course-card-rating">${'⭐'.repeat(Math.min(5, Math.floor(ra)))} <span>(${ra})</span>
-          <div class="course-card-stats">${en} alunos • ${re} avaliações</div>
+        <div class="course-card-author">✍️ ${au}</div>
+        <div class="course-card-stars">${starsHtml}</div>
+        <div class="course-card-stats-row">
+          <span>👥 ${en} alunos</span>
+          <span>💬 ${re} avaliações</span>
         </div>
-        <button class="btn btn-primary btn-block btn-sm" onclick="location.href='/contents/content/${id}'">Ver</button>
+        <div class="course-card-cta">
+          <button class="btn btn-primary btn-block btn-sm" onclick="location.href='/contents/content/${id}'">Acessar →</button>
+        </div>
       </div>`;
     return c;
   }
@@ -1419,6 +1662,64 @@
   function closeConfirm() { document.getElementById('confirm-modal').classList.remove('active'); }
   function submitForm() { document.getElementById('publish-form').submit(); }
 
+  /* ═══════════ LIMPAR CAMPOS (com confirmação) ═══════════ */
+  let pendingClearFieldId = null;
+
+  function clearField(fieldId) {
+    pendingClearFieldId = fieldId;
+    document.getElementById('clear-field-modal').classList.add('active');
+  }
+  function closeClearFieldModal() {
+    pendingClearFieldId = null;
+    document.getElementById('clear-field-modal').classList.remove('active');
+  }
+  function confirmClearField() {
+    if (!pendingClearFieldId) { closeClearFieldModal(); return; }
+    const el = document.getElementById(pendingClearFieldId);
+    if (el) {
+      if (el.type === 'file') {
+        el.value = '';
+        if (pendingClearFieldId === 'file') {
+          const hint = document.getElementById('pdf-hint');
+          if (hint) { hint.textContent = ''; hint.style.display = 'none'; }
+        }
+      } else {
+        el.value = '';
+      }
+      updatePreview();
+    }
+    closeClearFieldModal();
+  }
+
+  function openClearConfirm() {
+    document.getElementById('clear-all-modal').classList.add('active');
+  }
+  function closeClearAllModal() {
+    document.getElementById('clear-all-modal').classList.remove('active');
+  }
+  function confirmClearAll() {
+    const form = document.getElementById('publish-form');
+    form.reset();
+
+    const pdfHint = document.getElementById('pdf-hint');
+    if (pdfHint) { pdfHint.textContent = ''; pdfHint.style.display = 'none'; }
+
+    const bannerPreviewOwn = document.getElementById('banner-preview-own');
+    if (bannerPreviewOwn) { bannerPreviewOwn.style.display = 'none'; bannerPreviewOwn.src = ''; }
+    ownBannerDataUrl = null;
+
+    switchBannerTab('default');
+    const firstBannerOpt = document.querySelector('.banner-opt');
+    if (firstBannerOpt) {
+      const firstId = firstBannerOpt.id.replace('banner-opt-', '');
+      selectBannerOpt(firstId);
+    }
+
+    updatePreview();
+    closeClearAllModal();
+    showToast('Formulário limpo.');
+  }
+
   function showToast(msg) {
     const t = document.getElementById('toast'); t.textContent = msg;
     t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2800);
@@ -1473,6 +1774,10 @@
       if (pubTabBtn) switchTab('publications-section', pubTabBtn);
       if (activeTab === 'my-publications-view') { const btn = document.getElementById('sub-my-pubs-btn'); if (btn) switchPubSection('my-publications-view', btn); }
       else if (activeTab === 'publish-content-view') { const btn = document.getElementById('sub-publish-btn'); if (btn) switchPubSection('publish-content-view', btn); }
+    } else if (hash === '#all-courses' || hash === '') {
+      /* Após recarregar com filtros ativos, garante que "Todos os Cursos" está ativo */
+      const allBtn = document.getElementById('all-courses-btn');
+      if (allBtn) switchTab('all-courses', allBtn);
     }
   });
 </script>

@@ -23,6 +23,7 @@ from src.models.relationships_models.inscriptions import Subs
 from src.models.db_mongo_execute import (
     get_comments,
     get_reviews,
+    get_reviews_bulk,
     new_comment,
     new_review, 
     remove_content_inscription,
@@ -272,6 +273,9 @@ class Login_Account:
             user_pass_in = self.user.get("password")
 
             user_exist = check_user(user_name_in, self.dataBase)
+            if not user_exist:
+                user_email_in = self.user.get("name")
+                user_exist = check_user(search=user_email_in, dataBase=self.dataBase, column="email")#necwssario caso o usuario tente logar usando email pela barra de nomr
 
             if user_exist and compare(user_pass_in, user_exist.get("password")):
                 logger.info("Usuário validado com sucesso.")
@@ -467,8 +471,12 @@ class Management_User_Default(Login_Account):
                 query = query.order_by(Contents.creation_date.desc())
     
             total = query.count()
-    
-            if limit is not None:
+
+            # Quando popularidade está ativa, busca tudo primeiro para ordenar
+            # antes de paginar — caso contrário limit/offset são aplicados no SQL
+            applying_popularity = popularity in ('most_enrolled', 'most_reviewed')
+
+            if limit is not None and not applying_popularity:
                 query = query.limit(limit)
                 if offset is not None:
                     query = query.offset(offset)
@@ -488,22 +496,27 @@ class Management_User_Default(Login_Account):
                 "total_paginas": c.total_paginas,
             } for c in all_contents]
     
-            # Popularidade (usa MongoDB para ordenar)
-            if popularity in ('most_enrolled', 'most_reviewed'):
-                from src.models.mongo_models.rating_models import get_reviews
+            # Popularidade: ordena por stats do MongoDB em 1 query e só então pagina
+            if applying_popularity:
+                all_stats = get_reviews_bulk([item['id'] for item in items])
                 for item in items:
-                    stats = get_reviews(item['id'])
-                    item['_total_inscriptions'] = stats.get('total_inscriptions', 0)
-                    item['_total_reviews'] = stats.get('total_reviews', 0)
-    
+                    s = all_stats.get(item['id'], {})
+                    item['_total_inscriptions'] = s.get('total_inscriptions', 0)
+                    item['_total_reviews'] = s.get('total_reviews', 0)
+
                 if popularity == 'most_enrolled':
                     items.sort(key=lambda x: x['_total_inscriptions'], reverse=True)
                 elif popularity == 'most_reviewed':
                     items.sort(key=lambda x: x['_total_reviews'], reverse=True)
-    
+
                 for item in items:
                     item.pop('_total_inscriptions', None)
                     item.pop('_total_reviews', None)
+
+                # Paginação manual após a ordenação por popularidade
+                if limit is not None:
+                    off = offset or 0
+                    items = items[off: off + limit]
     
             if limit is not None:
                 return {"items": items, "total": total}
@@ -557,12 +570,25 @@ class Management_User_Default(Login_Account):
             return False
     
         full_content = []
+
+        # Busca ratings de todos os itens de uma vez (1 query MongoDB)
+        if review and contents:
+            valid_ids = [c["id"] for c in contents if c]
+            all_stats = get_reviews_bulk(valid_ids)
+        else:
+            all_stats = {}
+
         for content in contents:
             if not content:
                 continue
             content_id = content["id"]
             if review:
-                content["rating"] = self.get_content_review(content_id)
+                content["rating"] = all_stats.get(content_id, {
+                    "average_rating": 0.0,
+                    "total_reviews": 0,
+                    "total_inscriptions": 0,
+                    "sums_reviews": 0,
+                })
             if content.get("s3_uuid") and not content.get("url_base_s3"):
                 content["url_base_s3"] = build_pages_base_url(content["s3_uuid"])
             full_content.append(content)

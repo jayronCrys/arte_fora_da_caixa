@@ -8,6 +8,10 @@ from flask import session, g
 from src.controller.users.user_admin import Management_Admins
 from src.controller.users.user_professor import Management_Professors
 from src.controller.users.user_default import Management_User_Default
+# extensions.py
+from flask_mail import Mail
+
+mail = Mail()
 
 
 def make_session_from_dbuser(db_user_dict):

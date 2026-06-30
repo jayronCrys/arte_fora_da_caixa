@@ -5,12 +5,10 @@
   <title>Editar Conteúdo — Arte Fora da Caixa</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 
-  <!-- Design System -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
   <style>
     /* Container amplo para ocupar mais de 80% da tela */
@@ -29,6 +27,42 @@
     }
     .action-buttons > * {
       flex: 1;
+    }
+    /* Linha do label com botão de borracha ao lado */
+    .field-label-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .field-label-row .form-label {
+      margin-bottom: 0;
+      flex: 1;
+    }
+    .field-erase-btn {
+      flex-shrink: 0;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: 1.5px solid var(--border);
+      background: var(--bg-input);
+      color: var(--text-secondary);
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all var(--ease-out);
+      line-height: 1;
+    }
+    .field-erase-btn:hover {
+      border-color: var(--orange);
+      background: rgba(255,122,0,0.08);
+      color: var(--orange);
+      transform: scale(1.08);
+    }
+    .clear-all-row {
+      margin-top: 14px;
     }
   </style>
 </head>
@@ -74,12 +108,18 @@
       <div class="form-section-title">Informações Básicas</div>
 
       <div class="form-field">
-        <label class="form-label" for="input-title">Título da Publicação</label>
+        <div class="field-label-row">
+          <label class="form-label" for="input-title">Título da Publicação</label>
+          <button type="button" class="field-erase-btn" title="Limpar título" onclick="eraseField('input-title')">🧹</button>
+        </div>
         <input type="text" id="input-title" name="new_title" class="form-input" value="{{ content.title }}" placeholder="Digite o título..." oninput="updateHeroTitle(this.value)">
       </div>
 
       <div class="form-field">
-        <label class="form-label" for="desc-textarea">Descrição</label>
+        <div class="field-label-row">
+          <label class="form-label" for="desc-textarea">Descrição</label>
+          <button type="button" class="field-erase-btn" title="Limpar descrição" onclick="eraseField('desc-textarea')">🧹</button>
+        </div>
         <textarea id="desc-textarea" name="new_desc" class="form-textarea" placeholder="Digite a descrição...">{{ content.desc }}</textarea>
       </div>
     </div>
@@ -88,7 +128,10 @@
       <div class="form-section-title">Parâmetros e Mídia</div>
 
       <div class="form-field">
-        <label class="form-label" for="content-type-select">Tipo de Conteúdo</label>
+        <div class="field-label-row">
+          <label class="form-label" for="content-type-select">Tipo de Conteúdo</label>
+          <button type="button" class="field-erase-btn" title="Limpar tipo" onclick="eraseField('content-type-select')">🧹</button>
+        </div>
         <select id="content-type-select" name="content_type" class="form-select">
           <option value="" disabled selected>Selecione um tipo...</option>
           {% for v, label, _ in content_types %}
@@ -98,7 +141,10 @@
       </div>
 
       <div class="form-field">
-        <label class="form-label">Documento PDF</label>
+        <div class="field-label-row">
+          <label class="form-label">Documento PDF</label>
+          <button type="button" class="field-erase-btn" title="Limpar PDF" onclick="eraseField('pdf-input')">🧹</button>
+        </div>
         <div class="upload-area" onclick="document.getElementById('pdf-input').click()">
           <div class="upload-area-icon">📄</div>
           <div class="upload-area-text">Clique para substituir o PDF atual</div>
@@ -109,7 +155,10 @@
       </div>
 
       <div class="form-field">
-        <label class="form-label">Alterar Capa (Banner)</label>
+        <div class="field-label-row">
+          <label class="form-label">Alterar Capa (Banner)</label>
+          <button type="button" class="field-erase-btn" title="Limpar banner personalizado" onclick="eraseField('banner-input')">🧹</button>
+        </div>
         
         <div class="sub-filter-bar" style="margin-bottom: 14px;">
           <button type="button" class="sub-filter-btn active" id="btn-tab-default" onclick="switchBannerTab('default')">
@@ -152,14 +201,59 @@
 
     </div>
 
-    <button class="btn btn-primary btn-block btn-lg" type="submit">Salvar alterações</button>
+    <button class="btn btn-primary btn-block btn-lg" type="button" onclick="openSaveConfirm()">Salvar alterações</button>
   </form>
 
   <div class="action-buttons">
-    <form method="POST" action="/delete_content/{{ content.id }}" onsubmit="return confirm('Tem certeza que deseja excluir esta publicação?');">
-      <button type="submit" class="btn btn-danger btn-block">Excluir Publicação</button>
-    </form>
+    <button type="button" class="btn btn-muted btn-block" onclick="openClearAllConfirm()">🧹 Limpar tudo</button>
+    <button type="button" class="btn btn-danger btn-block" onclick="openDeleteConfirm()">Excluir Publicação</button>
     <a href="/contents/redirect_publications" class="btn btn-muted btn-block">Cancelar</a>
+  </div>
+</div>
+
+<form id="delete-form" method="POST" action="/delete_content/{{ content.id }}" style="display: none;"></form>
+
+<div class="modal-overlay" id="save-confirm-modal">
+  <div class="modal-box">
+    <h2>Salvar alterações?</h2>
+    <p style="font-size:13px;color:var(--text-secondary);margin-top:8px;">As alterações feitas nesta publicação serão salvas e ficarão visíveis para os usuários.</p>
+    <div class="modal-buttons">
+      <button class="btn btn-muted" onclick="closeSaveConfirm()">Revisar</button>
+      <button class="btn btn-primary" onclick="confirmSave()">Sim, salvar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="erase-field-modal">
+  <div class="modal-box">
+    <h2>Limpar este campo?</h2>
+    <p style="font-size:13px;color:var(--text-secondary);margin-top:8px;">O conteúdo deste campo será apagado. Essa ação não pode ser desfeita.</p>
+    <div class="modal-buttons">
+      <button class="btn btn-muted" onclick="closeEraseFieldModal()">Cancelar</button>
+      <button class="btn btn-danger" onclick="confirmEraseField()">Sim, limpar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="clear-all-modal">
+  <div class="modal-box">
+    <h2>Limpar tudo?</h2>
+    <p style="font-size:13px;color:var(--text-secondary);margin-top:8px;">Todas as informações preenchidas neste formulário serão apagadas. Essa ação não pode ser desfeita.</p>
+    <div class="modal-buttons">
+      <button class="btn btn-muted" onclick="closeClearAllModal()">Cancelar</button>
+      <button class="btn btn-danger" onclick="confirmClearAll()">Sim, limpar tudo</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="delete-confirm-modal">
+  <div class="modal-box">
+    <h2>Excluir publicação?</h2>
+    <p style="font-size:13px;color:var(--text-secondary);margin-top:8px;">Tem certeza que deseja excluir esta publicação? Esta ação é permanente e não pode ser desfeita.</p>
+    <div class="modal-buttons">
+      <button class="btn btn-muted" onclick="closeDeleteConfirm()">Cancelar</button>
+      <button class="btn btn-danger" onclick="confirmDelete()">Sim, excluir</button>
+    </div>
   </div>
 </div>
 
@@ -248,6 +342,102 @@
       label.style.display = "block";
       input.closest(".upload-area").style.borderColor = "var(--green)";
     }
+  }
+
+  /* ═══════════ LIMPAR CAMPO (com confirmação) ═══════════ */
+  let pendingEraseFieldId = null;
+
+  function eraseField(fieldId) {
+    pendingEraseFieldId = fieldId;
+    document.getElementById("erase-field-modal").classList.add("active");
+  }
+  function closeEraseFieldModal() {
+    pendingEraseFieldId = null;
+    document.getElementById("erase-field-modal").classList.remove("active");
+  }
+  function confirmEraseField() {
+    const fieldId = pendingEraseFieldId;
+    if (fieldId) {
+      const el = document.getElementById(fieldId);
+      if (el) {
+        if (el.tagName === "SELECT") {
+          el.selectedIndex = 0;
+        } else if (el.type === "file") {
+          el.value = "";
+          if (fieldId === "pdf-input") {
+            const pdfLabel = document.getElementById("pdf-name");
+            if (pdfLabel) { pdfLabel.textContent = ""; pdfLabel.style.display = "none"; }
+          }
+          if (fieldId === "banner-input") {
+            const bannerLabel = document.getElementById("banner-name");
+            if (bannerLabel) { bannerLabel.textContent = ""; bannerLabel.style.display = "none"; }
+          }
+        } else {
+          el.value = "";
+          if (fieldId === "input-title") updateHeroTitle("");
+        }
+      }
+    }
+    closeEraseFieldModal();
+  }
+
+  /* ═══════════ LIMPAR TUDO (com confirmação) ═══════════ */
+  function openClearAllConfirm() {
+    document.getElementById("clear-all-modal").classList.add("active");
+  }
+  function closeClearAllModal() {
+    document.getElementById("clear-all-modal").classList.remove("active");
+  }
+  function confirmClearAll() {
+    document.getElementById("input-title").value = "";
+    document.getElementById("desc-textarea").value = "";
+    document.getElementById("content-type-select").selectedIndex = 0;
+
+    const pdfInput = document.getElementById("pdf-input");
+    pdfInput.value = "";
+    const pdfLabel = document.getElementById("pdf-name");
+    pdfLabel.textContent = "";
+    pdfLabel.style.display = "none";
+
+    const bannerInput = document.getElementById("banner-input");
+    bannerInput.value = "";
+    const bannerLabel = document.getElementById("banner-name");
+    bannerLabel.textContent = "";
+    bannerLabel.style.display = "none";
+
+    document.querySelectorAll('input[name="new_banner_id"]').forEach(r => r.checked = false);
+
+    const heroImg = document.getElementById("hero-img");
+    if (heroImg) { heroImg.src = ""; heroImg.style.display = "none"; }
+
+    updateHeroTitle("");
+    switchBannerTab("default");
+    closeClearAllModal();
+  }
+
+  /* ═══════════ EXCLUIR CONTEÚDO (com popup/modal) ═══════════ */
+  function openDeleteConfirm() {
+    document.getElementById("delete-confirm-modal").classList.add("active");
+  }
+  
+  function closeDeleteConfirm() {
+    document.getElementById("delete-confirm-modal").classList.remove("active");
+  }
+  
+  function confirmDelete() {
+    document.getElementById("delete-form").submit();
+  }
+
+  /* ═══════════ SALVAR ALTERAÇÕES (com confirmação) ═══════════ */
+  function openSaveConfirm() {
+    document.getElementById("save-confirm-modal").classList.add("active");
+  }
+  function closeSaveConfirm() {
+    document.getElementById("save-confirm-modal").classList.remove("active");
+  }
+  function confirmSave() {
+    closeSaveConfirm();
+    document.getElementById("edit-form").submit();
   }
 </script>
 

@@ -6,7 +6,7 @@ from flask import (
     session, flash, current_app
 )
 from flask_mail import Message
-from src.app import mail                       # Flask-Mail
+from src.extensions import mail                  # Flask-
 from src.controller.users.user_default import (
     check_user, reset_user_password, database
 )
@@ -14,6 +14,19 @@ from src.controller.users.user_default import (
 from . import forg_pass_bp
 
 # ─── Envio de e‑mail com o código ────────────────────────────────────────
+
+
+
+@forg_pass_bp.route('/test_email')
+def test_email():
+    msg = Message('Teste', recipients=['teste@exemplo.com'], body='Teste')
+    try:
+        mail.send(msg)
+        return 'Mensagem enviada ao logger (verifique o terminal)'
+    except Exception as e:
+        return f'Erro: {e}'
+        
+        
 def send_reset_email(email, code):
     """Envia o código de verificação para o e‑mail informado."""
     try:
@@ -39,13 +52,12 @@ def forgot_password():
     if not identifier:
         flash('Informe seu nome ou e‑mail.')
         return redirect(url_for('forgot_password.forgot_password'))
-
+    print(">>>>>>", identifier)
     # Determina se é e‑mail (contém @) ou nome
     if '@' in identifier:
-        user = check_user(identifier, column='email')
+        user = check_user(search=identifier.lower(), column='email')
     else:
-        user = check_user(identifier, column='name')
-
+        user = check_user(search=identifier, column='name')
     if not user:
         flash('Usuário não encontrado.')
         return redirect(url_for('auth.login'))

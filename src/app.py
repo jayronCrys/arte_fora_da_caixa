@@ -2,23 +2,24 @@ import sys
 import os
 import logging
 
+from src.extensions import load_g_user, mail
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from flask import Flask, send_from_directory
-from extensions import load_g_user
 from src.models.mongo_models.rating_models import init_mongodb
 from flask_cors import CORS
 from flask_mail import Mail
 # Blueprints
-from blueprints.auth import auth_bp
-from blueprints.auth import forg_pass_bp
-from blueprints.user import user_bp
-from blueprints.user import inscriptions_bp
-from blueprints.contents import contents_bp
-from blueprints.admin import admin_bp
-from blueprints.professor import professor_bp
+from src.blueprints.auth import auth_bp
+from src.blueprints.auth import forg_pass_bp
+from src.blueprints.user import user_bp
+from src.blueprints.user import inscriptions_bp
+from src.blueprints.contents import contents_bp
+from src.blueprints.admin import admin_bp
+from src.blueprints.professor import professor_bp
 
-mail = Mail()
+
 
 def create_app() -> Flask:
     app = Flask(
@@ -27,7 +28,16 @@ def create_app() -> Flask:
         static_folder="view/static",
     )
     CORS(app)
-    
+    app.config['MAIL_SUPPRESS_SEND'] = False          # ← remover ou False
+    app.config['MAIL_SERVER']        = 'smtp.gmail.com'
+    app.config['MAIL_PORT']          = 587
+    app.config['MAIL_USE_TLS']       = True
+    app.config['MAIL_USE_SSL']       = False
+    app.config['MAIL_USERNAME']      = 'jayronribeiro161@gmail.com'
+    app.config['MAIL_PASSWORD']      = 'nupf fufl lzqx vfua'   # senha de app, não a normal
+    app.config['MAIL_DEFAULT_SENDER'] = ('Arte Fora da Caixa', 'jayronribeiro161@gmail.com')
+
+    mail.init_app(app)
     app.secret_key = os.environ.get("FLASK_SECRET", "dev-secret")
 
     # 🌟 INICIALIZAÇÃO DO MONGO: Movido para dentro do ciclo de criação do App
@@ -68,10 +78,6 @@ if __name__ == "__main__":
         make_contents()
     except Exception as exc:
         logging.info("create_db não executado ou já existente: %s", exc)
-
     os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
-    
-    # create_app já vai rodar o init_mongodb() internamente agora!
     app = create_app()
-    mail.init_app(app)
     app.run(debug=True, port=8080, host="0.0.0.0")

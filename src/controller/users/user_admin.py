@@ -105,7 +105,16 @@ class Management_Admins(Management_User_Default):
             if name:
                 query = query.filter(User.name.ilike(f'%{name}%'))
             if permission:
-                query = query.filter(User.cred == permission)
+                try:
+                    print("PERMISSION", permission)
+                    if self.CRED_MAP[permission]:
+                        cred = self.CRED_MAP[permission]
+                    
+                    query = query.filter(User.cred == cred)
+                except Exception as E:
+                    print("PULEI PRA KA")
+                    return False
+                    
             if has_email is True:
                 query = query.filter(User.email.isnot(None))
             elif has_email is False:
@@ -235,6 +244,34 @@ class Management_Admins(Management_User_Default):
         finally:
             conn.close()
                 
+    @admin_required
+    def get_user_inscription_by_admin(self, userId):
+        """Retorna todas as inscrições de um usuário com título do conteúdo e data."""
+        from src.models.relationships_models.inscriptions import Subs
+        conn = self.dataBase()
+        try:
+            rows = (
+                conn.query(Subs, Contents)
+                .join(Contents, Subs.content_id == Contents.id)
+                .filter(Subs.student_id == uuid.UUID(userId))
+                .order_by(Subs.creation_date.desc())
+                .all()
+            )
+            result = []
+            for sub, content in rows:
+                result.append({
+                    "content_id": str(content.id),
+                    "content_title": content.title,
+                    "inscription_date": sub.creation_date,
+                    "is_favorite": sub.is_favorite,
+                })
+            return result
+        except Exception as e:
+            logger.error(f"Erro ao buscar inscrições do usuário {userId}: {e}")
+            return []
+        finally:
+            conn.close()
+
     #____________________USERS_REVIEWS_________________________
     @admin_required
     def get_comment_by_admin(self, contentId):

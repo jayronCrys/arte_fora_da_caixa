@@ -1,6 +1,6 @@
 import logging
 
-from flask import g, redirect, render_template, request, session, url_for, jsonify
+from flask import g, redirect, render_template, request, session, url_for, jsonify, flash
 
 from src.controller.users.user_default import Create_Account, check_user
 
@@ -106,26 +106,30 @@ def admin_search_users():
 @admin_bp.route("/admin/create", methods=["POST"])
 def admin_create_user():
     if not _is_admin():
-        return redirect(url_for("auth.login"))
+        return jsonify({"success": False, "error": "Acesso negado."}), 403
 
-    nome = request.form.get("nome")
+    nome = request.form.get("nome", "").strip()
     cred = request.form.get("cred")
     senha = request.form.get("password")
     confirm = request.form.get("confirm")
-    
-    if not senha or not nome:
-        return render_template("admin_page.html", error="todos os campos são obrigatórios"), 400
-        
+
+    if not nome or not senha or not confirm:
+        return jsonify({"success": False, "error": "Todos os campos são obrigatórios."}), 400
+
     if senha != confirm:
-        return render_template("admin_page.html", error="senhas não coincidem"), 400
+        return jsonify({"success": False, "error": "As senhas não coincidem."}), 400
+
+    if len(senha) < 6:
+        return jsonify({"success": False, "error": "A senha deve ter no mínimo 6 caracteres."}), 400
 
     if check_user(nome):
-        return render_template("admin_page.html", error="O nome de usuário já está sendo utilizado"), 400
+        return jsonify({"success": False, "error": "O nome de usuário já está cadastrado."}), 400
 
-    if g.user.create_user_by_admin(nome, senha,cred):
-        logging.info("Usuário %s criado pelo admin", nome)
+    if not g.user.create_user_by_admin(nome, senha, cred):
+        return jsonify({"success": False, "error": "Erro ao criar usuário. Tente novamente."}), 500
 
-    return redirect(url_for("admin.admin_page"))
+    logging.info("Usuário %s criado pelo admin", nome)
+    return jsonify({"success": True, "message": f"Usuário '{nome}' criado com sucesso."}), 200
 
 
 @admin_bp.route("/admin/edit/<user_id>", methods=["GET", "POST"])

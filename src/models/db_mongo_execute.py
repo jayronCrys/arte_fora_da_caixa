@@ -101,23 +101,52 @@ def get_reviews(course_id):
         "average_rating": 0.0,
         "total_reviews": 0,
         "total_inscriptions": 0,
-        "sums_reviews": 0, # Garante que a chave sempre exista
+        "sums_reviews": 0,
     }
     try:
         course_stats_col = rating_models.get_course_stats_col()
         resultado = course_stats_col.find_one({"course_id": str(course_id)})
         if resultado:
-            # Mescla os dados do banco por cima dos padrões de forma segura
             stats.update(resultado)
-            
-            # Remove o ObjectId para evitar erros caso decida transformar em JSON depois
-            stats.pop("_id", None) 
-            
+            stats.pop("_id", None)
     except Exception as e:
         print(f"🚨 O MOTIVO DO EXCEPT É: {type(e).__name__} - {e}, {type(course_id)}")
         return stats
-        
     return stats
+
+
+def get_reviews_bulk(course_ids: list) -> dict:
+    """
+    Busca stats de múltiplos cursos em UMA única query MongoDB.
+    Retorna dict keyed by course_id: { course_id: stats_dict }
+    Substitui N chamadas a get_reviews() por 1 chamada só.
+    """
+    _default = lambda: {
+        "average_rating": 0.0,
+        "total_reviews": 0,
+        "total_inscriptions": 0,
+        "sums_reviews": 0,
+    }
+    if not course_ids:
+        return {}
+    try:
+        course_stats_col = rating_models.get_course_stats_col()
+        ids_str = [str(cid) for cid in course_ids]
+        cursor = course_stats_col.find({"course_id": {"$in": ids_str}})
+        result = {}
+        for doc in cursor:
+            cid = doc.get("course_id")
+            doc.pop("_id", None)
+            result[cid] = doc
+        # Garante que cursos sem stats retornam defaults
+        for cid in ids_str:
+            if cid not in result:
+                result[cid] = _default()
+        return result
+    except Exception as e:
+        print(f"🚨 Erro em get_reviews_bulk: {e}")
+        ids_str = [str(cid) for cid in course_ids]
+        return {cid: _default() for cid in ids_str}
 
 
 def get_comments(course_id, page=1, number_to_page=5, moderated=True):
