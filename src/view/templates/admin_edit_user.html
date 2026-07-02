@@ -484,7 +484,8 @@
         <div id="panel-dados" class="edit-panel active">
             
             <form id="form-edit-user" method="POST" enctype="multipart/form-data">
-                <div class="avatar-row">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="avatar-row">
                     <img id="avatar-preview" class="avatar-img"
                          src="{{ url_for('static', filename=user.picture) if user.picture else url_for('static', filename='default_profile.png') }}"
                          alt="Avatar de {{ user.name }}">
@@ -535,7 +536,9 @@
                 </div>
             </form>
 
-            <form id="form-delete-user" action="{{ url_for('admin.admin_delete_user', user_id=user.id) }}" method="POST" style="display: none;"></form>
+            <form id="form-delete-user" action="{{ url_for('admin.admin_delete_user', user_id=user.id) }}" method="POST" style="display: none;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+</form>
 
             <div class="form-actions-bar">
                 <button type="button" class="btn btn-primary" onclick="openConfirmModal('save')">

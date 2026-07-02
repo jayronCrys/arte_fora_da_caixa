@@ -5,22 +5,21 @@ import logging
 import os
 
 logger = logging.getLogger(__name__)
+CLIENT_SECRET = os.getenv("GOOGLE_KEY")
+CLIENT_ID = os.getenv("GOOGLE_USER")
 
-CLIENT_ID = "807683116571-e7a4d5hcfqb8udlsf99rfnoqfbrupuem.apps.googleusercontent.com"
- 
 def google_config(redirect_by):
     try:
-        CLIENT_SECRET = "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"
-        CLIENT_ID_ENV = CLIENT_ID
+        
         SCOPES = ["https://www.googleapis.com/auth/userinfo.email",
                   "https://www.googleapis.com/auth/userinfo.profile",
                   "openid"]
 
-        if CLIENT_SECRET and CLIENT_ID_ENV:
+        if CLIENT_SECRET and CLIENT_ID:
             redirect_uri = url_for(redirect_by, _external=True)
             client_config = {
                 "web": {
-                    "client_id": CLIENT_ID_ENV,
+                    "client_id": CLIENT_ID,
                     "client_secret": CLIENT_SECRET,
                     "auth_uri": "https://accounts.google.com/o/oauth2/auth",
                     "token_uri": "https://oauth2.googleapis.com/token",

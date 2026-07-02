@@ -1,18 +1,17 @@
+from flask_wtf.csrf import generate_csrf
 import logging
 import os
 from datetime import datetime
 
 from flask import (
-    abort, current_app, g, redirect, render_template,
+    abort, current_app, flash, g, redirect, render_template,
     request, send_file, session, url_for, jsonify
 )
 
 from src.models.database import get_session
 from . import contents_bp
-from src.view.configs.statics_configs import CONTENT_TYPES, DEFAULT_BANNERS
-
-
-
+from Configs.banners import DEFAULT_BANNERS
+from Configs.contents_types import CONTENT_TYPES
 
 from functools import lru_cache
 from datetime import datetime, timedelta
@@ -135,20 +134,72 @@ def _return_comment_by_cred(contentId):
         logging.error("Erro ao obter comentários: %s", e)
         return []
 
-def _render_contents_error(msg, active_tab="publish-content-view"):
+def _build_full_contents_context(active_tab="all-courses", page=1, per_page=12):
+    """
+    Monta o mesmo conjunto de variáveis que a rota `contents()` passa ao
+    template. Centralizado aqui para que QUALQUER rota que precise
+    re-renderizar `contents.html` (ex.: em caso de erro) sempre tenha o
+    contexto completo — evitando UndefinedError no Jinja por variáveis
+    ausentes (ex.: iterar `enrolled_contents` ou comparar `total_pages`
+    quando essas chaves não foram passadas ao template).
+    """
     try:
-        items = g.user.get_all_contents()
-        publications = _pub_items() if _cred() in _PUBLISHER_CREDS else []
-    except Exception:
-        items, publications = [], []
-    return render_template(
-        "contents.html",
-        error=msg,
+        result = g.user.GET_FULL_CONTENT(
+            all_contents=True,
+            content_to_select=None,
+            review=True,
+            limit=per_page,
+            offset=(page - 1) * per_page,
+        )
+        items = result["items"] if result else []
+        total_items = result["total"] if result else 0
+    except Exception as exc:
+        logging.error("Erro ao carregar conteúdos para contexto de fallback: %s", exc)
+        items, total_items = [], 0
+
+    total_pages = max(1, (total_items + per_page - 1) // per_page)
+
+    try:
+        enrolled_contents = (
+            g.user.get_my_courses_cached()
+            if hasattr(g.user, "get_my_courses_cached")
+            else g.user.get_my_courses()
+        ) or []
+    except Exception as exc:
+        logging.error("Erro ao carregar cursos inscritos para contexto de fallback: %s", exc)
+        enrolled_contents = []
+
+    last_accessed = None
+    last_id = session.get("last_accessed_id")
+    if last_id:
+        last_accessed = {
+            "id": last_id,
+            "title": session.get("last_accessed_title", ""),
+            "banner": session.get("last_accessed_banner", ""),
+            "content_type": session.get("last_accessed_type", ""),
+        }
+
+    pub_items = _pub_items() if _cred() in _PUBLISHER_CREDS else []
+
+    return dict(
         contents=items,
-        publications=publications,
+        enrolled_contents=enrolled_contents,
+        publications=pub_items,
+        pub_items=pub_items,
+        last_accessed=last_accessed,
         active_tab=active_tab,
+        page=page,
+        per_page=per_page,
+        total_pages=total_pages,
+        total_items=total_items,
         **tpl_ctx,
     )
+
+
+def _render_contents_error(msg, active_tab="publish-content-view"):
+    context = _build_full_contents_context(active_tab=active_tab)
+    context["error"] = msg
+    return render_template("contents.html", **context)
 
 # ── Redirecionamentos simples ─────────────────────────────────────────────────
 @contents_bp.route("/home")
@@ -181,6 +232,10 @@ def redirect_publish_content():
 def redirect_get_publications():
     return redirect(url_for("contents.contents", tab="my-publications-view",
                             _anchor="publications-section"))
+                            
+@contents_bp.route("/redirect_about", methods=["POST", "GET"])
+def redirect_about():
+    return redirect(url_for("contents.contents",tab="about-section",  _anchor="about-section"))
 
 # ── ROTA PRINCIPAL (SPA) ─────────────────────────────────────────────────────
 
@@ -200,7 +255,7 @@ def get_publications():
 def content_buss(content_id):
     if not content_id:
         abort(404)
-
+    print(generate_csrf())
     try:
         my_courses = g.user.get_my_courses()
     except Exception as exc:
@@ -222,6 +277,7 @@ def content_buss(content_id):
         return render_template("content_preview.html", content=content, my_courses=my_courses)
 
     if request.method == "POST":
+        print(generate_csrf())
         content = g.user.GET_FULL_CONTENT(all_contents=False, content_to_select=content_id, review=True)
         if not content:
             abort(404)
@@ -392,7 +448,7 @@ def publish_content():
     if _cred() == "admin":
         author_name = request.form.get("author")
         author_obj = g.user.get_user_by_username(author_name)
-        if author_obj and author_obj.get("name") == author_name:
+        if author_obj and author_obj.get("name") == author_name and author_obj.get("cred") in _PUBLISHER_CREDS:
             author = author_obj["name"]
             upload = g.user.publish_content_by_admin(content, author)
     else:
@@ -492,7 +548,7 @@ def edit_content(content_id):
 
     if action:
         get_session().expire_all()
-        return render_template("exito.html")
+        return render_template("content_preview.html")
 
     return _render_edit()
 
@@ -561,17 +617,38 @@ def ocult_user_review(content_id, comment_id):
         
     if not comment_id or not content_id:
         return False
-    print(f"[OCULT_REVIEW]: content id {content_id} %%% comment id {comment_id}")        
+
+    susp = False
     if _cred() == "admin":
         susp = g.user.suspended_comment_by_admin(content_id, comment_id)
-        
     if _cred() == "professor":
         susp = g.user.suspended_comment_by_professor(content_id, comment_id)
-        
-    if susp:
-        return redirect(url_for("contents.content_buss", content_id=content_id))
 
-    return redirect(url_for("contents.content_buss", content_id=content_id)), 404
+    if not susp:
+        flash("Não foi possível ocultar o comentário.")
+
+    return redirect(url_for("contents.content_buss", content_id=content_id))
+
+
+@contents_bp.route("/contents/unhide_user_review/<content_id>/<comment_id>", methods=["POST"])
+def unhide_user_review(content_id, comment_id):
+    if _cred() not in ["admin", "professor"]:
+        return redirect(url_for("auth.login"))
+
+    if not comment_id or not content_id:
+        return False
+
+    unhidden = False
+    if _cred() == "admin":
+        unhidden = g.user.unhide_comment_by_admin(content_id, comment_id)
+
+    if _cred() == "professor":
+        unhidden = g.user.unhide_comment_by_professor(content_id, comment_id)
+
+    if not unhidden:
+        flash("Não foi possível desocultar o comentário.")
+
+    return redirect(url_for("contents.content_buss", content_id=content_id))
 
 
 @contents_bp.route("/contents/delete_my_review/<content_id>/<comment_id>", methods=["POST"])
@@ -590,20 +667,24 @@ def delete_my_review(content_id, comment_id):
 
 
 @contents_bp.route("/contents/delete_user_review/<content_id>/<comment_id>", methods=["POST"])
-def delete_user_review(content_id, comment_id):    
+def delete_user_review(content_id, comment_id):
+    print("sou chamado")
     if _cred() not in ["admin", "professor"]:
+        print("nao sou nada")
         return redirect(url_for("auth.login"))
         
     if not comment_id or not content_id:
+        print("alugem nao existe")
         return False
-        
+
+    delete = False
     if _cred() == "admin":
         delete = g.user.delete_comment_by_admin(content_id, comment_id)
-        
     if _cred() == "professor":
+        print("deletareis")
         delete = g.user.delete_comment_by_professor(content_id, comment_id)
-        
-    if delete:
-        return redirect(url_for("contents.content_buss", content_id=content_id))
-        
-    return redirect(url_for("contents.content_buss", content_id=content_id)), 404
+
+    if not delete:
+        flash("Não foi possível apagar o comentário.")
+
+    return redirect(url_for("contents.content_buss", content_id=content_id))

@@ -275,7 +275,7 @@ class Login_Account:
             user_exist = check_user(user_name_in, self.dataBase)
             if not user_exist:
                 user_email_in = self.user.get("name")
-                user_exist = check_user(search=user_email_in, dataBase=self.dataBase, column="email")#necwssario caso o usuario tente logar usando email pela barra de nomr
+                user_exist = check_user(search=user_email_in.lower(), dataBase=self.dataBase, column="email")#necwssario caso o usuario tente logar usando email pela barra de nomr
 
             if user_exist and compare(user_pass_in, user_exist.get("password")):
                 logger.info("Usuário validado com sucesso.")
@@ -344,11 +344,16 @@ class Management_User_Default(Login_Account):
 
     @Login_Account.is_loged
     def update_user(self, field: str, newValue1, newValue2=None) -> bool:
-        if field not in self.manager_fields:
+        if field not in self.manager_fields or not newValue1:
             return False
 
         conn = self.dataBase()
-
+        if field == "email": 
+            if check_user(newValue1, self.dataBase, field):
+                logger.warning("email já utilizado.")
+                conn.close()
+                return False
+            
         if field == "name":
             checker = Create_Account(self.dataBase)
             if not checker.create_user_name(newValue1):
@@ -408,19 +413,80 @@ class Management_User_Default(Login_Account):
             conn.close()
 
     @Login_Account.is_loged            
-    def get_my_courses(self) -> list: 
+    def get_my_courses(self) -> list:
+        """
+        Retorna os cursos em que o usuário está inscrito.
+        Otimizado para evitar N+1: antes fazia uma consulta ao banco + uma
+        chamada ao MongoDB POR curso inscrito. Agora faz 1 consulta SQL em
+        lote (IN) + 1 chamada em lote ao MongoDB, independente de quantos
+        cursos o usuário tenha.
+        """
         inscriptions = self.my_inscriptions()
         if not inscriptions:
             return []
-            
-        my_courses = []
-        for inscription in inscriptions:
-            content_id = inscription["content_id"]
-            course = self.GET_FULL_CONTENT(all_contents=False, content_to_select=content_id, review=True)
-            if course and len(course) > 0:
-                my_courses.append(course[0])
-                    
-        return my_courses
+
+        content_ids_raw = [str(i["content_id"]) for i in inscriptions]
+
+        conn = self.dataBase()
+        try:
+            rows = conn.query(Contents).filter(
+                Contents.id.in_([UUID(cid) for cid in content_ids_raw])
+            ).all()
+            contents_by_id = {
+                str(c.id): {
+                    "id":            str(c.id),
+                    "title":         c.title,
+                    "desc":          c.desc,
+                    "banner":        c.banner,
+                    "content_type":  c.content_type,
+                    "author":        c.author,
+                    "creation_date": c.creation_date,
+                    "publisher_id":  str(c.publisher_id),
+                    "s3_uuid":       c.s3_uuid,
+                    "total_paginas": c.total_paginas,
+                } for c in rows
+            }
+        except Exception as e:
+            logger.error(f"Erro ao buscar conteúdos das inscrições em lote: {e}")
+            return []
+        finally:
+            conn.close()
+
+        if not contents_by_id:
+            return []
+
+        all_stats = get_reviews_bulk(list(contents_by_id.keys()))
+        for content_id, content in contents_by_id.items():
+            content["rating"] = all_stats.get(content_id, {
+                "average_rating": 0.0,
+                "total_reviews": 0,
+                "total_inscriptions": 0,
+                "sums_reviews": 0,
+            })
+            if content.get("s3_uuid") and not content.get("url_base_s3"):
+                content["url_base_s3"] = build_pages_base_url(content["s3_uuid"])
+
+        # Preserva a ordem original das inscrições.
+        return [
+            contents_by_id[cid] for cid in content_ids_raw if cid in contents_by_id
+        ]
+
+    @Login_Account.is_loged
+    def get_my_courses_cached(self, ttl=600):
+        """
+        Wrapper com cache em memória (TTL) sobre get_my_courses(). Corrigido:
+        antes estava com indentação incorreta (definido dentro do corpo de
+        GET_FULL_CONTENT, após seus `return`), o que o tornava código morto —
+        nunca era de fato um método da classe, e por isso o cache nunca
+        chegava a ser usado.
+        """
+        cache_key = f"my_courses_{self.userId}"
+        cached = self._cache_get(cache_key, ttl)
+        if cached is not None:
+            return cached
+        courses = self.get_my_courses()
+        self._cache_set(cache_key, courses)
+        return courses
         
     @Login_Account.is_loged   
     def get_content_by_id(self, contentId: str):
@@ -447,7 +513,6 @@ class Management_User_Default(Login_Account):
         finally:
             conn.close()
 
-    @Login_Account.is_loged
     @Login_Account.is_loged
     def get_all_contents(self, limit=None, offset=None,
                          search=None, content_type=None,
@@ -552,7 +617,6 @@ class Management_User_Default(Login_Account):
             conn.close()
 
     @Login_Account.is_loged
-    @Login_Account.is_loged
     def GET_FULL_CONTENT(self, all_contents=False, content_to_select=None, review=False,
                          limit=None, offset=None, search=None, content_type=None,
                          popularity=None, sort=None) -> Union[list, dict, bool]:
@@ -596,17 +660,7 @@ class Management_User_Default(Login_Account):
         if all_contents and content_to_select is None:
             return {"items": full_content, "total": total}
         return full_content
-                
-        @Login_Account.is_loged
-        def get_my_courses_cached(self, ttl=600):
-            cache_key = f"my_courses_{self.userId}"
-            cached = self._cache_get(cache_key, ttl)
-            if cached is not None:
-                return cached
-            courses = self.get_my_courses()
-            self._cache_set(cache_key, courses)
-            return courses
-        
+
     @Login_Account.is_loged
     def get_content_download_url(self, contentId: str):
         content = self.get_content_by_id(contentId)

@@ -9,7 +9,7 @@ from src.models.analytics import platform_global_analytics, analytics, general_a
 from src.models.passwords import compare_password as compare
 from src.models.contents_models.content_models import Contents
 from src.models.users_models.user_models import User, UserCred
-from src.models.db_mongo_execute import delete_comment, get_comment_by_id, suspend_comment
+from src.models.db_mongo_execute import delete_comment, get_comment_by_id, suspend_comment, unhide_comment
 from src.controller.storage.s3_content_storage import (
     create_content_storage,
     replace_content_pdf,
@@ -105,15 +105,12 @@ class Management_Admins(Management_User_Default):
             if name:
                 query = query.filter(User.name.ilike(f'%{name}%'))
             if permission:
-                try:
-                    print("PERMISSION", permission)
-                    if self.CRED_MAP[permission]:
-                        cred = self.CRED_MAP[permission]
-                    
-                    query = query.filter(User.cred == cred)
-                except Exception as E:
-                    print("PULEI PRA KA")
+                cred = self.CRED_MAP.get(permission)
+                if not cred:
+                    logger.warning(f"Permissão inválida recebida em all_users: {permission!r}")
                     return False
+                logger.debug(f"Filtrando usuários por permissão: {permission}")
+                query = query.filter(User.cred == cred)
                     
             if has_email is True:
                 query = query.filter(User.email.isnot(None))
@@ -289,6 +286,18 @@ class Management_Admins(Management_User_Default):
         except Exception as e:
             logger.error(f"Erro ao suspender comentário {commentId}: {e}")
             return False
+
+    @admin_required
+    def unhide_comment_by_admin(self, contentId, commentId):
+        if not self.get_content_by_id(contentId):
+            return False
+        if not get_comment_by_id(contentId, commentId):
+            return False
+        try:
+            return bool(unhide_comment(contentId, commentId))
+        except Exception as e:
+            logger.error(f"Erro ao desocultar comentário {commentId}: {e}")
+            return False
             
     @admin_required
     def delete_comment_by_admin(self, contentId, commentId):
@@ -447,7 +456,7 @@ class Management_Admins(Management_User_Default):
     #___________________ANALYTICS________________________ 
     @admin_required
     def get_content_analytics_by_admin(self, contentId):
-        print("<>"*10, contentId)
+        logger.debug(f"Coletando analytics do conteúdo {contentId} (admin)")
         if not self.get_content_by_admin(contentId):
             return False
         try:            
@@ -461,18 +470,18 @@ class Management_Admins(Management_User_Default):
         if not userName:
             return []
         conn = self.dataBase()
-        results = conn.query(User).filter_by(name=userName).all()
-        if not results:
-            results = conn.query(User).filter(User.name.contains(userName)).all()
-        temp_list = []
-        for result in results:
-            temp_json = {
-                "id": str(result.id),
-                "name": result.name,
-                "email": result.email
-            }
-            temp_list.append(temp_json)
-        return temp_list
+        try:
+            results = conn.query(User).filter(User.name.ilike(f"%{userName}%")).all()
+            logger.info(f"Busca de usuários por nome '{userName}' retornou {len(results)} resultado(s).")
+            return [
+                {"id": str(result.id), "name": result.name, "email": result.email}
+                for result in results
+            ]
+        except Exception as e:
+            logger.error(f"Erro ao buscar usuários por nome '{userName}': {e}")
+            return []
+        finally:
+            conn.close()
                     
     @admin_required
     def get_professor_analytics(self, professor_name):

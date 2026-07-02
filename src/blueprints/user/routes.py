@@ -3,13 +3,19 @@ import os
 import uuid
 
 from flask import (
-    current_app, flash, g, redirect, render_template, request, session, url_for
+    current_app,
+    flash, g,
+    redirect,
+    render_template,
+    request, session,
+    url_for
 )
 
 from src.controller.users.user_default import Login_Account, check_user
 from src.extensions import convert_heic_to_jpeg, make_session_from_dbuser
-from .inscriptions import get_my_courses
 from . import user_bp
+
+logger = logging.getLogger(__name__)
 
 
 def _require_login():
@@ -24,27 +30,33 @@ def _require_login():
 
 @user_bp.route("/user")
 def user():
-    print("user ativo")
+    guard = _require_login()
+    if guard:
+        return guard
+
     if getattr(g, "user", None):
         try:
             user_data = g.user.get_user()
         except Exception:
             user_data = session.get("user")
+
+        enrolled_courses = g.user.get_my_courses()
     else:
         user_data = session.get("user")
-    
-    enrolled_courses = g.user.get_my_courses()
-    
-    if enrolled_courses is (None or False):
+        enrolled_courses = None
+
+    if not enrolled_courses:
         total_courses = 0
-        print("tudo isso okha")
-    
+        enrolled_courses = []
     else:
-        print("amigo nao tem nada eu acho", enrolled_courses)
         total_courses = len(enrolled_courses)
-        print(total_courses)
-        
-    return render_template("user_page.html", session_user=user_data, total_courses=total_courses, enrolled_courses=enrolled_courses)
+
+    return render_template(
+        "user_page.html",
+        session_user=user_data,
+        total_courses=total_courses,
+        enrolled_courses=enrolled_courses,
+    )
 
 
 @user_bp.route("/edit_user", methods=["POST"])
@@ -62,7 +74,7 @@ def edit_user():
         try:
             ok = g.user.update_user(field="name", newValue1=new_name.strip())
         except Exception as exc:
-            logging.exception("Erro ao atualizar nome: %s", exc)
+            logger.exception("Erro ao atualizar nome: %s", exc)
         if not ok:
             flash("Erro ao atualizar nome.")
             return redirect(url_for("user.user"))
@@ -83,7 +95,7 @@ def edit_user():
             try:
                 new_image.save(temp_path)
             except Exception as exc:
-                logging.exception("Erro ao salvar HEIC temporário: %s", exc)
+                logger.exception("Erro ao salvar HEIC temporário: %s", exc)
                 flash("Erro ao processar imagem HEIC.")
                 return redirect(url_for("user.user"))
 
@@ -102,7 +114,7 @@ def edit_user():
             try:
                 new_image.save(filepath)
             except Exception as exc:
-                logging.exception("Erro ao salvar arquivo: %s", exc)
+                logger.exception("Erro ao salvar arquivo: %s", exc)
                 flash("Erro ao salvar imagem.")
                 return redirect(url_for("user.user"))
             public_url = f"/profile_images/{original_filename}"
@@ -116,9 +128,17 @@ def edit_user():
         flash("Perfil atualizado com sucesso.")
         return render_template("user_page.html")
 
+    # Nem nome nem imagem foram enviados.
+    flash("Nenhuma alteração enviada.")
+    return redirect(url_for("user.user"))
 
-@user_bp.route("/edit_user/delete_picture", methods=["POST", "GET"])
+
+@user_bp.route("/edit_user/delete_picture", methods=["POST"])
 def delete_picture():
+    guard = _require_login()
+    if guard:
+        return guard
+
     img_path = session.get("picture")
     if not img_path or not img_path.startswith("/profile_images/"):
         return render_template("user_page.html")
@@ -133,7 +153,7 @@ def delete_picture():
                 session["picture"] = g.user.picture
                 return render_template("exito.html")
         except Exception as exc:
-            logging.error("Erro ao apagar imagem: %s", exc)
+            logger.error("Erro ao apagar imagem: %s", exc)
 
     return render_template("user_page.html")
 
@@ -164,7 +184,7 @@ def change_password():
     try:
         ok = g.user.update_user(field="password", newValue1=new_password, newValue2=confirm_password)
     except Exception as exc:
-        logging.exception("Erro ao atualizar senha: %s", exc)
+        logger.exception("Erro ao atualizar senha: %s", exc)
         flash("Erro ao atualizar senha.")
         return redirect(url_for("user.change_password"))
 
@@ -173,11 +193,11 @@ def change_password():
         return redirect(url_for("user.change_password"))
 
     try:
-        updated = check_user(g.user.userId, collumn="id")
+        updated = check_user(g.user.userId, column="id")
         updated_dict = dict(updated) if not isinstance(updated, dict) else updated
         make_session_from_dbuser(updated_dict)
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.error("Erro ao atualizar sessão após troca de senha: %s", exc)
 
     flash("Senha alterada com sucesso!")
     return redirect(url_for("user.user"))
@@ -220,6 +240,6 @@ def delete_account_page():
         flash("Conta excluída com sucesso.")
         return redirect(url_for("auth.login"))
     except Exception as exc:
-        logging.exception("Erro ao excluir conta: %s", exc)
+        logger.exception("Erro ao excluir conta: %s", exc)
         flash("Erro ao excluir conta. Tente novamente.")
         return redirect(url_for("user.delete_account_page"))

@@ -206,12 +206,15 @@
             <form method="POST" action="/login">
                 <div class="form-field">
                     <label class="form-label">Usuário</label>
+                    
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <input type="text" name="name" class="form-input" placeholder="Digite seu usuário" required>
                 </div>
 
                 <div class="form-field">
                     <label class="form-label">Senha</label>
                     <div class="password-container">
+                     
                         <input type="password" name="password" id="login-password" class="form-input" placeholder="Digite sua senha" required>
                         <button type="button" class="toggle-password" onclick="togglePassword('login-password')">👁️</button>
                     </div>
@@ -245,6 +248,7 @@
                 <button type="button" class="close-btn" onclick="closeForgotModal()">&times;</button>
             </div>
             <form action="{{ url_for('forgot_password.forgot_password') }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="modal-body">
                     <p>Digite o seu <strong>Nome de Usuário</strong> ou <strong>E-mail</strong> cadastrado para iniciarmos a recuperação.</p>
                     <div class="form-field" style="margin-bottom: 0;">

@@ -3,6 +3,28 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+<script>
+  window.getCSRFToken = function () {
+    return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+  };
+
+  (function () {
+    const originalFetch = window.fetch;
+    window.fetch = function (resource, options = {}) {
+      const method = (options.method || 'GET').toUpperCase();
+      const isStateChanging = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method);
+      const url = typeof resource === 'string' ? resource : resource.url;
+      const isSameOrigin = url.startsWith('/') || url.startsWith(window.location.origin);
+
+      if (isStateChanging && isSameOrigin) {
+        options.headers = { ...(options.headers || {}), 'X-CSRFToken': window.getCSRFToken() };
+      }
+      return originalFetch(resource, options);
+    };
+  })();
+</script>
   <title>{% block title %}Arte Fora da Caixa{% endblock %}</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">

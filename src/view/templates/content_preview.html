@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+
     <title>{{ content.title or 'Visualizar Conteúdo' }} - Arte Fora da Caixa</title>
 
     <!-- Google Fonts -->
@@ -588,11 +590,13 @@
 
         <!-- CTA -->
         <div class="cta-section">
+        
             <button id="btn-subscribe-toggle" class="btn btn-primary btn-block btn-lg" onclick="handleSubscribeToggle()">
                 🚀 Inscrever-se nesse curso
             </button>
 
             <form id="form-view-course" method="POST" action="{{ url_for('contents.select_content', content_id=content.id) }}" style="display: none; margin-top: 12px;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="btn btn-primary btn-block">📖 Acessar Curso</button>
             </form>
 
@@ -687,6 +691,7 @@
                     <div class="comment-actions">
                         <button type="button" class="btn-action btn-action-edit" onclick="scrollToReviewForm()">✏️ Editar</button>
                         <form action="{{ url_for('contents.delete_my_review', content_id=content.id, comment_id=ns_comment.my_comment._id) }}" method="POST" style="display:inline;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="btn-action btn-action-delete">🗑️ Excluir</button>
                         </form>
                     </div>
@@ -713,9 +718,11 @@
                             {% if g.user and g.user.cred in ['admin', 'professor'] %}
                             <div class="comment-actions">
                                 <form action="{{ url_for('contents.delete_user_review', content_id=content.id, comment_id=comment._id) }}" method="POST" onsubmit="return confirm('Apagar este comentário?');">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <button type="submit" class="btn-action btn-action-delete">🚨 Apagar</button>
                                 </form>
                                 <form action="{{ url_for('contents.ocult_user_review', content_id=content.id, comment_id=comment._id|string) }}" method="POST" onsubmit="return confirm('Ocultar este comentário?');">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <button type="submit" class="btn-action btn-action-hide">👁️ Ocultar</button>
                                 </form>
                             </div>
@@ -755,10 +762,12 @@
                     {% if g.user and g.user.cred in ['admin', 'professor'] %}
                     <div class="comment-actions">
                         <form action="{{ url_for('contents.unhide_user_review', content_id=content.id, comment_id=comment._id|string) }}" method="POST" onsubmit="return confirm('Deseja desocultar este comentário e torná-lo público novamente?');" style="display:inline;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="btn-action btn-action-edit">👁️ Desocultar</button>
                         </form>
                         
                         <form action="{{ url_for('contents.delete_user_review', content_id=content.id, comment_id=comment._id) }}" method="POST" onsubmit="return confirm('Apagar permanentemente?');" style="display:inline;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="btn-action btn-action-delete">🚨 Apagar</button>
                         </form>
                     </div>
@@ -777,7 +786,25 @@
         © {{ now.year if now else '2026' }} Arte Fora da Caixa — Todos os direitos reservados
     </footer>
 
-    <script>
+<script>
+    window.getCSRFToken = function () {
+        return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    };
+
+    (function () {
+        const originalFetch = window.fetch;
+        window.fetch = function (resource, options = {}) {
+            const method = (options.method || 'GET').toUpperCase();
+            const isStateChanging = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method);
+            const url = typeof resource === 'string' ? resource : resource.url;
+            const isSameOrigin = url.startsWith('/') || url.startsWith(window.location.origin);
+
+            if (isStateChanging && isSameOrigin) {
+                options.headers = { ...(options.headers || {}), 'X-CSRFToken': window.getCSRFToken() };
+            }
+            return originalFetch(resource, options);
+        };
+    })();
         const contentId = "{{ content.id }}";
         const contentTitle = "{{ content.title|e or 'Sem Título' }}";
 
@@ -863,18 +890,20 @@
             if (isSubscribed()) {
                 openModal('Desinscrever-se', `Tem certeza que deseja se <strong>desinscrever</strong> do curso "<em>${escapeHTML(contentTitle)}</em>"?`, 'Sim, desinscrever', 'btn-muted', () => {
                     fetch(`/unsubscribe/${contentId}`, { method: 'POST' })
-                    .then(response => {
-                        if (response.ok) { setSubscribedState(false); showToast(`Você se desinscreveu do curso.`, 'warning'); }
-                        else { showToast('Erro ao processar sua desinscrição.', 'warning'); }
+                    .then(response => response.json().then(data => ({ ok: response.ok, data })))
+                    .then(({ ok, data }) => {
+                        if (ok && data.success) { setSubscribedState(false); showToast(`Você se desinscreveu do curso.`, 'warning'); }
+                        else { showToast(data.error || 'Erro ao processar sua desinscrição.', 'warning'); }
                     })
                     .catch(() => showToast('Erro de conexão com o servidor.', 'warning'));
                 });
             } else {
                 openModal('Confirmar inscrição', `Tem certeza que deseja se <strong>inscrever</strong> no curso "<em>${escapeHTML(contentTitle)}</em>"?`, 'Sim, inscrever-me', 'btn-primary', () => {
                     fetch(`/subscribe/${contentId}`, { method: 'POST' })
-                    .then(response => {
-                        if (response.ok) { setSubscribedState(true); showToast(`Inscrição confirmada! ✅`, 'success'); }
-                        else { showToast('Conteúdo não encontrado ou erro na inscrição.', 'warning'); }
+                    .then(response => response.json().then(data => ({ ok: response.ok, data })))
+                    .then(({ ok, data }) => {
+                        if (ok && data.success) { setSubscribedState(true); showToast(`Inscrição confirmada! ✅`, 'success'); }
+                        else { showToast(data.error || 'Conteúdo não encontrado ou erro na inscrição.', 'warning'); }
                     })
                     .catch(() => showToast('Erro de conexão com o servidor.', 'warning'));
                 });

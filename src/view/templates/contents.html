@@ -15,32 +15,31 @@
        NAVEGAÇÃO GLOBAL
     ══════════════════════════════════════════ */
     .nav-tabs-global {
-      background: var(--bg-card);
-      display: flex;
-      justify-content: flex-start;
-      gap: 2px;
-      padding: 0 8px;
-      border-bottom: 1px solid var(--border-light);
-      flex-wrap: nowrap;
-      width: 100%;
-      overflow-x: auto;
-    }
-    .nav-tab-item {
-      flex: 0 0 auto;
-      text-align: center;
-      padding: 14px 16px;
-      font-family: var(--font-display);
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text-secondary);
-      cursor: pointer;
-      border: none;
-      background: transparent;
-      border-bottom: 3px solid transparent;
-      transition: all var(--ease-out);
-      white-space: nowrap;
-      position: relative;
-    }
+  background: var(--bg-card);
+  display: flex;
+  gap: 2px;
+  padding: 0 8px;
+  border-bottom: 1px solid var(--border-light);
+  width: 100%;
+}
+.nav-tab-item {
+  flex: 1 1 0;
+  min-width: 0;
+  text-align: center;
+  padding: 14px 10px;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  border-bottom: 3px solid transparent;
+  transition: all var(--ease-out);
+  white-space: normal;
+  overflow-wrap: break-word;
+  position: relative;
+}
     .nav-tab-item:hover { color: var(--orange); background: rgba(255,122,0,0.04); }
     .nav-tab-item.active { color: var(--orange); border-bottom-color: var(--orange); background: rgba(255,122,0,0.06); font-weight: 700; }
     .nav-tab-item.admin-tab { color: #1e293b; }
@@ -817,6 +816,7 @@
             <p class="pub-card-v2-desc">{{ c.desc }}</p>
             <div class="pub-card-v2-footer">
               <form method="POST" action="{{ url_for('contents.content_buss', content_id=c.id) }}" style="margin:0;flex:1;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="btn btn-primary btn-sm btn-block">✏️ Editar</button>
               </form>
             </div>
@@ -832,12 +832,12 @@
       {% endif %}
     </div>
   </div>
-
   <!-- ─── Publicar Conteúdo ─── -->
   <div id="publish-content-view" style="display:none;">
     <div class="publish-form-outer">
       <div class="publish-form-inner">
         <form method="POST" action="{{ url_for('contents.publish_content') }}" enctype="multipart/form-data" id="publish-form">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <input type="hidden" id="banner-mode-input" name="banner_mode" value="default">
 
           <div class="publish-sections-layout">
@@ -1161,7 +1161,7 @@
       </div>
 
       <form id="delete-picture-form" method="POST" action="{{ url_for('user.delete_picture') }}" style="display:none;"></form>
-
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="profile-info">
         <div class="profile-name-row" id="name-display-row">
           <h2 class="profile-name" id="name-display">{{ session.get("name") or 'Usuário Exemplo' }}</h2>
@@ -1171,13 +1171,15 @@
         </div>
 
         <form method="POST" action="/edit_user" class="inline-name-form" id="name-edit-form" style="display: none; align-items: center; gap: 8px; margin-bottom: 5px;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <input type="text" name="new_name" id="name-input" class="form-input" placeholder="Novo nome" style="flex:1;">
           <button type="submit" class="btn btn-primary btn-sm">✓ Salvar</button>
           <button type="button" class="btn btn-muted btn-sm" onclick="toggleNameEdit()">✕</button>
         </form>
 
         <form method="POST" action="/edit_user" enctype="multipart/form-data" id="avatar-form">
-          <input type="file" name="profile_image" id="avatar-file-real" accept="image/*" style="display:none" onchange="onAvatarChosen(this)">
+         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+           <input type="file" name="profile_image" id="avatar-file-real" accept="image/*" style="display:none" onchange="onAvatarChosen(this)">
           <div id="avatar-form-row" style="display: none; margin-top: 8px; align-items: center; gap: 8px; flex-wrap: wrap;">
             <span id="avatar-file-name" style="font-size:13px; color:#555;">Nenhum arquivo escolhido</span>
             <button type="submit" class="btn btn-primary btn-sm">✓ Enviar foto</button>
@@ -1196,10 +1198,13 @@
     <div class="edit-section">
       <h3 class="section-title">Ações da conta</h3>
       <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px;">
-        <a href="/change_password" class="btn btn-primary btn-block">🔒 Alterar senha</a>
-        <a href="#" class="btn btn-outline btn-block" onclick="openLogoutModal(event)">🚪 Sair da conta</a>
-        <a href="{{ url_for('user.delete_account_page') }}" class="btn btn-danger btn-block">⚠️ Excluir conta</a>
-      </div>
+    <a href="/change_password" class="btn btn-primary btn-block">🔒 Alterar senha</a>
+    {% if not session.get("email") %}
+    <a href="{{ url_for('auth.link_google_account') }}" class="btn btn-outline btn-block">🔗 Vincular conta Google</a>
+    {% endif %}
+    <a href="#" class="btn btn-outline btn-block" onclick="openLogoutModal(event)">🚪 Sair da conta</a>
+    <a href="{{ url_for('user.delete_account_page') }}" class="btn btn-danger btn-block">⚠️ Excluir conta</a>
+</div>
     </div>
 
     <!-- Meus cursos (visível) -->
@@ -1768,16 +1773,24 @@
     }
 
     /* Rota por hash/query */
-    const hash = window.location.hash, params = new URLSearchParams(window.location.search), activeTab = params.get('tab');
-    if (hash === '#publications-section') {
-      const pubTabBtn = document.getElementById('publications-tab-btn');
-      if (pubTabBtn) switchTab('publications-section', pubTabBtn);
-      if (activeTab === 'my-publications-view') { const btn = document.getElementById('sub-my-pubs-btn'); if (btn) switchPubSection('my-publications-view', btn); }
-      else if (activeTab === 'publish-content-view') { const btn = document.getElementById('sub-publish-btn'); if (btn) switchPubSection('publish-content-view', btn); }
-    } else if (hash === '#all-courses' || hash === '') {
-      /* Após recarregar com filtros ativos, garante que "Todos os Cursos" está ativo */
+    /* Rota por hash/query */
+    const hash = window.location.hash;
+
+    if (hash) {
+      const section = document.querySelector(hash);
+      if (section) {
+        const btn = document.querySelector(`.nav-tab-item[onclick*="${section.id}"]`);
+        switchTab(section.id, btn);
+      }
+    } else {
       const allBtn = document.getElementById('all-courses-btn');
-      if (allBtn) switchTab('all-courses', allBtn);
+      switchTab('all-courses', allBtn);
+    }
+
+    const activeTab = "{{ active_tab }}";
+    if (activeTab) {
+      const btn = document.querySelector(`.nav-tab-item[onclick*="${activeTab}"]`);
+      if (btn) switchTab(activeTab, btn);
     }
   });
 </script>

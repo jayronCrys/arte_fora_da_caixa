@@ -102,8 +102,9 @@
   {% endif %}
 
   <form method="POST" enctype="multipart/form-data" id="edit-form"
+       
         action="{{ url_for('contents.edit_content', content_id=content.id) }}">
-
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="form-section">
       <div class="form-section-title">Informações Básicas</div>
 
@@ -211,7 +212,9 @@
   </div>
 </div>
 
-<form id="delete-form" method="POST" action="/delete_content/{{ content.id }}" style="display: none;"></form>
+<form id="delete-form" method="POST" action="/delete_content/{{ content.id }}" style="display: none;">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+</form>
 
 <div class="modal-overlay" id="save-confirm-modal">
   <div class="modal-box">

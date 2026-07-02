@@ -10,3 +10,5 @@ google-auth-oauthlib
 regex
 pymongo
 pip install Flask-Mail
+Flask-WTF
+

@@ -44,7 +44,8 @@
             {% endwith %}
 
             <form action="{{ url_for('forgot_password.verify_code') }}" method="POST">
-                <div class="form-field" style="margin-bottom: 28px;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="form-field" style="margin-bottom: 28px;">
                     <label class="form-label">Código de Verificação</label>
                     <input type="text" name="code" class="form-input text-center" placeholder="0 0 0 0 0 0" maxlength="6" required style="letter-spacing: 4px; font-size: 20px; font-weight: 700;">
                 </div>

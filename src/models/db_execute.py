@@ -1,4 +1,4 @@
-from sqlalchemy import select, update, delete
+from sqlalchemy import select, update, delete, and_
 from sqlalchemy.orm import Session
 import logging
 from typing import Union, List, Type
@@ -8,7 +8,11 @@ import uuid
 from uuid import UUID
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+# Removido `logging.basicConfig(...)` daqui: configurar o logging global dentro
+# de um módulo de biblioteca/utilitário é um anti-padrão — o primeiro módulo
+# importado "vence" a configuração para a aplicação inteira, de forma
+# silenciosa e imprevisível. Isso deve ser feito uma única vez no entrypoint
+# da aplicação (app.py), não aqui.
 logger = logging.getLogger(__name__)
 
 def insert_info(session: Session, model: Type[DeclarativeMeta], data: dict) -> bool:
@@ -22,7 +26,7 @@ def insert_info(session: Session, model: Type[DeclarativeMeta], data: dict) -> b
     except Exception as e:
         try:
             session.rollback()
-        except:
+        except Exception:
             pass
         logger.error(f"Erro ao inserir: {e}")
         return False
@@ -36,7 +40,6 @@ def select_info(
     valueReference: Union[str, int, List[Union[str, int]]],
     items_to_select: List[str] = None
 ) -> Union[bool, dict]:
-    print("<>"*10, valueReference, type(valueReference), columnReference)
     """
     Seleciona um registro da tabela.
 
@@ -46,6 +49,10 @@ def select_info(
 
     Retorna um dict com as colunas solicitadas ou False.
     """
+    logger.debug(
+        "select_info: model=%s columnReference=%s valueReference=%r",
+        getattr(model, "__tablename__", str(model)), columnReference, valueReference,
+    )
     try:
         # Monta a cláusula WHERE conforme o tipo de columnReference
         if isinstance(columnReference, list):
@@ -128,7 +135,7 @@ def update_info(session: Session, model: Type[DeclarativeMeta],
     except Exception as e:
         try:
             session.rollback()
-        except:
+        except Exception:
             pass
 
         logger.error(f"Erro ao atualizar: {e}")
@@ -149,7 +156,7 @@ def delete_info(session: Session, model: Type[DeclarativeMeta],
     except Exception as e:
         try:
             session.rollback()
-        except:
+        except Exception:
             pass
 
         logger.error(f"Erro ao deletar: {e}")

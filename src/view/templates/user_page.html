@@ -146,7 +146,7 @@
         </div>
 
         <form id="delete-picture-form" method="POST" action="{{ url_for('user.delete_picture') }}" style="display:none;"></form>
-
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="profile-info">
             <div class="profile-name-row" id="name-display-row">
                 <h2 class="profile-name" id="name-display">{{ session.get("name") or 'Usuário Exemplo' }}</h2>
@@ -156,13 +156,15 @@
             </div>
 
             <form method="POST" action="/edit_user" class="inline-name-form" id="name-edit-form" style="display: none; align-items: center; gap: 8px; margin-bottom: 5px;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <input type="text" name="new_name" id="name-input" class="form-input" placeholder="Novo nome" style="flex:1;">
                 <button type="submit" class="btn btn-primary btn-sm">✓ Salvar</button>
                 <button type="button" class="btn btn-muted btn-sm" onclick="toggleNameEdit()">✕</button>
             </form>
 
             <form method="POST" action="/edit_user" enctype="multipart/form-data" id="avatar-form">
-                <input type="file" name="profile_image" id="avatar-file-real" accept="image/*" style="display:none" onchange="onAvatarChosen(this)">
+               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                 <input type="file" name="profile_image" id="avatar-file-real" accept="image/*" style="display:none" onchange="onAvatarChosen(this)">
                 <div id="avatar-form-row" style="display: none; margin-top: 8px; align-items: center; gap: 8px; flex-wrap: wrap;">
                     <span id="avatar-file-name" style="font-size:13px; color:var(--text-secondary);">Nenhum arquivo escolhido</span>
                     <button type="submit" class="btn btn-primary btn-sm">✓ Enviar foto</button>
@@ -198,9 +200,13 @@
         </div>
 
         <div class="advanced-content" id="advanced-content">
-            <a href="/change_password" class="btn btn-primary btn-block">🔒 Alterar senha</a>
-            <a href="#" class="btn btn-outline btn-block" onclick="openLogoutModal(event)">🚪 Sair da conta</a>
-            <a href="{{ url_for('user.delete_account_page') }}" class="btn btn-danger btn-block">⚠️ Excluir conta</a>
+    <a href="/change_password" class="btn btn-primary btn-block">🔒 Alterar senha</a>
+    {% if not session.get("email") %}
+    <a href="{{ url_for('auth.link_google_account') }}" class="btn btn-outline btn-block">🔗 Vincular conta Google</a>
+    {% endif %}
+    <a href="#" class="btn btn-outline btn-block" onclick="openLogoutModal(event)">🚪 Sair da conta</a>
+    <a href="{{ url_for('user.delete_account_page') }}" class="btn btn-danger btn-block">⚠️ Excluir conta</a>
+</div>
         </div>
 
         {% if session.get("cred") in ["admin", "professor"] %}
@@ -306,7 +312,10 @@
         <!-- ── Atalhos rápidos para evitar espaço vazio ── -->
         <div class="quick-links-bar">
             <a href="/home" class="btn btn-outline">🏠 Voltar para Home</a>
-            <a href="/contents#about-section" class="btn btn-outline">ℹ️ Sobre o projeto</a>
+           <a href="{{ url_for('contents.redirect_about') }}"
+   class="btn btn-outline">
+    ℹ️ Sobre o projeto
+</a>
         </div>
     </div>
 </div>

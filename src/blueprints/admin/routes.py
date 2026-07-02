@@ -222,10 +222,13 @@ def get_content_analytics(content_id):
 def redirect_analytics_content_by_name(content_name):
     if not _is_admin():
         return redirect(url_for("auth.login"))
+        
     print("CONTENT_NAME", {content_name})
     contents = g.user.get_content_by_name(content_name)
     
-        
     if len(contents) == 1 and contents[0]["title"] == content_name:
         print("*"*10, type(contents[0]))
         return redirect(url_for("admin.get_content_analytics", content_id=contents[0]["id"]))
+    
+    # Adicionado: Retorno claro de erro caso o if não seja satisfeito
+    return jsonify({"error": "Conteúdo não encontrado ou múltiplos resultados encontrados"}), 404

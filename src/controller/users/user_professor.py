@@ -83,7 +83,7 @@ class Management_Professors(Management_User_Default):
             contentExist = select_info(conn, Contents, "id", uuid.UUID(contentId))
             if not contentExist:
                 return False
-            return contentExist if contentExist.get("publisher_id") == self.userId else False
+            return contentExist if str(contentExist.get("publisher_id")) == str(self.userId) or contentExist.get("author") == self.userName else False
         except Exception as e:
             logger.error(f"Erro ao obter conteúdo {contentId}: {e}")
             return False
@@ -251,8 +251,7 @@ class Management_Professors(Management_User_Default):
 
     @professor_required
     def suspended_comment_by_professor(self, contentId, commentId):
-        if not self.get_content_by_id(contentId):
-            return False
+        
         if not get_comment_by_id(contentId, commentId):
             return False
         if not self.professor_get_content_by_id(contentId):
@@ -262,6 +261,7 @@ class Management_Professors(Management_User_Default):
         except Exception as e:
             logger.error(f"Erro ao suspender comentário {commentId}: {e}")
             return False
+            
     @professor_required
     def unhide_comment_by_professor(self, contentId, commentId):
         if not self.get_content_by_id(contentId):

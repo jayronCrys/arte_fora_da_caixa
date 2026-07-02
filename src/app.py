@@ -1,7 +1,7 @@
 import sys
 import os
 import logging
-
+from flask_wtf import CSRFProtect
 from src.extensions import load_g_user, mail
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -20,7 +20,7 @@ from src.blueprints.admin import admin_bp
 from src.blueprints.professor import professor_bp
 
 
-
+csrf = CSRFProtect()
 def create_app() -> Flask:
     app = Flask(
         __name__,
@@ -34,12 +34,15 @@ def create_app() -> Flask:
     app.config['MAIL_USE_TLS']       = True
     app.config['MAIL_USE_SSL']       = False
     app.config['MAIL_USERNAME']      = 'jayronribeiro161@gmail.com'
-    app.config['MAIL_PASSWORD']      = 'nupf fufl lzqx vfua'   # senha de app, não a normal
+    app.config['MAIL_PASSWORD']      ='nupffufllzqxvfua'   # senha de app, não a normal
     app.config['MAIL_DEFAULT_SENDER'] = ('Arte Fora da Caixa', 'jayronribeiro161@gmail.com')
 
     mail.init_app(app)
     app.secret_key = os.environ.get("FLASK_SECRET", "dev-secret")
+    app.secret_key = os.environ.get("FLASK_SECRET", "dev-secret")
 
+    csrf = CSRFProtect()
+    csrf.init_app(app)
     # 🌟 INICIALIZAÇÃO DO MONGO: Movido para dentro do ciclo de criação do App
     print("🔌 Conectando ao MongoDB e aplicando validadores...")
     init_mongodb()
@@ -71,11 +74,12 @@ def create_app() -> Flask:
 if __name__ == "__main__":
     try:
         from src.models.database.creator_database import create_db
-        from src.maker_admin import make_users, make_contents
+        """from src.maker_admin import make_users, make_contents
 
-        create_db()
+        
         make_users()
-        make_contents()
+        make_contents()"""
+        create_db()
     except Exception as exc:
         logging.info("create_db não executado ou já existente: %s", exc)
     os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
