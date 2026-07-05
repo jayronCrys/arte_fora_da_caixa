@@ -2,6 +2,8 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
+  
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Arte Fora da Caixa — Painel</title>
 
@@ -569,7 +571,7 @@
 <header class="header">
   <span class="header-logo">Arte Fora da Caixa</span>
   <div class="header-user" onclick="location.href='{{ url_for('user.user') }}'">
-    <img class="header-avatar" src="{{ url_for('static', filename=session.get('picture')) if session.get('picture') else url_for('static', filename='default_profile.png') }}" alt="Avatar" />
+    <img class="header-avatar" src="{{ session.get('picture') if session.get('picture') else url_for('static', filename='default_profile.png') }}" alt="Avatar" />
     <div class="header-user-info">
       <span class="header-user-name">{{ session.get("name") or 'Usuário Exemplo' }}</span>
       {% if session.get("email") %}<span class="header-user-email">{{ session.get("email") }}</span>{% endif %}
@@ -1143,7 +1145,7 @@
     <div class="profile-header">
       <div class="avatar-wrapper">
         <img id="avatar-preview"
-             src="{{ url_for('static', filename=session.get('picture')) if session.get('picture') else url_for('static', filename='default_profile.png') }}"
+             src="{{ session.get('picture') if session.get('picture') else url_for('static', filename='default_profile.png') }}"
              alt="Foto de perfil">
 
         <button class="avatar-action-btn avatar-delete-btn" type="button" title="Excluir foto de perfil"

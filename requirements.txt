@@ -9,6 +9,9 @@ google-auth
 google-auth-oauthlib
 regex
 pymongo
-pip install Flask-Mail
+Flask-Mail
 Flask-WTF
+boto3
+pdf2image
+flask-cors
 

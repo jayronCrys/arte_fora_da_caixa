@@ -128,7 +128,7 @@
     <div class="profile-header">
         <div class="avatar-wrapper">
             <img id="avatar-preview"
-                 src="{{ url_for('static', filename=session.get('picture')) if session.get('picture') else url_for('static', filename='default_profile.png') }}"
+                 src="{{ session.get('picture') if session.get('picture') else url_for('static', filename='default_profile.png') }}"
                  alt="Foto de perfil">
 
             <button class="avatar-action-btn avatar-delete-btn" type="button" title="Excluir foto de perfil"
@@ -145,8 +145,8 @@
             </button>
         </div>
 
-        <form id="delete-picture-form" method="POST" action="{{ url_for('user.delete_picture') }}" style="display:none;"></form>
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <form id="delete-picture-form" method="POST" action="{{ url_for('user.delete_picture') }}" style="display:none;"><
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"></form>
         <div class="profile-info">
             <div class="profile-name-row" id="name-display-row">
                 <h2 class="profile-name" id="name-display">{{ session.get("name") or 'Usuário Exemplo' }}</h2>
@@ -180,7 +180,7 @@
     </div>
 
     <div class="edit-section">
-        <h3 class="section-title">Ações da conta</h3>
+        <h3 class="section-title">Ações da conta {{session.get("picture")}}</h3>
         <div class="action-bar">
             <button class="btn btn-outline" type="button" onclick="toggleAdvanced()">
                 ⚙️ Informações avançadas

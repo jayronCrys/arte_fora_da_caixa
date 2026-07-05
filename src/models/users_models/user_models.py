@@ -1,5 +1,6 @@
 # models/users_models/user_models.py
 import enum
+from typing import Union
 import uuid 
 import logging
 from sqlalchemy import Column, String, DateTime, Enum, func
@@ -26,7 +27,7 @@ class User(Base):
     email = Column(String(120), unique=True, nullable=True)
     password = Column(String(255), nullable=True)
     cred = Column(Enum(UserCred), default=UserCred.STUDENT, nullable=False)
-    picture = Column(String(255))  
+    picture = Column(String(255), nullable=True)  
     
     # OTIMIZAÇÃO: Adicionado índice para acelerar filtragens e ordenações cronológicas de utilizadores
     creation_date = Column(DateTime(timezone=True), default=func.now(), index=True)

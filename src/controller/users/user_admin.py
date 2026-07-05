@@ -1,7 +1,11 @@
+from src.models.relationships_models.inscriptions import Subs
 from functools import wraps
 import uuid
 import logging
 
+
+
+from sqlalchemy import func
 from src.controller.users.user_default import Management_User_Default, check_user, Create_Account
 from src.models.db_execute import insert_info, select_info, delete_info, update_info
 from src.models.database import get_session as database
@@ -20,7 +24,7 @@ from src.controller.storage.s3_content_storage import (
 logger = logging.getLogger(__name__)
 
 class Management_Admins(Management_User_Default):
-    def __init__(self, Account, database=database):
+    def __init__(self, Account, database=database)->None:
         super().__init__(Account, database)
         self.validFields = ["name", "email", "password", "cred"]
         self.contentValidFields = ["desc", "title", "banner", "content_type", "s3_uuid", "total_paginas"]
@@ -48,7 +52,7 @@ class Management_Admins(Management_User_Default):
 
     #_________________OTHER_USERS__________________________
     @admin_required
-    def get_user_by_username(self, userName):
+    def get_user_by_username(self, userName:str)->dict|None:
         conn = self.dataBase()
         try:
             db_task = select_info(conn, User, "name", userName)
@@ -60,7 +64,7 @@ class Management_Admins(Management_User_Default):
             conn.close()
             
     @admin_required
-    def get_user_by_id(self, userId):
+    def get_user_by_id(self, userId:str)->dict|None:
         conn = self.dataBase()
         try:
             db_task = select_info(conn, User, "id", uuid.UUID(userId))
@@ -72,10 +76,9 @@ class Management_Admins(Management_User_Default):
             conn.close()
             
     @admin_required
-    def count_users_by_role(self):
+    def count_users_by_role(self)->dict:
         conn = self.dataBase()
         try:
-            from sqlalchemy import func
             results = (
                 conn.query(User.cred, func.count(User.id))
                 .group_by(User.cred)
@@ -96,8 +99,8 @@ class Management_Admins(Management_User_Default):
         finally:
             conn.close()
         
-    @admin_required                        
-    def all_users(self, page=1, per_page=20, name=None, permission=None, has_email=None, sort_by='name_asc'):
+    @admin_required                         
+    def all_users(self, page=1, per_page=20, name=None, permission=None, has_email=None, sort_by='name_asc')->dict|bool:
         conn = self.dataBase()
         try:
             query = conn.query(User)
@@ -145,7 +148,7 @@ class Management_Admins(Management_User_Default):
             conn.close()
             
     @admin_required
-    def create_user_by_admin(self, userName, userPass, userCred="aluno"):
+    def create_user_by_admin(self, userName:str, userPass:str, userCred="aluno")->dict|bool:
         mapped_cred = self.CRED_MAP.get(userCred)
         if not mapped_cred:
             logger.warning("Tipo de credencial inválido")
@@ -182,7 +185,7 @@ class Management_Admins(Management_User_Default):
             conn.close()
 
     @admin_required
-    def update_user_by_admin(self, field, newValue, userId):
+    def update_user_by_admin(self, field:str, newValue:str, userId:str)->dict|bool:
         if field not in self.validFields or not userId:
             logger.warning("Parâmetro de atualização inválido")
             return False
@@ -225,7 +228,7 @@ class Management_Admins(Management_User_Default):
             conn.close()
             
     @admin_required
-    def delete_user_by_admin(self, userId):
+    def delete_user_by_admin(self, userId:str)->bool:
         if not userId:
             return False
             
@@ -242,9 +245,8 @@ class Management_Admins(Management_User_Default):
             conn.close()
                 
     @admin_required
-    def get_user_inscription_by_admin(self, userId):
+    def get_user_inscription_by_admin(self, userId:str)->list|bool:
         """Retorna todas as inscrições de um usuário com título do conteúdo e data."""
-        from src.models.relationships_models.inscriptions import Subs
         conn = self.dataBase()
         try:
             rows = (
@@ -271,12 +273,12 @@ class Management_Admins(Management_User_Default):
 
     #____________________USERS_REVIEWS_________________________
     @admin_required
-    def get_comment_by_admin(self, contentId):
+    def get_comment_by_admin(self, contentId:str)->list|bool:
         return (self.get_content_comment(contentId=contentId, moderated=False) or [],
                 self.get_content_comment(contentId=contentId, moderated=True) or [])
 
     @admin_required        
-    def suspended_comment_by_admin(self, contentId, commentId):
+    def suspended_comment_by_admin(self, contentId:str, commentId:str)->bool:
         if not self.get_content_by_id(contentId):
             return False
         if not get_comment_by_id(contentId, commentId):
@@ -288,7 +290,7 @@ class Management_Admins(Management_User_Default):
             return False
 
     @admin_required
-    def unhide_comment_by_admin(self, contentId, commentId):
+    def unhide_comment_by_admin(self, contentId:str, commentId:str)->bool:
         if not self.get_content_by_id(contentId):
             return False
         if not get_comment_by_id(contentId, commentId):
@@ -300,7 +302,7 @@ class Management_Admins(Management_User_Default):
             return False
             
     @admin_required
-    def delete_comment_by_admin(self, contentId, commentId):
+    def delete_comment_by_admin(self, contentId:str, commentId:str)->bool:
         if not self.get_content_by_id(contentId):
             return False
         if not get_comment_by_id(contentId, commentId):
@@ -313,7 +315,7 @@ class Management_Admins(Management_User_Default):
 
     #_______________________CONTENTS_____________________
     @admin_required
-    def get_content_by_admin(self, contentId):
+    def get_content_by_admin(self, contentId:str)->dict|bool:
         conn = self.dataBase()
         try:
             return select_info(conn, Contents, "id", uuid.UUID(contentId))
@@ -324,7 +326,7 @@ class Management_Admins(Management_User_Default):
             conn.close()    
 
     @admin_required
-    def get_all_contents_by_admin(self):
+    def get_all_contents_by_admin(self)->list|bool:
         try:
             return self.get_all_contents()
         except Exception as e:
@@ -332,7 +334,7 @@ class Management_Admins(Management_User_Default):
             return False
         
     @admin_required
-    def publish_content_by_admin(self, content, authorName):
+    def publish_content_by_admin(self, content:dict, authorName:str)->dict|bool:
         conn = self.dataBase()
         try:
             author = select_info(conn, User, "name", authorName)
@@ -362,7 +364,7 @@ class Management_Admins(Management_User_Default):
             conn.close()
 
     @admin_required
-    def upload_content_pdf_by_admin(self, pdf_bytes):
+    def upload_content_pdf_by_admin(self, pdf_bytes:bytes)->str|bool:
         try:
             return create_content_storage(pdf_bytes)
         except Exception as e:
@@ -370,7 +372,7 @@ class Management_Admins(Management_User_Default):
             return False
 
     @admin_required
-    def replace_content_pdf_by_admin(self, contentId, pdf_bytes):
+    def replace_content_pdf_by_admin(self, contentId:str, pdf_bytes:bytes)->bool:
         content = self.get_content_by_admin(contentId)
         if not content:
             return False
@@ -385,7 +387,7 @@ class Management_Admins(Management_User_Default):
         return bool(ok_uuid and ok_paginas)
 
     @admin_required
-    def upload_content_banner_by_admin(self, contentId, banner_filename, banner_bytes):
+    def upload_content_banner_by_admin(self, contentId:str, banner_filename:str, banner_bytes:bytes)->str|bool:
         content = self.get_content_by_admin(contentId)
         if not content:
             return False
@@ -395,13 +397,16 @@ class Management_Admins(Management_User_Default):
             return False
         try:
             banner_url = upload_content_banner(s3_uuid, banner_filename, banner_bytes)
+            if self.update_contents_by_admin("banner", contentId, banner_url):
+                return banner_url
+            return False
         except Exception as e:
             logger.error(f"Erro ao subir banner do conteúdo {contentId}: {e}")
             return False
-        return self.update_contents_by_admin("banner", contentId, banner_url)
+        
 
     @admin_required
-    def update_contents_by_admin(self, columnUpdate, contentId, newValue):
+    def update_contents_by_admin(self, columnUpdate:str, contentId:str, newValue)->bool:
         if newValue is None or not contentId or not columnUpdate:
             return False
         if columnUpdate not in self.contentValidFields:
@@ -422,14 +427,14 @@ class Management_Admins(Management_User_Default):
             conn.close()
 
     @admin_required
-    def suspended_content_by_admin(self, contentId):
+    def suspended_content_by_admin(self, contentId:str)->bool:
         if not self.get_content_by_id(contentId):
             return False
         # TODO: Implementar lógica de alteração do status para 'suspenso' no banco de dados.
         return True
                     
     @admin_required
-    def delete_contents_by_admin(self, contentId):
+    def delete_contents_by_admin(self, contentId:str)->bool:
         if not contentId:
             return False
             
@@ -455,7 +460,7 @@ class Management_Admins(Management_User_Default):
                             
     #___________________ANALYTICS________________________ 
     @admin_required
-    def get_content_analytics_by_admin(self, contentId):
+    def get_content_analytics_by_admin(self, contentId:str)->dict|bool:
         logger.debug(f"Coletando analytics do conteúdo {contentId} (admin)")
         if not self.get_content_by_admin(contentId):
             return False
@@ -466,7 +471,7 @@ class Management_Admins(Management_User_Default):
             return False
             
     @admin_required            
-    def search_users_by_name(self, userName):
+    def search_users_by_name(self, userName:str)->list:
         if not userName:
             return []
         conn = self.dataBase()
@@ -484,7 +489,7 @@ class Management_Admins(Management_User_Default):
             conn.close()
                     
     @admin_required
-    def get_professor_analytics(self, professor_name):
+    def get_professor_analytics(self, professor_name:str)->dict|bool:
         try:
             professor = self.get_user_by_username(professor_name)
             if not professor or not professor["id"]:
@@ -496,7 +501,7 @@ class Management_Admins(Management_User_Default):
             return False
             
     @admin_required
-    def get_plataform_analytics(self):
+    def get_plataform_analytics(self)->dict|bool:
         try:
             analytic = platform_global_analytics()
             return analytic if analytic else False

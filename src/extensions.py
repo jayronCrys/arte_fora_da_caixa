@@ -10,6 +10,7 @@ from src.controller.users.user_professor import Management_Professors
 from src.controller.users.user_default import Management_User_Default
 # extensions.py
 from flask_mail import Mail
+from storage.storage_host import upload_user_profile_image
 
 mail = Mail()
 
@@ -46,7 +47,7 @@ def load_g_user():
             g.user = Management_Professors(g.user.get_user())
 
 
-def save_google_picture(picture_url: str, upload_folder: str) -> str:
+def save_google_picture(user_id: str, picture_url: str, image_name: str) -> str:
     """
     Baixa a foto de perfil do Google, salva localmente e retorna a URL pública.
     Retorna a URL original em caso de falha.
@@ -55,11 +56,10 @@ def save_google_picture(picture_url: str, upload_folder: str) -> str:
         return picture_url
     try:
         img_bytes = requests.get(picture_url).content
-        unique_name = f"{uuid.uuid4()}.jpg"
-        filepath = os.path.join(upload_folder, unique_name)
-        with open(filepath, "wb") as f:
-            f.write(img_bytes)
-        return f"/profile_images/{unique_name}"
+        
+        image_path = upload_user_profile_image(user_id, image_name, img_bytes)
+        return image_path
+    
     except Exception as exc:
         logging.error("Erro ao salvar foto de perfil do Google: %s", exc)
         return picture_url

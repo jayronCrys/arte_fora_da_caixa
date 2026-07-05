@@ -3,28 +3,6 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="csrf-token" content="{{ csrf_token() }}">
-  <meta name="csrf-token" content="{{ csrf_token() }}">
-<script>
-  window.getCSRFToken = function () {
-    return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-  };
-
-  (function () {
-    const originalFetch = window.fetch;
-    window.fetch = function (resource, options = {}) {
-      const method = (options.method || 'GET').toUpperCase();
-      const isStateChanging = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method);
-      const url = typeof resource === 'string' ? resource : resource.url;
-      const isSameOrigin = url.startsWith('/') || url.startsWith(window.location.origin);
-
-      if (isStateChanging && isSameOrigin) {
-        options.headers = { ...(options.headers || {}), 'X-CSRFToken': window.getCSRFToken() };
-      }
-      return originalFetch(resource, options);
-    };
-  })();
-</script>
   <title>{% block title %}Arte Fora da Caixa{% endblock %}</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -178,7 +156,8 @@
   <header class="header">
     <a href="/contents" class="header-logo">Arte Fora da Caixa</a>
     <div class="header-user" onclick="location.href='{{ url_for('user.user') }}'">
-      <img class="header-avatar" src="{{ url_for('static', filename=session.get('picture')) if session.get('picture') else url_for('static', filename='default_profile.png') }}" alt="Avatar" />
+      {% set _picture = session.get('picture') %}
+      <img class="header-avatar" src="{{ _picture if _picture and 'http' in _picture else (url_for('static', filename=_picture) if _picture else url_for('static', filename='default_profile.png')) }}" alt="Avatar" />
       <div class="header-user-info">
         <span class="header-user-name">{{ session.get("name") or 'Usuário Exemplo' }}</span>
         {% if session.get("email") %}<span class="header-user-email">{{ session.get("email") }}</span>{% endif %}

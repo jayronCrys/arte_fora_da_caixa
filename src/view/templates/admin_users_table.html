@@ -15,7 +15,7 @@
                 <td>
                     <div class="user-avatar-cell">
                         {% if user.picture %}
-                            <img src="{{ url_for('static', filename=user.picture) }}" class="user-avatar-thumb" alt="Avatar">
+                            <img src="{{user.picture }}" class="user-avatar-thumb" alt="Avatar">
                         {% else %}
                             <div class="user-avatar-placeholder">{{ user.name[0] | upper }}</div>
                         {% endif %}

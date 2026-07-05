@@ -28,14 +28,25 @@ def create_app() -> Flask:
         static_folder="view/static",
     )
     CORS(app)
-    app.config['MAIL_SUPPRESS_SEND'] = False          # ← remover ou False
-    app.config['MAIL_SERVER']        = 'smtp.gmail.com'
+    """app.config['MAIL_SUPPRESS_SEND'] = False          # ← remover ou False
+    app.config['MAIL_SERVER']        = os.environ.get('MAIL_PASS')
     app.config['MAIL_PORT']          = 587
     app.config['MAIL_USE_TLS']       = True
     app.config['MAIL_USE_SSL']       = False
-    app.config['MAIL_USERNAME']      = 'jayronribeiro161@gmail.com'
-    app.config['MAIL_PASSWORD']      ='nupffufllzqxvfua'   # senha de app, não a normal
-    app.config['MAIL_DEFAULT_SENDER'] = ('Arte Fora da Caixa', 'jayronribeiro161@gmail.com')
+    app.config['MAIL_USERNAME']      = os.environ.get('EMAIL')
+    app.config['MAIL_PASSWORD']      =os.environ.get('MAIL_PASS')   # senha de app, não a normal
+    app.config['MAIL_DEFAULT_SENDER'] = (os.environ.get('MAIL_NAME'), os.environ.get('EMAIL'))"""
+
+
+    app.config['MAIL_SUPPRESS_SEND'] = False          # ← remover ou False
+    app.config['MAIL_SERVER']        = os.environ.get('MAIL_SERVER')
+    app.config['MAIL_PORT']          = 587
+    app.config['MAIL_USE_TLS']       = True
+    app.config['MAIL_USE_SSL']       = False
+    app.config['MAIL_USERNAME']      = os.environ.get('EMAIL')
+    app.config['MAIL_PASSWORD']      =os.environ.get('MAIL_PASS')   # senha de app, não a normal
+    app.config['MAIL_DEFAULT_SENDER'] = (os.environ.get('MAIL_NAME'), os.environ.get('EMAIL'))
+
 
     mail.init_app(app)
     app.secret_key = os.environ.get("FLASK_SECRET", "dev-secret")
@@ -74,11 +85,11 @@ def create_app() -> Flask:
 if __name__ == "__main__":
     try:
         from src.models.database.creator_database import create_db
-        """from src.maker_admin import make_users, make_contents
+        from src.maker_admin import make_users, make_contents
 
         
         make_users()
-        make_contents()"""
+        make_contents()
         create_db()
     except Exception as exc:
         logging.info("create_db não executado ou já existente: %s", exc)

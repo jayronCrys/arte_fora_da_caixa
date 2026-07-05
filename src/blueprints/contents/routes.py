@@ -294,17 +294,9 @@ def select_content(content_id):
         return redirect(url_for("auth.login"))
 
     # Obtém o conteúdo enriquecido (já com url_base_s3) usando a nova camada
-    content = g.user.GET_FULL_CONTENT(all_contents=False, content_to_select=content_id, review=False)
+    content = g.user.GET_FULL_CONTENT(all_contents=False, content_to_select=content_id, review=False)[0]
     if not content:
         return redirect(url_for("contents.get_publications"))
-
-    content = content[0]
-
-    # No novo fluxo, se o conteúdo estiver no S3, url_base_s3 já foi injetado por GET_FULL_CONTENT.
-    # Fallback para HTML legado (apenas se não houver S3 e existir campo 'pdf' – raro)
-    if not content.get("s3_uuid") and content.get("pdf"):
-        from pdf_to_html import pdf_bytes_to_html
-        content["html_body"] = pdf_bytes_to_html(content.get("pdf") or b"")
 
     return render_template("content_view.html", content=content)
 
@@ -492,6 +484,7 @@ def edit_content(content_id):
         return redirect(url_for("contents.get_publications"))
 
     def _update(field, value):
+        print(f"Atualizando campo {field} para valor: {value}")
         if _cred() == "professor":
             return g.user.update_contents_by_id(field, content["id"], value)
         return g.user.update_contents_by_admin(field, content["id"], value)
@@ -548,7 +541,7 @@ def edit_content(content_id):
 
     if action:
         get_session().expire_all()
-        return render_template("content_preview.html")
+        return redirect(url_for("contents.content_buss", content_id=content_id))
 
     return _render_edit()
 

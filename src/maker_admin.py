@@ -87,7 +87,7 @@ def make_contents():
     session = database()
 
     # Caminho do PDF local (ajuste para o seu ambiente)
-    pdf_path = "/storage/emulated/0/arte_fora_da_caixa/src/Modelagem_mtmtc.pdf"
+    pdf_path = "file:///home/Jwksjsjs/arte_fora_da_caixa/src/Modelagem_mtmtc.pdf"
     if not os.path.exists(pdf_path):
         logger.error("Arquivo PDF de exemplo não encontrado: %s", pdf_path)
         session.close()

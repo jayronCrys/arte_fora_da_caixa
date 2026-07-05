@@ -34,7 +34,7 @@ from src.Logs.terminal_logs import sucesfull_log, warning_log, error_log
 logger = logging.getLogger(__name__)
 
 # ── Configuração do cliente ────────────────────────────────────────────────
-""""s3_client = boto3.client(
+'''s3_client = boto3.(
     "s3",
     aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
     aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
@@ -42,9 +42,9 @@ logger = logging.getLogger(__name__)
 )
 
 s3_client.create_bucket(Bucket="myminio")
-print(s3_client.list_buckets())s3_client.create_bucket(Bucket="myminio")
 print(s3_client.list_buckets())
-BUCKET_NAME = os.getenv("AWS_BUCKET_NAME")"""
+
+clientBUCKET_NAME = os.getenv("AWS_BUCKET_NAME")'''
 s3_client = boto3.client(
     "s3",
     endpoint_url="http://127.0.0.1:9000",
@@ -61,6 +61,7 @@ BUCKET_NAME = "myminio"
 
 CONTENT_PREFIX = "conteudos"
 JPEG_QUALITY = 85
+PROFILE_IMAGES = 'profile_imgs'
 
 print(s3_client.list_buckets())
 # ── Helpers de nomenclatura de chaves ──────────────────────────────────────
@@ -108,7 +109,7 @@ def _banner_key(s3_uuid: str, ext: str) -> str:
 def build_pages_base_url(s3_uuid: str) -> str:
     """URL pública (não assinada) usada como prefixo das imagens de página.
     return f"https://{BUCKET_NAME}.s3.amazonaws.com/{_content_prefix(s3_uuid)}paginas/"""
-    return f"http://127.0.0.1:9000/{BUCKET_NAME}/{_content_prefix(s3_uuid)}paginas/"
+    return f"http://127.0.0.1:'9000/{BUCKET_NAME}/{_content_prefix(s3_uuid)}paginas/"
 
 
 # ── CREATE: PDF (upload + fatiamento) ──────────────────────────────────────

@@ -1,7 +1,7 @@
 import logging
 import os
 import uuid
-
+from Configs.profile_images import profile_image_save
 from flask import (
     current_app,
     flash, g,
@@ -10,9 +10,9 @@ from flask import (
     request, session,
     url_for
 )
-
+from storage.storage_host import delete_user_profile_image, upload_user_profile_image
 from src.controller.users.user_default import Login_Account, check_user
-from src.extensions import convert_heic_to_jpeg, make_session_from_dbuser
+from src.extensions import make_session_from_dbuser
 from . import user_bp
 
 logger = logging.getLogger(__name__)
@@ -33,7 +33,7 @@ def user():
     guard = _require_login()
     if guard:
         return guard
-
+    print(f"IMAGEM DE PERFIL : ++++++++++++++++++++++{g.user.picture}++++++++++++++++++++++++++")
     if getattr(g, "user", None):
         try:
             user_data = g.user.get_user()
@@ -83,43 +83,25 @@ def edit_user():
 
     # ── Atualizar imagem ──────────────────────────────────────────────────────
     if new_image and new_image.filename != "":
-        upload_folder = current_app.config["UPLOAD_FOLDER"]
-        original_filename = f"{uuid.uuid4().hex}.jpg"
+        image_name = new_image.filename
+        image_file = new_image.read()
         is_heic = new_image.filename.lower().endswith((".heic", ".heif"))
 
         if is_heic:
-            base, _ = os.path.splitext(original_filename)
-            final_filename = base + ".jpg"
-            final_path = os.path.join(upload_folder, final_filename)
-            temp_path = os.path.join(upload_folder, "__heic_temp_" + original_filename)
-            try:
-                new_image.save(temp_path)
-            except Exception as exc:
-                logger.exception("Erro ao salvar HEIC temporário: %s", exc)
-                flash("Erro ao processar imagem HEIC.")
-                return redirect(url_for("user.user"))
-
-            success = convert_heic_to_jpeg(temp_path, final_path)
-            try:
-                os.remove(temp_path)
-            except OSError:
-                pass
-
-            if not success:
-                flash("Erro ao converter HEIC. Envie JPEG ou PNG.")
-                return redirect(url_for("user.user"))
-            public_url = f"/profile_images/{final_filename}"
+            flash("formato de imagem inválido, envie uma imagem nos formatos: jpg, png, jpeg.")
         else:
-            filepath = os.path.join(upload_folder, original_filename)
+            
             try:
-                new_image.save(filepath)
+
+                image_path = profile_image_save(session["id"], session["picture"], image_name, image_file)
+                print("DPS DE UPLODA_USER_PROFUILE Imagem salva em:", image_path)
             except Exception as exc:
                 logger.exception("Erro ao salvar arquivo: %s", exc)
                 flash("Erro ao salvar imagem.")
                 return redirect(url_for("user.user"))
-            public_url = f"/profile_images/{original_filename}"
+            public_url = f"/profile_images/{image_name}"
 
-        ok = g.user.update_user(field="picture", newValue1=public_url)
+        ok = g.user.update_user(field="picture", newValue1=image_path)
         if not ok:
             flash("Erro ao salvar imagem no perfil.")
             return redirect(url_for("user.user"))
@@ -132,7 +114,6 @@ def edit_user():
     flash("Nenhuma alteração enviada.")
     return redirect(url_for("user.user"))
 
-
 @user_bp.route("/edit_user/delete_picture", methods=["POST"])
 def delete_picture():
     guard = _require_login()
@@ -140,24 +121,37 @@ def delete_picture():
         return guard
 
     img_path = session.get("picture")
-    if not img_path or not img_path.startswith("/profile_images/"):
-        return render_template("user_page.html")
-
-    full_path = os.path.join(
-        current_app.static_folder, "profile_images", os.path.basename(img_path)
-    )
-    if os.path.exists(full_path):
-        os.remove(full_path)
-        try:
-            if g.user.update_user("picture", None):
+    if not img_path:
+        flash("Nenhuma imagem de perfil para remover.")
+        return redirect(url_for("user.user"))
+    
+    try:
+        # Tenta deletar a imagem do storage
+        delete_success = delete_user_profile_image(session['id'], img_path)
+        
+        if delete_success:
+            # Atualiza o registro no banco de dados
+            update_success = g.user.update_user("picture", None)
+            
+            if update_success:
+                # Atualiza a sessão com o novo estado
                 session["picture"] = g.user.picture
-                return render_template("exito.html")
-        except Exception as exc:
-            logger.error("Erro ao apagar imagem: %s", exc)
-
-    return render_template("user_page.html")
-
-
+                flash("Foto de perfil removida com sucesso!")
+                return redirect(url_for("user.user"))
+            else:
+                # Falha ao atualizar o banco, mas a imagem já foi deletada
+                logger.error(f"Imagem deletada do storage mas falha ao atualizar banco para usuário {session['id']}")
+                flash("Erro ao atualizar registro. A imagem foi removida, mas pode ser necessário recarregar a página.")
+                return redirect(url_for("user.user"))
+        else:
+            # Falha ao deletar a imagem
+            flash("Não foi possível remover a imagem. Tente novamente.")
+            return redirect(url_for("user.user"))
+            
+    except Exception as exc:
+        logger.error(f"Erro ao apagar imagem do usuário {session.get('id')}: {exc}")
+        flash("Houve um erro ao tentar remover sua imagem. Por favor, tente novamente.")
+        return redirect(url_for("user.user"))
 # ── Senha ─────────────────────────────────────────────────────────────────────
 
 @user_bp.route("/change_password", methods=["GET", "POST"])

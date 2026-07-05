@@ -64,7 +64,7 @@ def forgot_password():
 
     user_id = user.get('id')
     user_email = user.get('email')
-
+    
     # Caso 1: sem e‑mail → redefinição direta
     if not user_email:
         session['reset_user_id'] = str(user_id)
@@ -80,7 +80,7 @@ def forgot_password():
 
     if not send_reset_email(user_email, code):
         flash('Erro ao enviar o código. Tente novamente mais tarde.')
-        return redirect(url_for('forgot_password.forgot_password'))
+        return redirect(url_for('auth.login'))
 
     flash('Um código de verificação foi enviado para seu e‑mail.')
     return redirect(url_for('forgot_password.verify_code'))

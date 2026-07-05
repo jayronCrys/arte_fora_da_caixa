@@ -344,7 +344,10 @@ class Management_User_Default(Login_Account):
 
     @Login_Account.is_loged
     def update_user(self, field: str, newValue1, newValue2=None) -> bool:
-        if field not in self.manager_fields or not newValue1:
+        if field not in self.manager_fields:
+            return False
+        if not field in ["picture", "email"] and not newValue1:
+            print(f"Campo inválido ou valor nulo para atualização: {field} -> {newValue1}")
             return False
 
         conn = self.dataBase()
@@ -354,7 +357,7 @@ class Management_User_Default(Login_Account):
                 conn.close()
                 return False
             
-        if field == "name":
+        elif field == "name":
             checker = Create_Account(self.dataBase)
             if not checker.create_user_name(newValue1):
                 logger.warning("Nome de atualização inválido.")
@@ -375,7 +378,7 @@ class Management_User_Default(Login_Account):
                 conn.close()
                 return False
             newValue1 = checker.userPass
-        
+
         try:
             ok = update_info(conn, User, field, newValue1, "id", self.userId)
             if not ok:
@@ -385,6 +388,7 @@ class Management_User_Default(Login_Account):
             if user_updated:
                 self.user = user_updated
                 self.get_infor_user_verif(user_updated)
+                print(f"Usuário atualizado:++++++++++++++++++++++++++++++++++++++++++++++++++ {self.user}")
             return True
 
         except Exception as e:

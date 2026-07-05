@@ -487,7 +487,7 @@
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="avatar-row">
                     <img id="avatar-preview" class="avatar-img"
-                         src="{{ url_for('static', filename=user.picture) if user.picture else url_for('static', filename='default_profile.png') }}"
+                         src="{{ url_for(filename=user.picture) if user.picture else url_for('static', filename='default_profile.png') }}"
                          alt="Avatar de {{ user.name }}">
                     <div class="avatar-info">
                         <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('picture-input').click()">
