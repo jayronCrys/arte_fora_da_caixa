@@ -6,6 +6,7 @@ from flask import (
     session, flash, current_app
 )
 from flask_mail import Message
+from Configs.mail import mail_message
 from src.extensions import mail                  # Flask-
 from src.controller.users.user_default import (
     check_user, reset_user_password, database
@@ -15,25 +16,15 @@ from . import forg_pass_bp
 
 # ─── Envio de e‑mail com o código ────────────────────────────────────────
 
-
-
-@forg_pass_bp.route('/test_email')
-def test_email():
-    msg = Message('Teste', recipients=['teste@exemplo.com'], body='Teste')
-    try:
-        mail.send(msg)
-        return 'Mensagem enviada ao logger (verifique o terminal)'
-    except Exception as e:
-        return f'Erro: {e}'
         
         
 def send_reset_email(email, code):
     """Envia o código de verificação para o e‑mail informado."""
     try:
         msg = Message(
-            subject="Redefinição de senha",
-            recipients=[email],
-            body=f"Seu código de verificação é: {code}\n\nEste código expira em 15 minutos."
+            subject     = "Redefinição de senha",
+            recipients  = [email],
+            body        = mail_message(code)
         )
         mail.send(msg)
         current_app.logger.info(f"Código enviado para {email}")
@@ -52,7 +43,6 @@ def forgot_password():
     if not identifier:
         flash('Informe seu nome ou e‑mail.')
         return redirect(url_for('forgot_password.forgot_password'))
-    print(">>>>>>", identifier)
     # Determina se é e‑mail (contém @) ou nome
     if '@' in identifier:
         user = check_user(search=identifier.lower(), column='email')
@@ -68,15 +58,15 @@ def forgot_password():
     # Caso 1: sem e‑mail → redefinição direta
     if not user_email:
         session['reset_user_id'] = str(user_id)
-        session['direct_reset'] = True
+        session['direct_reset']  = True
         flash('Sua conta não possui e‑mail. Redefina sua senha agora.')
         return redirect(url_for('forgot_password.reset_password'))
 
     # Caso 2: com e‑mail → enviar código
     code = ''.join(random.choices(string.digits, k=6))
-    session['reset_code'] = code
-    session['reset_user_id'] = str(user_id)
-    session['reset_code_expires'] = (datetime.utcnow() + timedelta(minutes=15)).timestamp()
+    session['reset_code']           = code
+    session['reset_user_id']        = str(user_id)
+    session['reset_code_expires']   = (datetime.utcnow() + timedelta(minutes=15)).timestamp()
 
     if not send_reset_email(user_email, code):
         flash('Erro ao enviar o código. Tente novamente mais tarde.')
@@ -101,7 +91,7 @@ def verify_code():
         return redirect(url_for('forgot_password.verify_code'))
 
     stored_code = session.get('reset_code')
-    expires = session.get('reset_code_expires')
+    expires     = session.get('reset_code_expires')
 
     if submitted_code != stored_code:
         flash('Código inválido.')
@@ -132,7 +122,7 @@ def reset_password():
     if request.method == 'GET':
         return render_template('reset_password.html')
 
-    new_pass = request.form.get('new_password', '').strip()
+    new_pass     = request.form.get('new_password', '').strip()
     confirm_pass = request.form.get('confirm_password', '').strip()
 
     if not new_pass or not confirm_pass:

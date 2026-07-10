@@ -1,19 +1,37 @@
-from src.models.relationships_models.inscriptions import Subs
 from functools import wraps
+
 import uuid
+
 import logging
 
-
-
 from sqlalchemy import func
-from src.controller.users.user_default import Management_User_Default, check_user, Create_Account
-from src.models.db_execute import insert_info, select_info, delete_info, update_info
-from src.models.database import get_session as database
-from src.models.analytics import platform_global_analytics, analytics, general_analytics
-from src.models.passwords import compare_password as compare
-from src.models.contents_models.content_models import Contents
+
 from src.models.users_models.user_models import User, UserCred
-from src.models.db_mongo_execute import delete_comment, get_comment_by_id, suspend_comment, unhide_comment
+
+from src.models.relationships_models.inscriptions import Subs
+
+from src.models.database import get_session as database
+
+from src.models.passwords import compare_password as compare
+
+from src.models.contents_models.content_models import Contents
+
+from src.controller.users.user_default import Management_User_Default, check_user, Create_Account
+
+from src.models.analytics import platform_global_analytics, analytics, general_analytics
+
+from src.models.db_execute import (
+    insert_info, select_info, 
+    delete_info, update_info
+)
+
+from src.models.db_mongo_execute import (
+    delete_comment, 
+    get_comment_by_id, 
+    suspend_comment, 
+    unhide_comment
+)
+
 from src.controller.storage.s3_content_storage import (
     create_content_storage,
     replace_content_pdf,
@@ -26,15 +44,15 @@ logger = logging.getLogger(__name__)
 class Management_Admins(Management_User_Default):
     def __init__(self, Account, database=database)->None:
         super().__init__(Account, database)
-        self.validFields = ["name", "email", "password", "cred"]
+        self.validFields        = ["name", "email", "password", "cred"]
         self.contentValidFields = ["desc", "title", "banner", "content_type", "s3_uuid", "total_paginas"]
-        self.userRole = self.user.get("cred") if isinstance(self.user, dict) else None
+        self.userRole           = self.user.get("cred") if isinstance(self.user, dict) else None
 
     # Mapeamento para evitar repetição de if/else de credenciais
     CRED_MAP = {
-        "aluno": UserCred.STUDENT,
-        "professor": UserCred.PROFESSOR,
-        "admin": UserCred.ADMIN
+        "aluno"     : UserCred.STUDENT,
+        "professor" : UserCred.PROFESSOR,
+        "admin"     : UserCred.ADMIN
     }
 
     # ------------------------------------------------------------
@@ -117,17 +135,22 @@ class Management_Admins(Management_User_Default):
                     
             if has_email is True:
                 query = query.filter(User.email.isnot(None))
+
             elif has_email is False:
                 query = query.filter(User.email.is_(None))
             
             if sort_by == 'name_asc':
                 query = query.order_by(User.name.asc())
+
             elif sort_by == 'name_desc':
                 query = query.order_by(User.name.desc())
+
             elif sort_by == 'date_desc':
                 query = query.order_by(User.creation_date.desc())
+
             elif sort_by == 'date_asc':
                 query = query.order_by(User.creation_date.asc())
+
             else:
                 query = query.order_by(User.name.asc())
             
@@ -135,11 +158,11 @@ class Management_Admins(Management_User_Default):
             users = query.offset((page - 1) * per_page).limit(per_page).all()
             
             return {
-                'users': users,
-                'total': total,
-                'page': page,
+                'users'   : users,
+                'total'   : total,
+                'page'    : page,
                 'per_page': per_page,
-                'pages': max(1, (total + per_page - 1) // per_page)
+                'pages'   : max(1, (total + per_page - 1) // per_page)
             }
         except Exception as e:
             logger.error(f"Erro ao listar usuários: {e}")
@@ -163,11 +186,11 @@ class Management_Admins(Management_User_Default):
             
         try:
             ok = insert_info(conn, User, {
-                "name": checker.userName,
-                "email": None,
+                "name"    : checker.userName,
+                "email"   : None,
                 "password": checker.userPass,
-                "picture": None,
-                "cred": mapped_cred
+                "picture" : None,
+                "cred"    : mapped_cred
             })
             if not ok:
                 return False
@@ -193,7 +216,7 @@ class Management_Admins(Management_User_Default):
         if not self.get_user_by_id(userId):
             return False
                         
-        checker = Create_Account(self.dataBase)
+        checker   = Create_Account(self.dataBase)
         save_user = check_user(userId, self.dataBase, "id")
         
         if field == "name":
@@ -259,10 +282,10 @@ class Management_Admins(Management_User_Default):
             result = []
             for sub, content in rows:
                 result.append({
-                    "content_id": str(content.id),
-                    "content_title": content.title,
+                    "content_id"      : str(content.id),
+                    "content_title"   : content.title,
                     "inscription_date": sub.creation_date,
-                    "is_favorite": sub.is_favorite,
+                    "is_favorite"     : sub.is_favorite,
                 })
             return result
         except Exception as e:
@@ -341,14 +364,14 @@ class Management_Admins(Management_User_Default):
             if content and author:
                 author_name = author.get("name")                
                 db_task = insert_info(conn, Contents, {
-                    "title":         content.get("title"),
-                    "desc":          content.get("desc"),
-                    "banner":        content.get("banner"),
-                    "content_type":  content.get("content_type"),
-                    "s3_uuid":       content.get("s3_uuid"),
-                    "total_paginas": content.get("total_paginas"),
-                    "author":        str(author_name),
-                    "publisher_id":  uuid.UUID(self.userId)
+                    "title"         : content.get("title"),
+                    "desc"          : content.get("desc"),
+                    "banner"        : content.get("banner"),
+                    "content_type"  : content.get("content_type"),
+                    "s3_uuid"       : content.get("s3_uuid"),
+                    "total_paginas" : content.get("total_paginas"),
+                    "author"        : str(author_name),
+                    "publisher_id"  : uuid.UUID(self.userId)
                 })
                 if db_task:
                     content_obj = conn.query(Contents).filter_by(

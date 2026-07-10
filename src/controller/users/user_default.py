@@ -55,8 +55,7 @@ def reset_user_password(user_id, new_password):
     conn = database()
     try:
         # Verifica existência
-        user = check_user(user_id, dataBase=database, column="id")
-        if not user:
+        if not check_user(user_id, dataBase=database, column="id"):
             logger.warning(f"Tentativa de redefinir senha de usuário inexistente: {user_id}")
             return False
 
@@ -64,8 +63,8 @@ def reset_user_password(user_id, new_password):
         hashed = make_hash(new_password)
 
         # Atualiza no banco
-        ok = update_info(conn, User, "password", hashed, "id", user_id)
-        if ok:
+        
+        if update_info(conn, User, "password", hashed, "id", user_id):
             logger.info(f"Senha do usuário {user_id} redefinida com sucesso.")
             return True
         else:
@@ -80,6 +79,8 @@ def reset_user_password(user_id, new_password):
         return False
     finally:
         conn.close()
+
+
 def check_user(search, dataBase=database, column="name"):
     """
     dataBase -> função que retorna sessão (get_session)
@@ -125,10 +126,10 @@ class Create_Account:
         conn = self.dataBase()
         try:
             ok = insert_info(conn, User, {
-                "name": self.userName,
-                "email": account.get("email"),
+                "name"    : self.userName,
+                "email"   : account.get("email"),
                 "password": self.userPass,
-                "picture": account.get("picture")
+                "picture" : account.get("picture")
             })
             if not ok:
                 return False
@@ -154,9 +155,10 @@ class Create_Account:
             return False
 
         if (any(e.isdigit() for e in pass1) and
-                any(e.isalpha() for e in pass1) and
-                any(e.islower() for e in pass1) and
-                any(e.isupper() for e in pass1)):
+            any(e.isalpha() for e in pass1) and
+            any(e.islower() for e in pass1) and
+            any(e.isupper() for e in pass1)):
+
             self.userPass = make_hash(pass1)
             return True
 
@@ -168,7 +170,7 @@ class Create_Account:
         if not name:
             return False
 
-        real_name = " ".join(name.split())
+        real_name           = " ".join(name.split())
         name_without_spaces = name.replace(" ", "")
         
         if len(name_without_spaces) < 5 or len(name_without_spaces) > 50:
@@ -182,6 +184,7 @@ class Create_Account:
         if re.match(r'^[A-Za-z0-9._-]+$', name_without_spaces):
             self.userName = real_name
             return True
+        
         logger.info("Nome contém caracteres não permitidos.")
         return False
 
@@ -203,8 +206,8 @@ class Create_Account:
                 return False, None
 
             user = create_account_instance.create_user(creationMethod, {
-                "name": create_account_instance.userName,
-                "email": None,
+                "name"   : create_account_instance.userName,
+                "email"  : None,
                 "picture": None
             })
         else:
@@ -218,16 +221,16 @@ class Create_Account:
 
 class Login_Account:
     def __init__(self, account, dataBase):
-        self.user = account
-        self.dataBase = dataBase
-        self.userName = None
-        self.userPass = None
-        self.email = None
+        self.user       = account
+        self.dataBase   = dataBase
+        self.userName   = None
+        self.userPass   = None
+        self.email      = None
         self.createDate = None
-        self.picture = None
-        self.userId = None
-        self.isLoged = False
-        self.cred = None
+        self.picture    = None
+        self.userId     = None
+        self.isLoged    = False
+        self.cred       = None
 
     @staticmethod
     def is_loged(func):
@@ -242,22 +245,21 @@ class Login_Account:
         if user:
             self.user = user
         
-        self.isLoged = True
-        self.cred = self.user.get("cred")
-        self.userId = self.user.get("id")
-        self.email = self.user.get("email")
-        self.userName = self.user.get("name")
-        self.userPass = True
+        self.isLoged    = True
+        self.cred       = self.user.get("cred")
+        self.userId     = self.user.get("id")
+        self.email      = self.user.get("email")
+        self.userName   = self.user.get("name")
+        self.userPass   = True
         self.createDate = self.user.get("creation_date")
-        self.picture = self.user.get("picture")
+        self.picture    = self.user.get("picture")
 
     def login_with_google_account(self) -> Tuple[bool, Union[dict, None]]:
         if isinstance(self.user, dict):
-            user_name_in = self.user.get("name")
+            user_name_in  = self.user.get("name")
             user_email_in = self.user.get("email")
 
-            user_exist = check_user(user_name_in, self.dataBase)
-
+            user_exist = check_user(user_email_in, self.dataBase, "email")
             if user_exist and user_exist.get("email") == user_email_in:
                 self.user = user_exist
                 self.get_infor_user_verif()
@@ -275,7 +277,7 @@ class Login_Account:
             user_exist = check_user(user_name_in, self.dataBase)
             if not user_exist:
                 user_email_in = self.user.get("name")
-                user_exist = check_user(search=user_email_in.lower(), dataBase=self.dataBase, column="email")#necwssario caso o usuario tente logar usando email pela barra de nomr
+                user_exist    = check_user(search=user_email_in.lower(), dataBase=self.dataBase, column="email")#necwssario caso o usuario tente logar usando email pela barra de nomr
 
             if user_exist and compare(user_pass_in, user_exist.get("password")):
                 logger.info("Usuário validado com sucesso.")
@@ -302,7 +304,7 @@ class Login_Account:
         elif loginMethod == "local":
             user_logged, user_account = user_log.login_with_local_account()
 
-        if not user_account and account and loginMethod == "google":
+        if not user_account and account and loginMethod == "google": #Se tentar logasr com google e tiver enviado as informações mas não tiver registro: tenta criar uma conta
             logger.info("Conta Google não encontrada. Iniciando auto-criação.")
             return Create_Account.creator(creationMethod=loginMethod, userName=account.get("name"), email=account)
 
@@ -346,6 +348,7 @@ class Management_User_Default(Login_Account):
     def update_user(self, field: str, newValue1, newValue2=None) -> bool:
         if field not in self.manager_fields:
             return False
+        
         if not field in ["picture", "email"] and not newValue1:
             print(f"Campo inválido ou valor nulo para atualização: {field} -> {newValue1}")
             return False
@@ -388,7 +391,6 @@ class Management_User_Default(Login_Account):
             if user_updated:
                 self.user = user_updated
                 self.get_infor_user_verif(user_updated)
-                print(f"Usuário atualizado:++++++++++++++++++++++++++++++++++++++++++++++++++ {self.user}")
             return True
 
         except Exception as e:
@@ -438,16 +440,16 @@ class Management_User_Default(Login_Account):
             ).all()
             contents_by_id = {
                 str(c.id): {
-                    "id":            str(c.id),
-                    "title":         c.title,
-                    "desc":          c.desc,
-                    "banner":        c.banner,
-                    "content_type":  c.content_type,
-                    "author":        c.author,
-                    "creation_date": c.creation_date,
-                    "publisher_id":  str(c.publisher_id),
-                    "s3_uuid":       c.s3_uuid,
-                    "total_paginas": c.total_paginas,
+                    "id"            : str(c.id),
+                    "title"         : c.title,
+                    "desc"          : c.desc,
+                    "banner"        : c.banner,
+                    "content_type"  : c.content_type,
+                    "author"        : c.author,
+                    "creation_date" : c.creation_date,
+                    "publisher_id"  : str(c.publisher_id),
+                    "s3_uuid"       : c.s3_uuid,
+                    "total_paginas" : c.total_paginas,
                 } for c in rows
             }
         except Exception as e:
@@ -460,12 +462,13 @@ class Management_User_Default(Login_Account):
             return []
 
         all_stats = get_reviews_bulk(list(contents_by_id.keys()))
+        
         for content_id, content in contents_by_id.items():
             content["rating"] = all_stats.get(content_id, {
-                "average_rating": 0.0,
-                "total_reviews": 0,
+                "average_rating"    : 0.0,
+                "total_reviews"     : 0,
                 "total_inscriptions": 0,
-                "sums_reviews": 0,
+                "sums_reviews"      : 0,
             })
             if content.get("s3_uuid") and not content.get("url_base_s3"):
                 content["url_base_s3"] = build_pages_base_url(content["s3_uuid"])
@@ -518,10 +521,10 @@ class Management_User_Default(Login_Account):
             conn.close()
 
     @Login_Account.is_loged
-    def get_all_contents(self, limit=None, offset=None,
-                         search=None, content_type=None,
-                         popularity=None, sort=None) -> Union[list, dict, bool]:
-        conn = self.dataBase()
+    def get_all_contents(self, limit = None, offset       = None,
+                         search      = None, content_type = None,
+                         popularity  = None,  sort        = None) -> Union[list, dict, bool]:
+        conn = self.dataBase() 
         try:
             query = conn.query(Contents)
     
@@ -571,7 +574,7 @@ class Management_User_Default(Login_Account):
                 for item in items:
                     s = all_stats.get(item['id'], {})
                     item['_total_inscriptions'] = s.get('total_inscriptions', 0)
-                    item['_total_reviews'] = s.get('total_reviews', 0)
+                    item['_total_reviews']      = s.get('total_reviews', 0)
 
                 if popularity == 'most_enrolled':
                     items.sort(key=lambda x: x['_total_inscriptions'], reverse=True)
@@ -610,9 +613,9 @@ class Management_User_Default(Login_Account):
             temp_list = []
             for result in results:
                 temp_json = {
-                    "id": str(result.id),
-                    "title": result.title,
-                    "desc": result.desc,
+                    "id"    : str(result.id),
+                    "title" : result.title,
+                    "desc"  : result.desc,
                     "author": result.author
                 }
                 temp_list.append(temp_json)
@@ -621,15 +624,20 @@ class Management_User_Default(Login_Account):
             conn.close()
 
     @Login_Account.is_loged
-    def GET_FULL_CONTENT(self, all_contents=False, content_to_select=None, review=False,
-                         limit=None, offset=None, search=None, content_type=None,
-                         popularity=None, sort=None) -> Union[list, dict, bool]:
+    def GET_FULL_CONTENT(self, 
+                        all_contents = False, content_to_select  = None, review = False,
+                        limit        = None ,  offset            = None, search = None , 
+                        content_type = None ,  popularity        = None, sort   = None) -> Union[list, dict, bool]:
+        
+
         if not all_contents and content_to_select:
             contents = [self.get_content_by_id(content_to_select)]
+
+
         elif all_contents and content_to_select is None:
-            result = self.get_all_contents(limit=limit, offset=offset,
-                                           search=search, content_type=content_type,
-                                           popularity=popularity, sort=sort)
+            result = self.get_all_contents(limit      = limit     , offset       = offset,
+                                           search     = search    , content_type = content_type,
+                                           popularity = popularity, sort         = sort)
             if not result:
                 return False
             contents = result["items"]
@@ -652,10 +660,10 @@ class Management_User_Default(Login_Account):
             content_id = content["id"]
             if review:
                 content["rating"] = all_stats.get(content_id, {
-                    "average_rating": 0.0,
-                    "total_reviews": 0,
+                    "average_rating"    : 0.0,
+                    "total_reviews"     : 0,
                     "total_inscriptions": 0,
-                    "sums_reviews": 0,
+                    "sums_reviews"      : 0,
                 })
             if content.get("s3_uuid") and not content.get("url_base_s3"):
                 content["url_base_s3"] = build_pages_base_url(content["s3_uuid"])

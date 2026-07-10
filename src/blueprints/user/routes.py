@@ -1,16 +1,14 @@
 import logging
-import os
-import uuid
+
 from Configs.profile_images import profile_image_save
 from flask import (
-    current_app,
     flash, g,
     redirect,
     render_template,
     request, session,
     url_for
 )
-from storage.storage_host import delete_user_profile_image, upload_user_profile_image
+from storage.storage_host import delete_user_profile_image
 from src.controller.users.user_default import Login_Account, check_user
 from src.extensions import make_session_from_dbuser
 from . import user_bp
@@ -19,7 +17,6 @@ logger = logging.getLogger(__name__)
 
 
 def _require_login():
-    """Retorna redirect se não houver sessão, None caso contrário."""
     if not session.get("user"):
         flash("Acesso negado.")
         return redirect(url_for("auth.login"))
@@ -30,42 +27,41 @@ def _require_login():
 
 @user_bp.route("/user")
 def user():
-    guard = _require_login()
-    if guard:
+
+    if guard := _require_login():
         return guard
-    print(f"IMAGEM DE PERFIL : ++++++++++++++++++++++{g.user.picture}++++++++++++++++++++++++++")
+
     if getattr(g, "user", None):
         try:
-            user_data = g.user.get_user()
+            user_data    = g.user.get_user()
         except Exception:
-            user_data = session.get("user")
+            user_data    = session.get("user")
 
         enrolled_courses = g.user.get_my_courses()
     else:
-        user_data = session.get("user")
+        user_data        = session.get("user")
         enrolled_courses = None
 
     if not enrolled_courses:
-        total_courses = 0
+        total_courses    = 0
         enrolled_courses = []
     else:
-        total_courses = len(enrolled_courses)
+        total_courses    = len(enrolled_courses)
 
     return render_template(
         "user_page.html",
-        session_user=user_data,
-        total_courses=total_courses,
-        enrolled_courses=enrolled_courses,
+        session_user     = user_data,
+        total_courses    = total_courses,
+        enrolled_courses = enrolled_courses,
     )
 
 
 @user_bp.route("/edit_user", methods=["POST"])
 def edit_user():
-    guard = _require_login()
-    if guard:
-        return guard
 
-    new_name = request.form.get("new_name")
+    if guard := _require_login(): return guard
+
+    new_name  = request.form.get("new_name")
     new_image = request.files.get("profile_image")
 
     # ── Atualizar nome ────────────────────────────────────────────────────────
@@ -85,24 +81,25 @@ def edit_user():
     if new_image and new_image.filename != "":
         image_name = new_image.filename
         image_file = new_image.read()
-        is_heic = new_image.filename.lower().endswith((".heic", ".heif"))
+        is_heic    = new_image.filename.lower().endswith((".heic", ".heif"))
 
         if is_heic:
             flash("formato de imagem inválido, envie uma imagem nos formatos: jpg, png, jpeg.")
+
         else:
             
             try:
-
                 image_path = profile_image_save(session["id"], session["picture"], image_name, image_file)
-                print("DPS DE UPLODA_USER_PROFUILE Imagem salva em:", image_path)
+
             except Exception as exc:
                 logger.exception("Erro ao salvar arquivo: %s", exc)
                 flash("Erro ao salvar imagem.")
                 return redirect(url_for("user.user"))
+            
             public_url = f"/profile_images/{image_name}"
 
-        ok = g.user.update_user(field="picture", newValue1=image_path)
-        if not ok:
+
+        if not g.user.update_user(field="picture", newValue1=image_path):
             flash("Erro ao salvar imagem no perfil.")
             return redirect(url_for("user.user"))
 
@@ -116,9 +113,8 @@ def edit_user():
 
 @user_bp.route("/edit_user/delete_picture", methods=["POST"])
 def delete_picture():
-    guard = _require_login()
-    if guard:
-        return guard
+
+    if guard := _require_login(): return guard
 
     img_path = session.get("picture")
     if not img_path:
@@ -156,9 +152,8 @@ def delete_picture():
 
 @user_bp.route("/change_password", methods=["GET", "POST"])
 def change_password():
-    guard = _require_login()
-    if guard:
-        return guard
+
+    if guard := _require_login(): return guard
 
     if request.method == "GET":
         return render_template("change_password.html")
@@ -187,7 +182,7 @@ def change_password():
         return redirect(url_for("user.change_password"))
 
     try:
-        updated = check_user(g.user.userId, column="id")
+        updated      = check_user(g.user.userId, column="id")
         updated_dict = dict(updated) if not isinstance(updated, dict) else updated
         make_session_from_dbuser(updated_dict)
     except Exception as exc:
@@ -201,14 +196,13 @@ def change_password():
 
 @user_bp.route("/delete_account", methods=["GET", "POST"])
 def delete_account_page():
-    guard = _require_login()
-    if guard:
-        return guard
+
+    if guard := _require_login(): return guard
 
     if request.method == "GET":
         return render_template("delete_account.html")
 
-    password = request.form.get("password")
+    password         = request.form.get("password")
     confirm_password = request.form.get("confirm_password")
 
     if not password or not confirm_password:
@@ -233,6 +227,7 @@ def delete_account_page():
         session.clear()
         flash("Conta excluída com sucesso.")
         return redirect(url_for("auth.login"))
+    
     except Exception as exc:
         logger.exception("Erro ao excluir conta: %s", exc)
         flash("Erro ao excluir conta. Tente novamente.")

@@ -1,9 +1,11 @@
 import logging
 
-from flask import g, redirect, render_template, request, session, url_for, jsonify, flash
+from flask import (
+    g, redirect, session, render_template, 
+    request, url_for, jsonify, flash
+)
 
-from src.controller.users.user_default import Create_Account, check_user
-
+from src.controller.users.user_default import check_user
 from . import admin_bp
 
 
@@ -19,14 +21,14 @@ def admin_page():
         return render_template("index.html")
     
     # Paginação
-    page = request.args.get('page', 1, type=int)
+    page        = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 20, type=int)
     
     # Filtros
-    name = request.args.get('name', None, type=str)
-    permission = request.args.get('permission', None, type=str)
-    has_email = request.args.get('has_email', None, type=str)
-    sort_by = request.args.get('sort_by', 'name_asc', type=str)
+    name        = request.args.get('name', None, type=str)
+    permission  = request.args.get('permission', None, type=str)
+    has_email   = request.args.get('has_email', None, type=str)
+    sort_by     = request.args.get('sort_by', 'name_asc', type=str)
     
     # Converte 'with'/'without' para boolean
     if has_email == 'with':
@@ -37,12 +39,12 @@ def admin_page():
         has_email = None  # não filtra
     
     result = g.user.all_users(
-        page=page,
-        per_page=per_page,
-        name=name if name else None,
-        permission=permission if permission != 'all' else None,
-        has_email=has_email,
-        sort_by=sort_by
+        page        = page,
+        per_page    = per_page,
+        name        = name if name else None,
+        permission  = permission if permission != 'all' else None,
+        has_email   = has_email,
+        sort_by     = sort_by
     )
     
     if not result:
@@ -53,14 +55,14 @@ def admin_page():
     
     return render_template(
         "admin_page.html",
-        users=result['users'],
-        pagination=result,
-        role_counts=role_counts,
-        current_filters={
-            'name': name or '',
-            'permission': permission or 'all',
-            'has_email': has_email if has_email is not None else 'all',
-            'sort_by': sort_by
+        users           =result['users'],
+        pagination      = result,
+        role_counts     = role_counts,
+        current_filters = {
+        'name'          : name or '',
+        'permission'    : permission or 'all',
+        'has_email'     : has_email if has_email is not None else 'all',
+        'sort_by'       : sort_by
         }
     )
     
@@ -68,30 +70,34 @@ def admin_page():
 # ── CRUD de usuários pelo admin ───────────────────────────────────────────────
 @admin_bp.route("/admin/admin_page/search")
 def admin_search_users():
+
     if not _is_admin():
         return "Acesso negado", 403
 
-    page = request.args.get('page', 1, type=int)
-    per_page = request.args.get('per_page', 20, type=int)
-    name = request.args.get('name', None, type=str)
-    permission = request.args.get('permission', None, type=str)
-    has_email = request.args.get('has_email', None, type=str)
-    sort_by = request.args.get('sort_by', 'name_asc', type=str)
+    page        = request.args.get('page', 1, type=int)
+    per_page    = request.args.get('per_page', 20, type=int)
+    name        = request.args.get('name', None, type=str)
+    permission  = request.args.get('permission', None, type=str)
+    has_email   = request.args.get('has_email', None, type=str)
+    sort_by     = request.args.get('sort_by', 'name_asc', type=str)
 
     # Converte has_email
     if has_email == 'with':
         has_email = True
+
     elif has_email == 'without':
         has_email = False
+
     else:
         has_email = None
-    print("PERMISSION>>>>>>>>>>>" , permission)
+
     result = g.user.all_users(
-        page=page, per_page=per_page,
-        name=name if name else None,
-        permission=permission if permission != 'all' else None,
-        has_email=has_email,
-        sort_by=sort_by
+        page        = page,
+        per_page    = per_page,
+        name        = name if name else None,
+        permission  = permission if permission != 'all' else None,
+        has_email   = has_email,
+        sort_by     = sort_by
     )
     if not result:
         return "Erro ao buscar usuários", 500
@@ -99,8 +105,8 @@ def admin_search_users():
     # Retorna apenas o HTML parcial da tabela
     return render_template(
         "admin_users_table.html",
-        users=result['users'],
-        pagination=result
+        users       = result['users'],
+        pagination  = result
     )
     
 @admin_bp.route("/admin/create", methods=["POST"])
@@ -108,10 +114,10 @@ def admin_create_user():
     if not _is_admin():
         return jsonify({"success": False, "error": "Acesso negado."}), 403
 
-    nome = request.form.get("nome", "").strip()
-    cred = request.form.get("cred")
-    senha = request.form.get("password")
-    confirm = request.form.get("confirm")
+    nome        = request.form.get("nome", "").strip()
+    cred        = request.form.get("cred")
+    senha       = request.form.get("password")
+    confirm     = request.form.get("confirm")
 
     if not nome or not senha or not confirm:
         return jsonify({"success": False, "error": "Todos os campos são obrigatórios."}), 400
@@ -119,7 +125,7 @@ def admin_create_user():
     if senha != confirm:
         return jsonify({"success": False, "error": "As senhas não coincidem."}), 400
 
-    if len(senha) < 6:
+    if len(senha) < 8:
         return jsonify({"success": False, "error": "A senha deve ter no mínimo 6 caracteres."}), 400
 
     if check_user(nome):
@@ -138,10 +144,10 @@ def admin_edit_user(user_id):
         return redirect(url_for("auth.login"))
 
     if request.method == "POST":
-        new_name = request.form.get("nome", "")
-        new_pass = request.form.get("senha")
+        new_name     = request.form.get("nome", "")
+        new_pass     = request.form.get("senha")
         confirm_pass = request.form.get("confirm_pass")
-        new_cred = request.form.get("cred")
+        new_cred     = request.form.get("cred")
 
         if new_name.strip() == "":
             logging.info("Nome não pode ser espaço em branco")
@@ -176,8 +182,6 @@ def admin_delete_user(user_id):
     return redirect(url_for("admin.admin_page"))
 
 
-
-
 #── STATISTICAS PELO ADMIN ───────────────────────────────────────────────
 @admin_bp.route("/admin/redirector", methods=["GET"])
 def redirector():
@@ -190,34 +194,26 @@ def app_analytics():
         return redirect(url_for("auth.login"))
 
     analytics = g.user.get_plataform_analytics()
-    if analytics:
-        return jsonify(analytics), 200
-        
-    return redirect(url_for("admin.admin_page"))
     
+    if not analytics:
+        return redirect(url_for("admin.admin_page"))
     
+    return jsonify(analytics), 200
+
+
 @admin_bp.route("/admin/analytics/professor/<professor_name>", methods=["GET"])
 def professor_analytics(professor_name):
     if not _is_admin():
         return redirect(url_for("auth.login"))
         
     analytic = g.user.get_professor_analytics(professor_name)
-    if analytic:
-        return jsonify(analytic), 200
-    return redirect(url_for("admin.admin_page"))    
+
+    if not analytic:
+        return redirect(url_for("admin.admin_page"))    
+
+    return jsonify(analytic), 200
             
 
-@admin_bp.route("/admin/analytics/contents_by_id/<content_id>", methods=["GET", "POST"])
-def get_content_analytics(content_id):
-    if not content_id or not _is_admin():
-        return redirect(url_for("auth.login"))
-                
-    content = g.user.get_content_analytics_by_admin(content_id)
-    print("<!>"*10, content_id, type(content_id))
-    if content:
-        return jsonify(content), 200
-    return [], 404        
-    
 @admin_bp.route("/admin/analytics/contents_by_name/<content_name>", methods=["POST", "GET"])
 def redirect_analytics_content_by_name(content_name):
     if not _is_admin():
@@ -232,3 +228,17 @@ def redirect_analytics_content_by_name(content_name):
     
     # Adicionado: Retorno claro de erro caso o if não seja satisfeito
     return jsonify({"error": "Conteúdo não encontrado ou múltiplos resultados encontrados"}), 404
+
+
+@admin_bp.route("/admin/analytics/contents_by_id/<content_id>", methods=["GET", "POST"])
+def get_content_analytics(content_id):
+    if not content_id or not _is_admin():
+        return redirect(url_for("auth.login"))
+                
+    content = g.user.get_content_analytics_by_admin(content_id)
+    
+    if not content:
+        return [], 404        
+
+    return jsonify(content), 200
+    

@@ -3,6 +3,7 @@ import os
 import logging
 from flask_wtf import CSRFProtect
 from src.extensions import load_g_user, mail
+from dotenv import load_dotenv
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -11,7 +12,7 @@ from src.models.mongo_models.rating_models import init_mongodb
 from flask_cors import CORS
 from flask_mail import Mail
 # Blueprints
-from src.blueprints.auth import auth_bp
+from src.blueprints.auth import    auth_bp
 from src.blueprints.auth import forg_pass_bp
 from src.blueprints.user import user_bp
 from src.blueprints.user import inscriptions_bp
@@ -21,41 +22,33 @@ from src.blueprints.professor import professor_bp
 
 
 csrf = CSRFProtect()
+
+
 def create_app() -> Flask:
     app = Flask(
         __name__,
-        template_folder="view/templates",
-        static_folder="view/static",
+        template_folder = "view/templates",
+        static_folder   = "view/static",
     )
     CORS(app)
-    """app.config['MAIL_SUPPRESS_SEND'] = False          # ← remover ou False
-    app.config['MAIL_SERVER']        = os.environ.get('MAIL_PASS')
-    app.config['MAIL_PORT']          = 587
-    app.config['MAIL_USE_TLS']       = True
-    app.config['MAIL_USE_SSL']       = False
-    app.config['MAIL_USERNAME']      = os.environ.get('EMAIL')
-    app.config['MAIL_PASSWORD']      =os.environ.get('MAIL_PASS')   # senha de app, não a normal
-    app.config['MAIL_DEFAULT_SENDER'] = (os.environ.get('MAIL_NAME'), os.environ.get('EMAIL'))"""
 
-
-    app.config['MAIL_SUPPRESS_SEND'] = False          # ← remover ou False
-    app.config['MAIL_SERVER']        = os.environ.get('MAIL_SERVER')
-    app.config['MAIL_PORT']          = 587
-    app.config['MAIL_USE_TLS']       = True
-    app.config['MAIL_USE_SSL']       = False
-    app.config['MAIL_USERNAME']      = os.environ.get('EMAIL')
-    app.config['MAIL_PASSWORD']      =os.environ.get('MAIL_PASS')   # senha de app, não a normal
+    app.config['MAIL_SUPPRESS_SEND']  = False          # ← remover ou False
+    app.config['MAIL_SERVER']         = os.environ.get('MAIL_SERVER')
+    app.config['MAIL_PORT']           = 587
+    app.config['MAIL_USE_TLS']        = True
+    app.config['MAIL_USE_SSL']        = False
+    app.config['MAIL_USERNAME']       = os.environ.get('EMAIL')
+    app.config['MAIL_PASSWORD']       = os.environ.get('MAIL_PASS')   # senha de app, não a normal
     app.config['MAIL_DEFAULT_SENDER'] = (os.environ.get('MAIL_NAME'), os.environ.get('EMAIL'))
 
 
     mail.init_app(app)
     app.secret_key = os.environ.get("FLASK_SECRET", "dev-secret")
-    app.secret_key = os.environ.get("FLASK_SECRET", "dev-secret")
 
     csrf = CSRFProtect()
     csrf.init_app(app)
-    # 🌟 INICIALIZAÇÃO DO MONGO: Movido para dentro do ciclo de criação do App
-    print("🔌 Conectando ao MongoDB e aplicando validadores...")
+
+    print(" Conectando ao MongoDB e aplicando validadores...")
     init_mongodb()
 
     # ── Upload de imagens de perfil ───────────────────────────────────────────
@@ -79,6 +72,7 @@ def create_app() -> Flask:
     app.register_blueprint(contents_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(professor_bp)
+
     return app
 
 
@@ -91,8 +85,11 @@ if __name__ == "__main__":
         make_users()
         make_contents()
         create_db()
+
     except Exception as exc:
         logging.info("create_db não executado ou já existente: %s", exc)
+
+    load_dotenv()
     os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
     app = create_app()
     app.run(debug=True, port=8080, host="0.0.0.0")

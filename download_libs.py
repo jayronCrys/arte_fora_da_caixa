@@ -11,7 +11,7 @@ def install_requirements(file_path="requirements.txt"):
     """
     
     if not os.path.exists(file_path):
-        print(f"❌ Erro: O arquivo {file_path} não foi encontrado.")
+        print(f"Erro: O arquivo {file_path} não foi encontrado.")
         print("Certifique-se de que o arquivo está no mesmo diretório ou verifique o caminho.")
         return
     

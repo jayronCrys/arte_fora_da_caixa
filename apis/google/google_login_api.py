@@ -3,12 +3,16 @@ from google_auth_oauthlib.flow import Flow
 from flask import url_for
 import logging
 import os
+"""from dotenv import load_dotenv
+load_dotenv()"""
 
 logger = logging.getLogger(__name__)
 CLIENT_SECRET = os.getenv("GOOGLE_KEY")
 CLIENT_ID = os.getenv("GOOGLE_USER")
 
 def google_config(redirect_by):
+    print("GOOGLE_KEY:", CLIENT_SECRET)
+    print("GOOGLE_USER:", CLIENT_ID)
     try:
         
         SCOPES = ["https://www.googleapis.com/auth/userinfo.email",
@@ -65,3 +69,6 @@ def client_ifo(token, req):
     except Exception as e:
         logging.error(f"Erro oauth: {e}")
         return False
+    
+print("GOOGLE_KEY:", CLIENT_SECRET)
+print("GOOGLE_USER:", CLIENT_ID)

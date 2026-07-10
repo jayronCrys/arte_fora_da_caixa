@@ -1,12 +1,17 @@
 import logging
 
 import google.auth.transport.requests as goo_request
-from flask import current_app, flash, g, redirect, render_template, request, session, url_for
 from google_auth_oauthlib.flow import Flow
 
 from apis.google.google_login_api import client_ifo, google_config
 from src.controller.users.user_default import Create_Account, Login_Account, check_user
 from src.extensions import make_session_from_dbuser, save_google_picture
+
+from flask import (
+    current_app,
+    flash, g, redirect,
+    render_template, request,
+    session, url_for)
 
 from . import auth_bp
 
@@ -26,7 +31,7 @@ def login():
     if request.method == "GET":
         return render_template("index.html")
 
-    login_with = request.form.get("method")
+    login_with         = request.form.get("method")
     create_new_account = request.form.get("new_account")
     logging.info("método de login: %s", login_with)
 
@@ -87,7 +92,7 @@ def google_login():
 
     authorization = google_config("auth.google_login_checkout")
 
-    session["google_state"] = authorization["google_state"]
+    session["google_state"]         = authorization["google_state"]
     session["google_client_config"] = authorization["client_config"]
     session["google_code_verifier"] = authorization["google_code_verifier"]
 
@@ -111,10 +116,10 @@ def link_google_account():
 
     authorization = google_config("auth.google_login_checkout")
 
-    session["google_state"] = authorization["google_state"]
+    session["google_state"]         = authorization["google_state"]
     session["google_client_config"] = authorization["client_config"]
     session["google_code_verifier"] = authorization["google_code_verifier"]
-    session["google_link_mode"] = True
+    session["google_link_mode"]     = True
 
     return redirect(authorization["oauth_autho"])
 
@@ -122,16 +127,15 @@ def link_google_account():
 @auth_bp.route("/login/google/checkin")
 def google_login_checkout():
     link_mode = session.pop("google_link_mode", False)
-
-    flow = Flow.from_client_config(
+    flow      = Flow.from_client_config(
         session.get("google_client_config"),
         scopes=[
             "openid",
             "https://www.googleapis.com/auth/userinfo.email",
             "https://www.googleapis.com/auth/userinfo.profile",
         ],
-        redirect_uri=url_for("auth.google_login_checkout", _external=True),
-        state=session.get("google_state"),
+        redirect_uri   =  url_for("auth.google_login_checkout", _external=True),
+        state          = session.get("google_state"),
     )
     flow.code_verifier = session["google_code_verifier"]
     flow.fetch_token(authorization_response=request.url)
@@ -147,11 +151,13 @@ def google_login_checkout():
         return _link_google_to_current_user(account)
 
     upload_folder = current_app.config["UPLOAD_FOLDER"]
-    account["picture"] = save_google_picture(account.get("picture", ""), upload_folder)
 
     userLoged, userAccount = Login_Account.login("google", account)
     if userLoged and userAccount:
         try:
+            save_google_picture(userLoged.userId, account.get("picture", ""), upload_folder)
+
+
             user_dict = dict(userAccount)
         except Exception:
             user_dict = userAccount
@@ -192,14 +198,14 @@ def _link_google_to_current_user(account: dict):
         )
 
     if not current.get("picture"):
-        upload_folder = current_app.config["UPLOAD_FOLDER"]
-        google_picture = save_google_picture(account.get("picture", ""), upload_folder)
+        upload_folder   = current_app.config["UPLOAD_FOLDER"]
+        google_picture  = save_google_picture(account.get("picture", ""), upload_folder)
         if google_picture and g.user.update_user(field="picture", newValue1=google_picture):
             updated_any = True
 
     if updated_any:
         try:
-            updated = check_user(g.user.userId, column="id")
+            updated      = check_user(g.user.userId, column="id")
             updated_dict = dict(updated) if not isinstance(updated, dict) else updated
             make_session_from_dbuser(updated_dict)
         except Exception as exc:
@@ -216,9 +222,9 @@ def _link_google_to_current_user(account: dict):
 @auth_bp.route("/create_account", methods=["GET", "POST"])
 def create_account():
     if request.method == "POST":
-        name = request.form.get("name")
-        password_1 = request.form.get("password_1")
-        password_2 = request.form.get("password_2")
+        name         = request.form.get("name")
+        password_1   = request.form.get("password_1")
+        password_2   = request.form.get("password_2")
 
         if password_1 != password_2:
             return render_template("create_account.html", error="senhas não coincidem"), 400
@@ -227,13 +233,13 @@ def create_account():
             return render_template(
                 "create_account.html", error="O nome de usuário já está sendo utilizado"
             ), 400
-
+ 
         userLoged, userAccount = Create_Account.creator(
-            creationMethod="local",
-            userName=name,
-            email=None,
-            pass1=password_1,
-            pass2=password_2,
+            creationMethod ="local",
+            userName       = name,
+            email          = None,
+            pass1          = password_1,
+            pass2          = password_2,
         )
 
         if userLoged and userAccount:

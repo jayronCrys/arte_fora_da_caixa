@@ -4,17 +4,17 @@ import os
 from datetime import datetime
 
 from flask import (
-    abort, current_app, flash, g, redirect, render_template,
-    request, send_file, session, url_for, jsonify
+    abort, current_app, flash,
+    g, redirect, render_template,
+    request, send_file, session,
+    url_for, jsonify
 )
 
 from src.models.database import get_session
 from . import contents_bp
 from Configs.banners import DEFAULT_BANNERS
 from Configs.contents_types import CONTENT_TYPES
-
 from functools import lru_cache
-from datetime import datetime, timedelta
 
 # Cache simples em memória (pode ser substituído por Redis/Flask-Caching depois)
 _cache = {}
@@ -34,26 +34,26 @@ def _cache_set(key, value):
 @contents_bp.route("/contents/<publications>", methods=["GET", "POST"])
 def contents(publications):
     try:
-        page = request.args.get("page", 1, type=int)
-        per_page = request.args.get("per_page", 12, type=int)
-        active_tab = request.args.get("tab", "all-courses")
+        page         = request.args.get("page", 1, type=int)
+        per_page     = request.args.get("per_page", 12, type=int)
+        active_tab   = request.args.get("tab", "all-courses")
 
         # ── Novos filtros ────────────────────────
-        search = request.args.get("search", None, type=str)
+        search       = request.args.get("search", None, type=str)
         content_type = request.args.get("type", "all", type=str)
-        popularity = request.args.get("popularity", "all", type=str)
-        sort = request.args.get("sort", "recent", type=str)
+        popularity   = request.args.get("popularity", "all", type=str)
+        sort         = request.args.get("sort", "recent", type=str)
 
-        result = g.user.GET_FULL_CONTENT(
-            all_contents=True,
-            content_to_select=None,
-            review=True,
-            limit=per_page,
-            offset=(page - 1) * per_page,
-            search=search if search else None,
-            content_type=content_type,
-            popularity=popularity,
-            sort=sort
+        result       = g.user.GET_FULL_CONTENT(
+            all_contents      = True,
+            content_to_select = None,
+            review            = True,
+            limit             = per_page,
+            offset            = (page - 1) * per_page,
+            search            = search if search else None,
+            content_type      = content_type,
+            popularity        = popularity,
+            sort              = sort
         )
         if not result:
             return "Erro ao carregar conteúdos", 500
@@ -71,9 +71,9 @@ def contents(publications):
         last_id = session.get("last_accessed_id")
         if last_id:
             last_accessed = {
-                "id": last_id,
-                "title": session.get("last_accessed_title", ""),
-                "banner": session.get("last_accessed_banner", ""),
+                "id"          : last_id,
+                "title"       : session.get("last_accessed_title", ""),
+                "banner"      : session.get("last_accessed_banner", ""),
                 "content_type": session.get("last_accessed_type", ""),
             }
 
@@ -86,16 +86,16 @@ def contents(publications):
 
         return render_template(
             "contents.html",
-            contents=items,
-            enrolled_contents=enrolled_contents,
-            publications=publications,
-            pub_items=pub_items,
-            last_accessed=last_accessed,
-            active_tab=active_tab,
-            page=page,
-            per_page=per_page,
-            total_pages=total_pages,
-            total_items=total_items,
+            contents            = items,
+            enrolled_contents   = enrolled_contents,
+            publications        = publications,
+            pub_items           = pub_items,
+            last_accessed       = last_accessed,
+            active_tab          = active_tab,
+            page                = page,
+            per_page            = per_page,
+            total_pages         = total_pages,
+            total_items         = total_items,
             **tpl_ctx,
         )
     except Exception as exc:
@@ -145,11 +145,11 @@ def _build_full_contents_context(active_tab="all-courses", page=1, per_page=12):
     """
     try:
         result = g.user.GET_FULL_CONTENT(
-            all_contents=True,
-            content_to_select=None,
-            review=True,
-            limit=per_page,
-            offset=(page - 1) * per_page,
+            all_contents        = True,
+            content_to_select   = None,
+            review              = True,
+            limit               = per_page,
+            offset              = (page - 1) * per_page,
         )
         items = result["items"] if result else []
         total_items = result["total"] if result else 0
@@ -173,25 +173,25 @@ def _build_full_contents_context(active_tab="all-courses", page=1, per_page=12):
     last_id = session.get("last_accessed_id")
     if last_id:
         last_accessed = {
-            "id": last_id,
-            "title": session.get("last_accessed_title", ""),
-            "banner": session.get("last_accessed_banner", ""),
-            "content_type": session.get("last_accessed_type", ""),
+            "id"            : last_id,
+            "title"         : session.get("last_accessed_title", ""),
+            "banner"        : session.get("last_accessed_banner", ""),
+            "content_type"  : session.get("last_accessed_type", ""),
         }
 
     pub_items = _pub_items() if _cred() in _PUBLISHER_CREDS else []
 
     return dict(
-        contents=items,
-        enrolled_contents=enrolled_contents,
-        publications=pub_items,
-        pub_items=pub_items,
-        last_accessed=last_accessed,
-        active_tab=active_tab,
-        page=page,
-        per_page=per_page,
-        total_pages=total_pages,
-        total_items=total_items,
+        contents            = items,
+        enrolled_contents   = enrolled_contents,
+        publications        = pub_items,
+        pub_items           = pub_items,
+        last_accessed       = last_accessed,
+        active_tab          = active_tab,
+        page                = page,
+        per_page            = per_page,
+        total_pages         = total_pages,
+        total_items         = total_items,
         **tpl_ctx,
     )
 
@@ -225,13 +225,15 @@ def seach_professors(professors):
 
 @contents_bp.route("/redirect_publish_content", methods=["POST", "GET"])
 def redirect_publish_content():
-    return redirect(url_for("contents.contents", tab="publish-content-view",
-                            _anchor="publications-section"))
+    return redirect(url_for("contents.contents",
+                        tab     = "publish-content-view",
+                         _anchor = "publications-section"))
 
 @contents_bp.route("/contents/redirect_publications", methods=["GET"])
 def redirect_get_publications():
-    return redirect(url_for("contents.contents", tab="my-publications-view",
-                            _anchor="publications-section"))
+    return redirect(url_for("contents.contents",
+                        tab     = "my-publications-view",
+                        _anchor = "publications-section"))
                             
 @contents_bp.route("/redirect_about", methods=["POST", "GET"])
 def redirect_about():
@@ -247,9 +249,10 @@ def get_publications():
     if _cred() not in _VALID_CREDS:
         return redirect(url_for("auth.login"))
     publications = _pub_items()
-    return redirect(url_for("contents.contents", tab="my-publications-view",
-                            _anchor="publications-section",
-                            publications=publications))
+    return redirect(url_for("contents.contents",
+                            tab             = "my-publications-view",
+                            _anchor         = "publications-section",
+                            publications    = "publications"))
 
 @contents_bp.route("/contents/content/<content_id>", methods=["GET", "POST"])
 def content_buss(content_id):
@@ -269,11 +272,11 @@ def content_buss(content_id):
         content = content[0]
         content["comments"], content["moderated_comments"] = _return_comment_by_cred(content_id)
         # Dentro de content_buss ou select_content, após carregar o conteúdo:
-        session["last_accessed_id"] = content["id"]
-        session["last_accessed_title"] = content.get("title", "")
+        session["last_accessed_id"]     = content["id"]
+        session["last_accessed_title"]  = content.get("title", "")
         session["last_accessed_banner"] = content.get("banner", "")
-        session["last_accessed_type"] = content.get("content_type", "")
-        session.modified = True
+        session["last_accessed_type"]   = content.get("content_type", "")
+        session.modified                = True
         return render_template("content_preview.html", content=content, my_courses=my_courses)
 
     if request.method == "POST":
@@ -344,7 +347,7 @@ def get_banner(content_id):
         return redirect(url_for("contents.get_banner_default", banner_id=banner))
 
     static_dir = os.path.join(current_app.root_path, "view/static")
-    full_path = os.path.join(static_dir, banner)
+    full_path  = os.path.join(static_dir, banner)
     if not os.path.exists(full_path):
         abort(404)
     return send_file(full_path, mimetype="image/jpeg")
@@ -365,8 +368,9 @@ def get_banner_default(banner_id):
 @contents_bp.route("/publish_content", methods=["POST", "GET"])
 def publish_content():
     if request.method == "GET":
-        return redirect(url_for("contents.contents", tab="publish-content-view",
-                                _anchor="publications-section"))
+        return redirect(url_for("contents.contents", 
+                            tab     = "publish-content-view",
+                            _anchor = "publications-section"))
 
     if _cred() not in _PUBLISHER_CREDS:
         return redirect(url_for("auth.login"))
@@ -439,10 +443,10 @@ def publish_content():
     author = None
     if _cred() == "admin":
         author_name = request.form.get("author")
-        author_obj = g.user.get_user_by_username(author_name)
+        author_obj  = g.user.get_user_by_username(author_name)
         if author_obj and author_obj.get("name") == author_name and author_obj.get("cred") in _PUBLISHER_CREDS:
-            author = author_obj["name"]
-            upload = g.user.publish_content_by_admin(content, author)
+            author  = author_obj["name"]
+            upload  = g.user.publish_content_by_admin(content, author)
     else:
         author = g.user.get_user_name()
         if author == session.get("name"):
@@ -507,10 +511,10 @@ def edit_content(content_id):
             return _render_edit("Descrição muito curta")
         action = _update("desc", new_desc)
 
-    new_type = request.form.get("content_type")
+    new_type    = request.form.get("content_type")
     valid_types = [v for v, _, _ in CONTENT_TYPES]
     if new_type and new_type in valid_types:
-        action = _update("content_type", new_type)
+        action  = _update("content_type", new_type)
 
     # Atualização de banner
     banner_file = request.files.get("banner_file")
@@ -561,8 +565,8 @@ def delete_content(content_id):
     if not action:
         return render_template(
             "edit_content.html",
-            content={"id": content_id},
-            error="Não foi possível excluir conteúdo",
+            content = {"id": content_id},
+            error   = "Não foi possível excluir conteúdo",
         )
     return redirect(url_for("contents.redirect_get_publications"))
 
@@ -578,12 +582,12 @@ def set_review():
         return redirect(url_for("auth.login"))
 
     course_request = request.get_json()
-    course_id = course_request.get("course_id")
+    course_id      = course_request.get("course_id")
         
     if not course_id:
         return False
         
-    rating = course_request.get("rating")
+    rating  = course_request.get("rating")
     comment = course_request.get("comment")
      
     if g.user.get_my_comment(course_id):

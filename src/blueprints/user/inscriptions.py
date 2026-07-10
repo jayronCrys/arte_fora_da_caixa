@@ -26,13 +26,13 @@ def subscribe(content_id):
     try:
         if g.user.new_inscription(content_id):
             return jsonify({
-                'success': True,
-                'redirect_url': url_for("contents.content_buss", content_id=content_id),
+                'success'       : True,
+                'redirect_url'  : url_for("contents.content_buss", content_id=content_id),
             }), 200
-        return jsonify({'error': 'Conteúdo não encontrado'}), 404
+        return jsonify({'error' : 'Conteúdo não encontrado'}), 404
     except Exception as e:
         logger.error(f"Erro ao inscrever usuário no conteúdo {content_id}: {e}")
-        return jsonify({'error': 'Conteúdo não encontrado'}), 404
+        return jsonify({'error' : 'Conteúdo não encontrado'}), 404
 
 
 def unsubscribe(content_id):
@@ -72,8 +72,8 @@ def unsubscribe_preview(content_id):
         return jsonify({'error': 'Não foi possível se desinscrever do conteúdo'}), 404
 
     return jsonify({
-        'success': True,
-        'redirect_url': url_for("contents.content_buss", content_id=content_id),
+        'success'       : True,
+        'redirect_url'  : url_for("contents.content_buss", content_id=content_id),
     }), 200
 
 
@@ -82,7 +82,7 @@ def get_my_courses():
     courses = []
     try:
         for inscription in inscriptions:
-            course = g.user.get_content_by_id(inscription["content_id"])
+            course           = g.user.get_content_by_id(inscription["content_id"])
             course["banner"] = get_banner(inscription["content_id"])
             courses.append(course)
         return courses

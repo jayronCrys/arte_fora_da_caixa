@@ -22,19 +22,12 @@ class User(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String(100), nullable=False)
-    
-    # NOTA DE PERFORMANCE: 'unique=True' já cria implicitamente um índice único na base de dados.
     email = Column(String(120), unique=True, nullable=True)
     password = Column(String(255), nullable=True)
     cred = Column(Enum(UserCred), default=UserCred.STUDENT, nullable=False)
     picture = Column(String(255), nullable=True)  
-    
-    # OTIMIZAÇÃO: Adicionado índice para acelerar filtragens e ordenações cronológicas de utilizadores
     creation_date = Column(DateTime(timezone=True), default=func.now(), index=True)
 
-    # DICA PARA EVITAR GARGALOS (N+1 Queries): 
-    # Ao carregar utilizadores em lote, lembre-se de usar 'joinedload' ou 'selectinload' na sua query 
-    # para evitar que o SQLAlchemy faça uma consulta extra à base de dados para cada relacionamento acessado.
     contents = relationship("Contents", back_populates="publisher")
     subs = relationship("Subs", back_populates="student")
 

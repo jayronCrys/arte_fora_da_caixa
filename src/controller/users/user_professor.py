@@ -2,7 +2,7 @@ from functools import wraps
 import uuid
 import logging
 
-from src.controller.users.user_default import Management_User_Default, Login_Account
+from src.controller.users.user_default import Management_User_Default
 
 from src.models.db_execute import insert_info, select_info, delete_info, update_info
 
