@@ -1,3 +1,5 @@
 minio
 __arte__A.db
 __pycache__
+.env
+.venv

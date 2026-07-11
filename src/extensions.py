@@ -20,28 +20,28 @@ def make_session_from_dbuser(db_user_dict):
     if not db_user_dict:
         return
     session["user"] = {
-        "id": str(db_user_dict.get("id")),
-        "name": db_user_dict.get("name"),
-        "email": db_user_dict.get("email"),
-        "picture": db_user_dict.get("picture"),
+        "id"           : str(db_user_dict.get("id")),
+        "name"         : db_user_dict.get("name"),
+        "email"        : db_user_dict.get("email"),
+        "picture"      : db_user_dict.get("picture"),
         "creation_date": str(db_user_dict.get("creation_date")),
-        "cred": db_user_dict.get("cred"),
+        "cred"         : db_user_dict.get("cred"),
     }
-    session["name"] = session["user"]["name"]
-    session["email"] = session["user"]["email"]
+    session["name"]    = session["user"]["name"]
+    session["email"]   = session["user"]["email"]
     session["picture"] = session["user"]["picture"]
-    session["id"] = session["user"]["id"]
-    session["cred"] = session["user"]["cred"]
-    session.modified = True
+    session["id"]      = session["user"]["id"]
+    session["cred"]    = session["user"]["cred"]
+    session.modified   = True
     logging.info("Sessão criada/atualizada para %s", session.get("name"))
 
 
 def load_g_user():
     """Reconstrói g.user a partir da sessão. Chamado em before_request."""
     if session.get("user"):
-        user_data = session["user"]
-        g.user = Management_User_Default(user_data)
-        if user_data.get("cred") == "admin":
+        user_data  = session["user"]
+        g.user     = Management_User_Default(user_data)
+        if user_data.get("cred")   == "admin":
             g.user = Management_Admins(g.user.get_user())
         elif user_data.get("cred") == "professor":
             g.user = Management_Professors(g.user.get_user())
@@ -55,7 +55,7 @@ def save_google_picture(user_id: str, picture_url: str, image_name: str) -> str:
     if not (picture_url and picture_url.startswith("http")):
         return picture_url
     try:
-        img_bytes = requests.get(picture_url).content
+        img_bytes  = requests.get(picture_url).content
         
         image_path = upload_user_profile_image(user_id, image_name, img_bytes)
         return image_path
@@ -72,8 +72,10 @@ def convert_heic_to_jpeg(source_path: str, dest_path: str, quality: int = 90) ->
             ["heif-convert", "-q", str(quality), source_path, dest_path],
             check=True, capture_output=True, timeout=30,
         )
+
         logging.info("HEIC convertido com heif-convert: %s -> %s", source_path, dest_path)
         return True
+    
     except (FileNotFoundError, subprocess.CalledProcessError) as exc:
         logging.warning("heif-convert falhou ou não encontrado: %s", exc)
 

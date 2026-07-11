@@ -10,8 +10,8 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from flask import Flask, send_from_directory
 from src.models.mongo_models.rating_models import init_mongodb
 from flask_cors import CORS
-from flask_mail import Mail
 # Blueprints
+
 from src.blueprints.auth import    auth_bp
 from src.blueprints.auth import forg_pass_bp
 from src.blueprints.user import user_bp
@@ -19,10 +19,6 @@ from src.blueprints.user import inscriptions_bp
 from src.blueprints.contents import contents_bp
 from src.blueprints.admin import admin_bp
 from src.blueprints.professor import professor_bp
-
-
-csrf = CSRFProtect()
-
 
 def create_app() -> Flask:
     app = Flask(
@@ -32,28 +28,26 @@ def create_app() -> Flask:
     )
     CORS(app)
 
-    app.config['MAIL_SUPPRESS_SEND']  = False          # ← remover ou False
     app.config['MAIL_SERVER']         = os.environ.get('MAIL_SERVER')
-    app.config['MAIL_PORT']           = 587
-    app.config['MAIL_USE_TLS']        = True
-    app.config['MAIL_USE_SSL']        = False
+    app.config['MAIL_PORT']           = os.environ.get('MAIL_PORT')
+    app.config['MAIL_USE_TLS']        = os.environ.get('MAIL_USE_TLS')
     app.config['MAIL_USERNAME']       = os.environ.get('EMAIL')
     app.config['MAIL_PASSWORD']       = os.environ.get('MAIL_PASS')   # senha de app, não a normal
     app.config['MAIL_DEFAULT_SENDER'] = (os.environ.get('MAIL_NAME'), os.environ.get('EMAIL'))
 
 
-    mail.init_app(app)
-    app.secret_key = os.environ.get("FLASK_SECRET", "dev-secret")
+    
+    app.secret_key = os.environ.get("FLASK_SECRET")
 
     csrf = CSRFProtect()
     csrf.init_app(app)
-
-    print(" Conectando ao MongoDB e aplicando validadores...")
+    mail.init_app(app)
     init_mongodb()
 
     # ── Upload de imagens de perfil ───────────────────────────────────────────
-    UPLOAD_FOLDER = os.path.join(app.static_folder, "profile_images")
+    UPLOAD_FOLDER               = os.path.join(app.static_folder, "profile_images")
     app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+
     os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
     # ── Hooks globais ─────────────────────────────────────────────────────────

@@ -7,8 +7,6 @@ from src.models.users_models.user_models import User
 from src.models.contents_models.content_models import Contents
 from src.models.relationships_models.inscriptions import Subs
 
-import os
-
 def create_db():
     Base.metadata.create_all(bind=engine)
     print("Banco criado com todas as tabelas!")

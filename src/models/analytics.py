@@ -84,9 +84,9 @@ def general_analytics(publisher_id):
 
         general_doc = {
             "total_published_contents": len(my_contents),
-            "global_inscriptions": 0,
-            "global_total_reviews": 0,
-            "global_average_rating": 0.0,
+            "global_inscriptions"     : 0,
+            "global_total_reviews"    : 0,
+            "global_average_rating"   : 0.0,
             "global_inscriptions_line": []
         }
 
@@ -102,17 +102,17 @@ def general_analytics(publisher_id):
 
         total_sums_reviews = 0
         for stats in all_stats.values():
-            general_doc["global_inscriptions"] += stats.get("total_inscriptions", 0)
+            general_doc["global_inscriptions"]  += stats.get("total_inscriptions", 0)
             general_doc["global_total_reviews"] += stats.get("total_reviews", 0)
-            total_sums_reviews += stats.get("sums_reviews", 0)
+            total_sums_reviews                  += stats.get("sums_reviews", 0)
 
         if general_doc["global_total_reviews"] > 0:
             general_doc["global_average_rating"] = round(
                 total_sums_reviews / general_doc["global_total_reviews"], 2
             )
 
-        all_inscriptions = conn.query(Subs).filter(Subs.content_id.in_(content_ids)).all()
-        dates = [ins.creation_date for ins in all_inscriptions if getattr(ins, "creation_date", None)]
+        all_inscriptions                        = conn.query(Subs).filter(Subs.content_id.in_(content_ids)).all()
+        dates                                   = [ins.creation_date for ins in all_inscriptions if getattr(ins, "creation_date", None)]
         general_doc["global_inscriptions_line"] = sorted(dates)
 
         return general_doc
@@ -120,9 +120,9 @@ def general_analytics(publisher_id):
         logger.error(f"Erro ao montar analytics gerais do publisher {publisher_id}: {e}")
         return {
             "total_published_contents": 0,
-            "global_inscriptions": 0,
-            "global_total_reviews": 0,
-            "global_average_rating": 0.0,
+            "global_inscriptions"     : 0,
+            "global_total_reviews"    : 0,
+            "global_average_rating"   : 0.0,
             "global_inscriptions_line": []
         }
     finally:
@@ -135,11 +135,11 @@ def platform_global_analytics():
     # ─────────────────────────────────────────────────────────────────
     logger.warning("[PLATFORM_ANALYTICS]: retornando dados FICTÍCIOS da plataforma (toggle de mock ativo)")
     return {
-    "total_active_contents": 42,
-    "total_users_registered": 1850,
-    "platform_total_inscriptions": 5420,
-    "platform_total_reviews": 1200,
-    "platform_average_rating": 4.6,
+    "total_active_contents"        : 42,
+    "total_users_registered"       : 1850,
+    "platform_total_inscriptions"  : 5420,
+    "platform_total_reviews"       : 1200,
+    "platform_average_rating"      : 4.6,
      "growth_inscriptions_timeline": ["2026-01-01", "2026-01-10", "2026-02-20", "2026-02-20", "2026-02-20", "2026-02-20", "2026-02-20", "2026-02-20", "2026-04-05", "2026-05-17", "2026-05-17", "2026-05-17", "2026-06-30", "2026-06-31", "2026-06-31",
      "2026-06-31", "2026-06-31"]
      }
@@ -148,15 +148,15 @@ def platform_global_analytics():
     conn = database()
     try:
         global_doc = {
-            "total_active_contents": 0,
-            "total_users_registered": 0,
-            "platform_total_inscriptions": 0,
-            "platform_total_reviews": 0,
-            "platform_average_rating": 0.0,
-            "growth_inscriptions_timeline": []
+            "total_active_contents"        : 0,
+            "total_users_registered"       : 0,
+            "platform_total_inscriptions"  : 0,
+            "platform_total_reviews"       : 0,
+            "platform_average_rating"      : 0.0,
+            "growth_inscriptions_timeline" : []
         }
 
-        global_doc["total_active_contents"] = conn.query(func.count(Contents.id)).scalar()
+        global_doc["total_active_contents"]  = conn.query(func.count(Contents.id)).scalar()
         global_doc["total_users_registered"] = conn.query(func.count(User.id)).scalar()
 
         try:
@@ -164,28 +164,28 @@ def platform_global_analytics():
             pipeline = [
                 {
                     "$group": {
-                        "_id": None,
+                        "_id"               : None,
                         "total_inscriptions": {"$sum": "$total_inscriptions"},
-                        "total_reviews": {"$sum": "$total_reviews"},
-                        "sums_reviews": {"$sum": "$sums_reviews"}
+                        "total_reviews"     : {"$sum": "$total_reviews"},
+                        "sums_reviews"      : {"$sum": "$sums_reviews"}
                     }
                 }
             ]
             result = list(course_stats_col.aggregate(pipeline))
             if result:
-                datas_mongo = result[0]
+                datas_mongo                               = result[0]
                 global_doc["platform_total_inscriptions"] = datas_mongo.get("total_inscriptions", 0)
-                global_doc["platform_total_reviews"] = datas_mongo.get("total_reviews", 0)
+                global_doc["platform_total_reviews"]      = datas_mongo.get("total_reviews", 0)
 
                 total_reviews = datas_mongo.get("total_reviews", 0)
-                sums_reviews = datas_mongo.get("sums_reviews", 0)
+                sums_reviews  = datas_mongo.get("sums_reviews", 0)
                 if total_reviews > 0:
                     global_doc["platform_average_rating"] = round(sums_reviews / total_reviews, 2)
 
         except Exception as e:
             logger.error(f"Erro ao agregar dados globais do MongoDB: {e}")
 
-        all_subs = conn.query(Subs.creation_date).order_by(Subs.creation_date.asc()).all()
+        all_subs                                   = conn.query(Subs.creation_date).order_by(Subs.creation_date.asc()).all()
         global_doc["growth_inscriptions_timeline"] = [sub.creation_date for sub in all_subs if sub.creation_date]
 
         return global_doc
